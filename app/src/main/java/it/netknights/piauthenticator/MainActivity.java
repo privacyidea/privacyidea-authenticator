@@ -181,6 +181,9 @@ public class MainActivity extends AppCompatActivity {
                         "/TOTP00114F8F?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=60&digits=6&issuer=privacyIDEA60"));
                 tokens.add(Util.makeTokenFromURI("otpauth://totp" +
                         "/TOTP00114F8F?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=30&digits=6&issuer=privacyIDEA30"));
+                //sha512 test token
+                /*tokens.add(Util.makeTokenFromURI("otpauth://hotp" +
+                        "/TOTP00114F8F?secret=DE84N3ENAKFXWHJWAGLNOOQDXWPZMD3N&period=60&algorithm=sha512&digits=6&issuer=SHA512test"));*/
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -208,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 try {
                     tokens.add(Util.makeTokenFromURI(result.getContents()));
-                    tokenlistadapter.refreshAllTOTP();
+                    tokenlistadapter.refreshOTPs();
                     Util.saveTokens(this, tokens);
                     tokenlistadapter.notifyDataSetChanged();
                 } catch (Exception e) {
