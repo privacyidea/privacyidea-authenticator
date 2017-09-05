@@ -21,9 +21,15 @@
 package it.netknights.piauthenticator;
 
 
+import android.os.Build;
+import android.util.Log;
+
+import java.nio.charset.StandardCharsets;
+
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import static android.content.ContentValues.TAG;
 import static it.netknights.piauthenticator.Token.HOTP;
 import static it.netknights.piauthenticator.Token.TOTP;
 
@@ -55,9 +61,10 @@ public class OTPGenerator {
      * @param algorithm The hashing algorithm, "HmacSHA1", "HmacSHA256", "HmacSHA512"
      * @return The OTP value for the HOTP Token
      */
-    private static int generateHOTP(byte[] key
+    public static int generateHOTP(byte[] key
             , long counter, int digits, String algorithm) {
         int r = 0;
+
         try {
             byte[] data = new byte[8];
             long value = counter;
@@ -68,6 +75,9 @@ public class OTPGenerator {
             Mac mac = Mac.getInstance(algorithm);
             mac.init(signKey);
             byte[] hash = mac.doFinal(data);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                Log.d(TAG, "algorithm is: "+algorithm+"   hash: "+new String(hash, StandardCharsets.UTF_8));
+            }
             int offset = hash[20 - 1] & 0xF;
             long truncatedHash = 0;
             for (int i = 0; i < 4; ++i) {
@@ -93,7 +103,7 @@ public class OTPGenerator {
      * @param algorithm The hashing algorithm, "HmacSHA1", "HmacSHA256", "HmacSHA512"
      * @return The OTP value for the HOTP Token
      */
-    private static int generateTOTP(byte[] key, long t, int digits, int period, String algorithm) {
+    public static int generateTOTP(byte[] key, long t, int digits, int period, String algorithm) {
          /*
         The unix system time is devided by the time step. This number of time slices is used as
         counter input for the normal HOTP algorithm

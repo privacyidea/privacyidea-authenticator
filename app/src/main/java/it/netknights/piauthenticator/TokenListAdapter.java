@@ -84,19 +84,21 @@ public class TokenListAdapter extends BaseAdapter {
             final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
             v = inflater.inflate(R.layout.tokenentry, parent, false);
         }
+        //v.setLongClickable(true);
+        v.setTag(position);
 
         final ProgressBar progressBar = (ProgressBar) v.findViewById(R.id.progressBar);
         final Token token = getItem(position);
         final TextView tmp2 = (TextView) v.findViewById(R.id.textViewToken);
         final TextView tmp1 = (TextView) v.findViewById(R.id.textViewLabel);
 
-        v.setLongClickable(true);
-        v.setTag(position);
+
 
         if (token.getType().equals(HOTP)) {
             progressBar.setVisibility(GONE);
         } else {
             progressBar.setVisibility(VISIBLE);
+            //v.setClickable(false);
         }
         progressBar.setTag(position);
         progressBar.setMax(token.getPeriod());

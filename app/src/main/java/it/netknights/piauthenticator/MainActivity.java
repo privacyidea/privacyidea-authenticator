@@ -30,6 +30,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.ActionMode;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -48,7 +49,7 @@ import com.google.zxing.integration.android.IntentResult;
 import java.util.ArrayList;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ActionMode.Callback {
     private TokenListAdapter tokenlistadapter;
     private ArrayList<Token> tokens;
     private Handler handler;
@@ -82,6 +83,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
+
         //-------------- initialize adapter with loaded tokens---------------
         PRNGFixes.apply();
         tokens = Util.loadTokens(this);
@@ -91,7 +94,14 @@ public class MainActivity extends AppCompatActivity {
         tokenlistadapter.refreshOTPs();
         tokenlistadapter.notifyDataSetChanged();
         registerForContextMenu(listview);
-
+        /* listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                listview.
+                //startActionMode(MainActivity.this);
+                return true;
+            }
+        });*/
         //------------ start the timer thread --------------------------------
         handler = new Handler();
         timer = new Runnable() {
@@ -248,5 +258,25 @@ public class MainActivity extends AppCompatActivity {
 
     private void save(ArrayList<Token> tokens) {
         Util.saveTokens(this, tokens);
+    }
+
+    @Override
+    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+        return false;
+    }
+
+    @Override
+    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+        return false;
+    }
+
+    @Override
+    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+        return false;
+    }
+
+    @Override
+    public void onDestroyActionMode(ActionMode mode) {
+
     }
 }

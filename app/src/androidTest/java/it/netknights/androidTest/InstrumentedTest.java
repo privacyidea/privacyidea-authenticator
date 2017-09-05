@@ -16,6 +16,8 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
@@ -135,10 +137,39 @@ public class InstrumentedTest {
                 "/OATH00014BE1?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=privacyIDEA");
         Token totp = Util.makeTokenFromURI("otpauth://totp" +
                 "/TOTP00114F8F?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=60&digits=6&issuer=privacyIDEA&algorithm=SHA256");
-        assertEquals(OTPGenerator.generate(hotp), "034072");
-        assertNotSame(OTPGenerator.generate(hotp), OTPGenerator.generate(totp));
+     /*   assertEquals(OTPGenerator.generate(hotp), "034072");
+        assertNotSame(OTPGenerator.generate(hotp), OTPGenerator.generate(totp));*/
+
+        String sha256 = "HmacSHA256";
+        String sha512 = "HmacSHA512";
+        String sha1 = "HmacSHA1";
+        byte[] key = "12345678901234567890".getBytes();
+
+
+        Token test = Util.makeTokenFromURI("otpauth://hotp" +
+                "/OATH00014BE1?secret=12345678901234567890&counter=1&digits=8&issuer=RFC6238TestVectors");
+        assertEquals(94287082, OTPGenerator.generateTOTP(key, 59l, 8, 30, sha1));
+        assertEquals(46119246, OTPGenerator.generateTOTP(key, 59l, 8, 30, sha256));
+        assertEquals(90693936, OTPGenerator.generateTOTP(key, 59l, 8, 30, sha512));
+        assertEquals(7081804, OTPGenerator.generateTOTP(key, 1111111109l, 8, 30, sha1));
+        assertEquals(68084774, OTPGenerator.generateTOTP(key, 1111111109l, 8, 30, sha256));
+        assertEquals(25091201, OTPGenerator.generateTOTP(key, 1111111109l, 8, 30, sha512));
+        assertEquals(14050471, OTPGenerator.generateTOTP(key, 1111111111l, 8, 30, sha1));
+        assertEquals(67062674, OTPGenerator.generateTOTP(key, 1111111111l, 8, 30, sha256));
+        assertEquals(99943326, OTPGenerator.generateTOTP(key, 1111111111l, 8, 30, sha512));
+        assertEquals(89005924, OTPGenerator.generateTOTP(key, 1234567890l, 8, 30, sha1));
+        assertEquals(91819424, OTPGenerator.generateTOTP(key, 1234567890l, 8, 30, sha256));
+        assertEquals(93441116, OTPGenerator.generateTOTP(key, 1234567890l, 8, 30, sha512));
+        assertEquals(69279037, OTPGenerator.generateTOTP(key, 2000000000l, 8, 30, sha1));
+        assertEquals(90698825, OTPGenerator.generateTOTP(key, 2000000000l, 8, 30, sha256));
+        assertEquals(38618901, OTPGenerator.generateTOTP(key, 2000000000l, 8, 30, sha512));
+        assertEquals(65353130, OTPGenerator.generateTOTP(key, 20000000000l, 8, 30, sha1));
+        assertEquals(77737706, OTPGenerator.generateTOTP(key, 20000000000l, 8, 30, sha256));
+        assertEquals(47863826, OTPGenerator.generateTOTP(key, 20000000000l, 8, 30, sha512));
+
     }
 
+    @Test
     public void testEncryptionHelper() throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException,
             IllegalBlockSizeException, UnsupportedEncodingException, InvalidAlgorithmParameterException, DecoderException {
 
@@ -163,4 +194,6 @@ public class InstrumentedTest {
             assertEquals(testCase[2], new String(new Hex().encode(EncryptionHelper.decrypt(k, iv, cipherTExt))));
         }
     }
+
+
 }

@@ -101,6 +101,9 @@ public class Token {
     }
 
     public void setAlgorithm(String algorithm) {
+        if(algorithm.startsWith("sha")){
+            this.algorithm="Hmac"+algorithm.toUpperCase();
+        }
         this.algorithm = algorithm;
     }
 

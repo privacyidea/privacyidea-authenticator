@@ -29,9 +29,14 @@ import static android.support.test.espresso.Espresso.onData;
 import static android.support.test.espresso.Espresso.onView;
 import static android.support.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu;
 import static android.support.test.espresso.action.ViewActions.click;
+import static android.support.test.espresso.action.ViewActions.closeSoftKeyboard;
+import static android.support.test.espresso.action.ViewActions.longClick;
+import static android.support.test.espresso.action.ViewActions.replaceText;
 import static android.support.test.espresso.assertion.ViewAssertions.matches;
 import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static android.support.test.espresso.matcher.ViewMatchers.withClassName;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
+import static android.support.test.espresso.matcher.ViewMatchers.withParent;
 import static android.support.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anything;
@@ -48,43 +53,28 @@ public class MainActivityTest2 {
 
     @Test
     public void mainActivityTest2() throws Exception {
-
+        // sleep() = Thread.sleep(1000)
+        //----------- remove all existing tokens and insert dummytokens ----------------------------
         openActionBarOverflowOrOptionsMenu(getInstrumentation().getTargetContext());
 
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        sleep();
 
         ViewInteraction appCompatTextView2 = onView(
                 allOf(ViewMatchers.withId(R.id.title), withText("Remove all tokens"), isDisplayed()));
         appCompatTextView2.perform(click());
 
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        sleep();
 
         openActionBarOverflowOrOptionsMenu(getInstrumentation().getTargetContext());
 
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        sleep();
 
         ViewInteraction appCompatTextView = onView(
                 allOf(withId(R.id.title), withText("Insert Dummy-Tokens"), isDisplayed()));
         appCompatTextView.perform(click());
 
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        //------------check at position x in the listview if the label and OTP are correct----------
+        sleep();
+        //------------ check at position x in the listview if the label and OTP are correct --------
         onData(anything()).
                 inAdapterView(withId(R.id.listview)).
                 atPosition(0).
@@ -124,30 +114,52 @@ public class MainActivityTest2 {
                 .check(matches(withText(OTPGenerator.generate(Util.makeTokenFromURI("otpauth://totp" +
                         "/TOTP00114F8F?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=30&digits=6&issuer=privacyIDEA30")))));
 
-        //-------------------check the next hotp value by clicking on it-----------------------------
+        //------------------- check the next hotp value by clicking on it -----------------------------
         onData(anything()).inAdapterView(withId(R.id.listview)).atPosition(0).onChildView(withId(R.id.textViewToken)).perform(click());
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+
+        sleep();
+
         onData(anything()).inAdapterView(withId(R.id.listview)).atPosition(0).onChildView(withId(R.id.textViewToken))
                 .check(matches(withText(OTPGenerator.generate(Util.makeTokenFromURI("otpauth://hotp" +
                         "/OATH00014BE1?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=2&digits=6&issuer=privacyIDEA")))));
 
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        sleep();
 
+        //----------------- delete the first token -------------------------------------------------
+        onData(anything()).inAdapterView(withId(R.id.listview)).atPosition(0).perform();
+        sleep();
+        onView(allOf(withId(android.R.id.title), withText("DELETE"), isDisplayed())).perform(click());
+        sleep();
+        //---------- check if the formerly 2nd is now the first token
+        onData(anything()).
+                inAdapterView(withId(R.id.listview)).
+                atPosition(0).
+                onChildView(withId(R.id.textViewLabel))
+                .check(matches(withText(startsWith("privacyIDEA60"))));
+
+        sleep();
+        //---------------- rename the (then) first token ---------------------------------------------
+        onData(anything()).inAdapterView(withId(R.id.listview)).atPosition(0).perform(longClick());
+        sleep();
+        onView(allOf(withId(android.R.id.title), withText("RENAME"), isDisplayed())).perform(click());
+        sleep();
+        onView(allOf(withText("privacyIDEA60: TOTP00114F8F"),withParent(allOf(withId(android.R.id.custom), withParent           (withClassName(is("android.widget.FrameLayout"))))),isDisplayed())).perform(click());
+        sleep();
+        onView(allOf(withText("privacyIDEA60: TOTP00114F8F"),withParent(allOf(withId(android.R.id.custom),
+        withParent(withClassName(is("android.widget.FrameLayout"))))),isDisplayed())).perform(replaceText("test123"),           closeSoftKeyboard());
+        sleep();
+        //---------- check the new name ---------------
+        onData(anything()).
+                inAdapterView(withId(R.id.listview)).
+                atPosition(0).
+                onChildView(withId(R.id.textViewLabel))
+                .check(matches(withText(startsWith("test123"))));
+        sleep();
+
+        //---------------- open actionbar and remove all tokens-------------------------------------
         openActionBarOverflowOrOptionsMenu(getInstrumentation().getTargetContext());
 
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        sleep();
 
         ViewInteraction appCompatTextView5 = onView(
                 allOf(withId(R.id.title), withText("Remove all tokens"), isDisplayed()));
@@ -156,27 +168,12 @@ public class MainActivityTest2 {
 
     }
 
-    private static Matcher<View> childAtPosition(
-            final Matcher<View> parentMatcher, final int position) {
-
-        return new TypeSafeMatcher<View>() {
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("Child at position " + position + " in parent ");
-                parentMatcher.describeTo(description);
-            }
-
-            @Override
-            public boolean matchesSafely(View view) {
-                ViewParent parent = view.getParent();
-                return parent instanceof ViewGroup && parentMatcher.matches(parent)
-                        && view.equals(((ViewGroup) parent).getChildAt(position));
-            }
-        };
-    }
-
-    static MenuItemTitleMatcher withTitle(String title) {
-        return new MenuItemTitleMatcher(title);
+    private void sleep() {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     static class MenuItemTitleMatcher extends BaseMatcher<Object> {
