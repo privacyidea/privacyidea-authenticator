@@ -143,10 +143,10 @@ public class MainActivityTest2 {
         sleep();
         onView(allOf(withId(android.R.id.title), withText("RENAME"), isDisplayed())).perform(click());
         sleep();
-        onView(allOf(withText("privacyIDEA60: TOTP00114F8F"),withParent(allOf(withId(android.R.id.custom), withParent           (withClassName(is("android.widget.FrameLayout"))))),isDisplayed())).perform(click());
+        onView(allOf(withText("privacyIDEA60: TOTP00114F8F"), withParent(allOf(withId(android.R.id.custom), withParent(withClassName(is("android.widget.FrameLayout"))))), isDisplayed())).perform(click());
         sleep();
-        onView(allOf(withText("privacyIDEA60: TOTP00114F8F"),withParent(allOf(withId(android.R.id.custom),
-        withParent(withClassName(is("android.widget.FrameLayout"))))),isDisplayed())).perform(replaceText("test123"),           closeSoftKeyboard());
+        onView(allOf(withText("privacyIDEA60: TOTP00114F8F"), withParent(allOf(withId(android.R.id.custom),
+                withParent(withClassName(is("android.widget.FrameLayout"))))), isDisplayed())).perform(replaceText("test123"), closeSoftKeyboard());
         sleep();
         //---------- check the new name ---------------
         onData(anything()).

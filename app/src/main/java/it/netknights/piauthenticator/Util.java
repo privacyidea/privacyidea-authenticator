@@ -88,8 +88,8 @@ public class Util {
             label = issuer + ": " + label;
         }
         int digits = Integer.parseInt(uri.getQueryParameter(DIGITS));
-        byte[] secretbytes = new Base32().decode(secret.toUpperCase());
-        Token tmp = new Token(secretbytes, label, type, digits);
+        //byte[] secretAsbytes = new Base32().decode(secret.toUpperCase());
+        Token tmp = new Token(secret, label, type, digits);
 
         if (type.equals(TOTP)) {
             tmp.setPeriod(Integer.parseInt(uri.getQueryParameter(PERIOD)));
@@ -131,9 +131,8 @@ public class Util {
         return tokens;
     }
 
-
     /**
-     * Save and encrypt the ArrayList of tokens with a Secret Key, which wrapped by a Public Key
+     * Encrpyt and save the ArrayList of tokens with a Secret Key, which wrapped by a Public Key
      * that is stored in the Keystore
      *
      * @param context Needed to get the FilesDir
@@ -162,7 +161,8 @@ public class Util {
     }
 
     public static Token makeTokenFromJSON(JSONObject o) throws JSONException {
-        Token tmp = new Token(new Base32().decode(o.getString(SECRET)), o.getString(LABEL), o.getString(TYPE), o.getInt(DIGITS));
+        //Token tmp = new Token(new Base32().decode(o.getString(SECRET)), o.getString(LABEL), o.getString(TYPE), o.getInt(DIGITS));
+        Token tmp = new Token(o.getString(SECRET), o.getString(LABEL), o.getString(TYPE), o.getInt(DIGITS));
         tmp.setAlgorithm(o.getString(ALGORITHM));
         if (o.getString(TYPE).equals(HOTP)) {
             tmp.setCounter(o.getInt(COUNTER));
@@ -175,7 +175,8 @@ public class Util {
 
     public static JSONObject makeJSONfromToken(Token t) throws JSONException {
         JSONObject o = new JSONObject();
-        o.put(SECRET, new String(new Base32().encode(t.getSecret())));
+        //o.put(SECRET, new String(new Base32().encode(t.getSecret())));
+        o.put(SECRET, new String(t.getSecret()));
         o.put(LABEL, t.getLabel());
         o.put(DIGITS, t.getDigits());
         o.put(ALGORITHM, t.getAlgorithm());

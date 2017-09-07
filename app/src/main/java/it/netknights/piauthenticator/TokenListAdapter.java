@@ -22,8 +22,6 @@
 package it.netknights.piauthenticator;
 
 import android.graphics.Color;
-import android.util.Log;
-import android.view.DragEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,10 +29,8 @@ import android.widget.BaseAdapter;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import static android.content.ContentValues.TAG;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 import static it.netknights.piauthenticator.Token.HOTP;
@@ -44,6 +40,15 @@ import static it.netknights.piauthenticator.Token.TOTP;
 public class TokenListAdapter extends BaseAdapter {
 
     private List<Token> tokens;
+    private Token CurrentSelection;
+
+    public Token getCurrentSelection() {
+        return CurrentSelection;
+    }
+
+    public void setCurrentSelection(Token currentSelection) {
+        CurrentSelection = currentSelection;
+    }
 
     //update is called from the timer-thread within the MainActivity
     public void updatePBs(int progress) {
@@ -93,13 +98,13 @@ public class TokenListAdapter extends BaseAdapter {
         final TextView tmp1 = (TextView) v.findViewById(R.id.textViewLabel);
 
 
-
         if (token.getType().equals(HOTP)) {
             progressBar.setVisibility(GONE);
         } else {
             progressBar.setVisibility(VISIBLE);
             //v.setClickable(false);
         }
+
         progressBar.setTag(position);
         progressBar.setMax(token.getPeriod());
         progressBar.getProgressDrawable().setColorFilter(
@@ -116,6 +121,15 @@ public class TokenListAdapter extends BaseAdapter {
             public boolean onDrag(View v, DragEvent event) {
                 int action = event.getAction();
                 switch (action) {
+                    case DragEvent.ACTION_DRAG_STARTED:
+                        break;
+
+                    case DragEvent.ACTION_DRAG_EXITED:
+                        break;
+
+                    case DragEvent.ACTION_DRAG_ENTERED:
+                        break;
+
                     case DragEvent.ACTION_DROP: {
                         int from = Integer.parseInt("" + event.getClipDescription().getLabel());
                         int to = (Integer) (v.getTag());
@@ -131,6 +145,23 @@ public class TokenListAdapter extends BaseAdapter {
                         break;
                 }
                 return true;
+            }
+        });
+
+        v.setOnTouchListener(new View.OnTouchListener() {
+
+            @Override
+            public boolean onTouch(View v, MotionEvent arg1) {
+
+                if (getCurrentSelection() != getTokens().get(position)) {
+                    return false;
+                }
+
+                ClipData data = ClipData.newPlainText(v.getTag() + "", "");
+                View.DragShadowBuilder shadow = new View.DragShadowBuilder(v);
+                v.startDrag(data, shadow, null, 0);
+
+                return false;
             }
         });*/
 

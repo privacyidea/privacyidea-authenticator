@@ -5,10 +5,8 @@ import android.os.Build;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.filters.LargeTest;
 import android.support.test.runner.AndroidJUnit4;
-import android.test.InstrumentationTestCase;
 
 import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,8 +14,6 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
@@ -32,12 +28,11 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import it.netknights.piauthenticator.EncryptionHelper;
-import it.netknights.piauthenticator.OTPGenerator;
 import it.netknights.piauthenticator.Token;
 import it.netknights.piauthenticator.Util;
 
+import static it.netknights.piauthenticator.OTPGenerator.generateHOTP;
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotSame;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
@@ -68,7 +63,7 @@ public class InstrumentedTest {
         assertEquals(1, hotp.getCounter());
         assertEquals(0, hotp.getPeriod());
         assertEquals("hotp", hotp.getType());
-        assertTrue(Arrays.equals(hotp.getSecret(), new Base32().decode("2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY")));
+        assertEquals("2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY", hotp.getSecret());
         assertEquals("privacyIDEA: TOTP00114F8F", totp.getLabel());
         assertEquals(60, totp.getPeriod());
         assertEquals(0, totp.getCounter());
@@ -87,22 +82,22 @@ public class InstrumentedTest {
         assertEquals(1, loaded.get(0).getCounter());
         assertEquals(0, loaded.get(0).getPeriod());
         assertEquals("hotp", loaded.get(0).getType());
-        assertTrue(Arrays.equals(loaded.get(0).getSecret(), new Base32().decode("2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY")));
+        assertEquals("2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY", loaded.get(0).getSecret());
 
         assertEquals("privacyIDEA: TOTP00114F8F", loaded.get(1).getLabel());
         assertEquals(60, loaded.get(1).getPeriod());
         assertEquals(0, loaded.get(1).getCounter());
         assertEquals("HmacSHA256", loaded.get(1).getAlgorithm());
-        assertTrue(Arrays.equals(new Base32().decode("HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N"), loaded.get(1).getSecret()));
+        assertEquals("HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N", loaded.get(1).getSecret());
 
         hotp.setCurrentOTP("523432");
         hotp.setType("totp");
         hotp.setLabel("test setlabel");
-        byte[] s = "Hallo test123".getBytes();
+        String s = "Hallo test123";
         hotp.setSecret(s);
         assertEquals("523432", hotp.getCurrentOTP());
         assertEquals("totp", hotp.getType());
-        assertTrue(Arrays.equals(s, hotp.getSecret()));
+        assertEquals(s, hotp.getSecret());
         assertEquals("test setlabel", hotp.getLabel());
 
         //test the exceptions
@@ -133,41 +128,61 @@ public class InstrumentedTest {
 
     @Test
     public void testOTPGenerator() throws Exception {
-        Token hotp = Util.makeTokenFromURI("otpauth://hotp" +
-                "/OATH00014BE1?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=privacyIDEA");
-        Token totp = Util.makeTokenFromURI("otpauth://totp" +
-                "/TOTP00114F8F?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=60&digits=6&issuer=privacyIDEA&algorithm=SHA256");
-     /*   assertEquals(OTPGenerator.generate(hotp), "034072");
-        assertNotSame(OTPGenerator.generate(hotp), OTPGenerator.generate(totp));*/
+        // Testvectors for TOTP are from https://tools.ietf.org/html/rfc6238#appendix-B
 
         String sha256 = "HmacSHA256";
         String sha512 = "HmacSHA512";
         String sha1 = "HmacSHA1";
-        byte[] key = "12345678901234567890".getBytes();
+        // The original seed is "12345678901234567890" as ASCII String
+        // Seed as HEX for HMAC-SHA1 - 20 bytes
+        String seed = "3132333435363738393031323334353637383930";
+        // Seed as HEX for HMAC-SHA256 - 32 bytes
+        String seed32 = "3132333435363738393031323334353637383930" +
+                "313233343536373839303132";
+        // Seed as HEX for HMAC-SHA512 - 64 bytes
+        String seed64 = "3132333435363738393031323334353637383930" +
+                "3132333435363738393031323334353637383930" +
+                "3132333435363738393031323334353637383930" +
+                "31323334";
+        String digits = "8";
 
+        long X = 30;    // The period: 30 seconds
+        long testTime[] = {59L, 1111111109L, 1111111111L,
+                1234567890L, 2000000000L, 20000000000L};
 
-        Token test = Util.makeTokenFromURI("otpauth://hotp" +
-                "/OATH00014BE1?secret=12345678901234567890&counter=1&digits=8&issuer=RFC6238TestVectors");
-        assertEquals(94287082, OTPGenerator.generateTOTP(key, 59l, 8, 30, sha1));
-        assertEquals(46119246, OTPGenerator.generateTOTP(key, 59l, 8, 30, sha256));
-        assertEquals(90693936, OTPGenerator.generateTOTP(key, 59l, 8, 30, sha512));
-        assertEquals(7081804, OTPGenerator.generateTOTP(key, 1111111109l, 8, 30, sha1));
-        assertEquals(68084774, OTPGenerator.generateTOTP(key, 1111111109l, 8, 30, sha256));
-        assertEquals(25091201, OTPGenerator.generateTOTP(key, 1111111109l, 8, 30, sha512));
-        assertEquals(14050471, OTPGenerator.generateTOTP(key, 1111111111l, 8, 30, sha1));
-        assertEquals(67062674, OTPGenerator.generateTOTP(key, 1111111111l, 8, 30, sha256));
-        assertEquals(99943326, OTPGenerator.generateTOTP(key, 1111111111l, 8, 30, sha512));
-        assertEquals(89005924, OTPGenerator.generateTOTP(key, 1234567890l, 8, 30, sha1));
-        assertEquals(91819424, OTPGenerator.generateTOTP(key, 1234567890l, 8, 30, sha256));
-        assertEquals(93441116, OTPGenerator.generateTOTP(key, 1234567890l, 8, 30, sha512));
-        assertEquals(69279037, OTPGenerator.generateTOTP(key, 2000000000l, 8, 30, sha1));
-        assertEquals(90698825, OTPGenerator.generateTOTP(key, 2000000000l, 8, 30, sha256));
-        assertEquals(38618901, OTPGenerator.generateTOTP(key, 2000000000l, 8, 30, sha512));
-        assertEquals(65353130, OTPGenerator.generateTOTP(key, 20000000000l, 8, 30, sha1));
-        assertEquals(77737706, OTPGenerator.generateTOTP(key, 20000000000l, 8, 30, sha256));
-        assertEquals(47863826, OTPGenerator.generateTOTP(key, 20000000000l, 8, 30, sha512));
+        long time0 = testTime[0] / X;
+        String step0 = Long.toHexString(time0).toUpperCase();
+        long time1 = testTime[1] / X;
+        String step1 = Long.toHexString(time1).toUpperCase();
+        long time2 = testTime[2] / X;
+        String step2 = Long.toHexString(time2).toUpperCase();
+        long time3 = testTime[3] / X;
+        String step3 = Long.toHexString(time3).toUpperCase();
+        long time4 = testTime[4] / X;
+        String step4 = Long.toHexString(time4).toUpperCase();
+        long time5 = testTime[5] / X;
+        String step5 = Long.toHexString(time5).toUpperCase();
 
+        assertEquals(94287082, generateHOTP(seed, step0, digits, sha1));
+        assertEquals(46119246, generateHOTP(seed32, step0, digits, sha256));
+        assertEquals(90693936, generateHOTP(seed64, step0, digits, sha512));
+        assertEquals(7081804, generateHOTP(seed, step1, digits, sha1));
+        assertEquals(68084774, generateHOTP(seed32, step1, digits, sha256));
+        assertEquals(25091201, generateHOTP(seed64, step1, digits, sha512));
+        assertEquals(14050471, generateHOTP(seed, step2, digits, sha1));
+        assertEquals(67062674, generateHOTP(seed32, step2, digits, sha256));
+        assertEquals(99943326, generateHOTP(seed64, step2, digits, sha512));
+        assertEquals(89005924, generateHOTP(seed, step3, digits, sha1));
+        assertEquals(91819424, generateHOTP(seed32, step3, digits, sha256));
+        assertEquals(93441116, generateHOTP(seed64, step3, digits, sha512));
+        assertEquals(69279037, generateHOTP(seed, step4, digits, sha1));
+        assertEquals(90698825, generateHOTP(seed32, step4, digits, sha256));
+        assertEquals(38618901, generateHOTP(seed64, step4, digits, sha512));
+        assertEquals(65353130, generateHOTP(seed, step5, digits, sha1));
+        assertEquals(77737706, generateHOTP(seed32, step5, digits, sha256));
+        assertEquals(47863826, generateHOTP(seed64, step5, digits, sha512));
     }
+
 
     @Test
     public void testEncryptionHelper() throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException,

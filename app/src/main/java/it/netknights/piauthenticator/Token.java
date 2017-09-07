@@ -37,7 +37,7 @@ public class Token {
     public static final String HOTP = "hotp";
 
     private String currentOTP;
-    private byte secret[];
+    private String secret;
     private String label;
     private String type;
     private int digits;
@@ -47,7 +47,7 @@ public class Token {
     private ProgressBar pb;
 
 
-    public Token(byte[] secret, String label, String type, int digits) {
+    public Token(String secret, String label, String type, int digits) {
         this.label = label;
         this.secret = secret;
         this.type = type;
@@ -76,11 +76,11 @@ public class Token {
         this.counter = counter;
     }
 
-    public void setSecret(byte[] secret) {
+    public void setSecret(String secret) {
         this.secret = secret;
     }
 
-    public byte[] getSecret() {
+    public String getSecret() {
         return secret;
     }
 
@@ -101,8 +101,9 @@ public class Token {
     }
 
     public void setAlgorithm(String algorithm) {
-        if(algorithm.startsWith("sha")){
-            this.algorithm="Hmac"+algorithm.toUpperCase();
+        // In the KeyURI the parameter is sha1,sha256,sha512 whereas the Mac instance is HmacSHA1 etc.
+        if (algorithm.startsWith("sha")) {
+            this.algorithm = "Hmac" + algorithm.toUpperCase();
         }
         this.algorithm = algorithm;
     }

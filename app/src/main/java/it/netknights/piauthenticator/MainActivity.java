@@ -39,7 +39,6 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -54,15 +53,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private ArrayList<Token> tokens;
     private Handler handler;
     private Runnable timer;
-
+    private Token nextSelection;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        //---------initialize view components----------------
+        //--------- initialize view components ----------------
         super.onCreate(savedInstanceState);
         setTitle("PrivacyIDEA Authenticator");
         setContentView(R.layout.activity_main);
-
         final ListView listview = (ListView) findViewById(R.id.listview);
         final TextView countdown = (TextView) findViewById(R.id.countdownfield);
         final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -82,8 +80,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 }
             }
         });
-
-
+        /*  listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                nextSelection = tokens.get(position);
+                startActionMode(MainActivity.this);
+                return true;
+            }
+        });*/
 
         //-------------- initialize adapter with loaded tokens---------------
         PRNGFixes.apply();
@@ -94,14 +98,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         tokenlistadapter.refreshOTPs();
         tokenlistadapter.notifyDataSetChanged();
         registerForContextMenu(listview);
-        /* listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                listview.
-                //startActionMode(MainActivity.this);
-                return true;
-            }
-        });*/
+
         //------------ start the timer thread --------------------------------
         handler = new Handler();
         timer = new Runnable() {
@@ -136,6 +133,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 tokens.remove(position);
                 tokenlistadapter.notifyDataSetChanged();
                 save(tokens);
+                Snackbar.make(getCurrentFocus(), "Token removed", Snackbar.LENGTH_LONG).show();
                 return true;
 
             case R.id.edit_token: {
@@ -151,11 +149,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                         tokens.get(position).setLabel(input.getEditableText().toString());
                         tokenlistadapter.notifyDataSetChanged();
                         save(tokens);
+                        Snackbar.make(getCurrentFocus(), "New name saved", Snackbar.LENGTH_LONG).show();
                     }
                 });
 
                 alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
+                        Snackbar.make(getCurrentFocus(), "Rename cancelled", Snackbar.LENGTH_LONG).show();
                         dialog.cancel();
                     }
                 });
@@ -170,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.overflow_menu, menu);
         return true;
     }
 
@@ -186,14 +186,15 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             //insert a TOTP and HOTP dummy-token
             try {
                 tokens.add(Util.makeTokenFromURI("otpauth://hotp" +
-                        "/OATH00014BE1?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=privacyIDEA"));
+                        "/HOTP?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=SampleToken"));
                 tokens.add(Util.makeTokenFromURI("otpauth://totp" +
-                        "/TOTP00114F8F?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=60&digits=6&issuer=privacyIDEA60"));
+                        "/TOTP60SSHA1?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=60&digits=6&issuer=SampleToken"));
                 tokens.add(Util.makeTokenFromURI("otpauth://totp" +
-                        "/TOTP00114F8F?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=30&digits=6&issuer=privacyIDEA30"));
+                        "/TOTP30SSHA1?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=30&digits=6&issuer=SampleToken"));
+
                 //sha512 test token
-                /*tokens.add(Util.makeTokenFromURI("otpauth://hotp" +
-                        "/TOTP00114F8F?secret=DE84N3ENAKFXWHJWAGLNOOQDXWPZMD3N&period=60&algorithm=sha512&digits=6&issuer=SHA512test"));*/
+                /*tokens.add(Util.makeTokenFromURI("otpauth://totp/?secret=AXICHWZZHPIREPHNPCF4GKBZZCFWTKA42EPJ655SJGYGGHLZFV2LYGU6ZNQ3LQSJ7E3CXSMSH6RLJAVXEG56WARF2M5NE2JFQ7XHBSI
+                &algorithm=sha512&period=30&digits=6&issuer=privacyIDEA"));*/
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -205,6 +206,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             tokens.clear();
             tokenlistadapter.notifyDataSetChanged();
             save(tokens);
+            Snackbar.make(getCurrentFocus(), "All tokens deleted", Snackbar.LENGTH_LONG
+            ).show();
             return true;
         }
 
@@ -220,11 +223,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
             } else {
                 try {
-                    tokens.add(Util.makeTokenFromURI(result.getContents()));
+                    Token t = Util.makeTokenFromURI(result.getContents());
+                    tokens.add(t);
+                    Snackbar.make(getCurrentFocus(), "Token added for: " + t.getLabel(), Snackbar.LENGTH_LONG).show();
                     tokenlistadapter.refreshOTPs();
                     Util.saveTokens(this, tokens);
                     tokenlistadapter.notifyDataSetChanged();
                 } catch (Exception e) {
+                    Snackbar.make(this.getCurrentFocus(), "Invalid QR Code", Snackbar.LENGTH_LONG).show();
                     e.printStackTrace();
                 }
             }
@@ -262,21 +268,63 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     @Override
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-        return false;
+        MenuInflater inflater = mode.getMenuInflater();
+        inflater.inflate(R.menu.actionmode_menu, menu);
+        return true;
     }
 
     @Override
     public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-        return false;
+        tokenlistadapter.setCurrentSelection(nextSelection);
+        tokenlistadapter.notifyDataSetChanged();
+        mode.setTitle(tokenlistadapter.getCurrentSelection().getLabel());
+        return true;
     }
 
     @Override
     public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+        final int position = item.getItemId();
+        switch (item.getItemId()) {
+            case R.id.delete_token2:
+                tokens.remove(position);
+                tokenlistadapter.notifyDataSetChanged();
+                save(tokens);
+                Snackbar.make(getCurrentFocus(), "Token removed", Snackbar.LENGTH_LONG).show();
+                return true;
+
+            case R.id.edit_token2: {
+                AlertDialog.Builder alert = new AlertDialog.Builder(this);
+                alert.setTitle("Edit Name");
+
+                final EditText input = new EditText(this);
+                input.setText(tokens.get(position).getLabel());
+                alert.setView(input);
+
+                alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        tokens.get(position).setLabel(input.getEditableText().toString());
+                        tokenlistadapter.notifyDataSetChanged();
+                        save(tokens);
+                        Snackbar.make(getCurrentFocus(), "New name saved", Snackbar.LENGTH_LONG).show();
+                    }
+                });
+
+                alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        Snackbar.make(getCurrentFocus(), "Rename cancelled", Snackbar.LENGTH_LONG).show();
+                        dialog.cancel();
+                    }
+                });
+                alert.show();
+                return true;
+            }
+        }
         return false;
     }
 
     @Override
     public void onDestroyActionMode(ActionMode mode) {
-
+        tokenlistadapter.setCurrentSelection(null);
+        tokenlistadapter.notifyDataSetChanged();
     }
 }
