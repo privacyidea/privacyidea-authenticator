@@ -14,7 +14,10 @@
         android:visible="true" />
     <item
         android:id="@+id/action_settings"
-        android:orderInCategory="102"
-        android:title="@string/action_settings"
-        app:showAsAction="never" />
+        android:orderInCategory="105"
+        android:title="Settings" />
+    <item
+        android:id="@+id/action_about"
+        android:orderInCategory="106"
+        android:title="About" />
 </menu>

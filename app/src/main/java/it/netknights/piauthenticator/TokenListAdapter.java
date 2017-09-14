@@ -21,8 +21,11 @@
 
 package it.netknights.piauthenticator;
 
+import android.content.ClipData;
 import android.graphics.Color;
+import android.view.DragEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -89,7 +92,7 @@ public class TokenListAdapter extends BaseAdapter {
             final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
             v = inflater.inflate(R.layout.tokenentry, parent, false);
         }
-        //v.setLongClickable(true);
+        v.setLongClickable(true);
         v.setTag(position);
 
         final ProgressBar progressBar = (ProgressBar) v.findViewById(R.id.progressBar);
@@ -115,7 +118,8 @@ public class TokenListAdapter extends BaseAdapter {
         tmp1.setText(token.getLabel());
         tmp2.setText(token.getCurrentOTP());
 
-        //------------- switch list entries with drag -----------TODO: not working!!!
+        //------------- switch list entries with drag -----------
+        // TODO: not working!!!
         /*v.setOnDragListener(new View.OnDragListener() {
             @Override
             public boolean onDrag(View v, DragEvent event) {
@@ -146,9 +150,9 @@ public class TokenListAdapter extends BaseAdapter {
                 }
                 return true;
             }
-        });
+        });*/
 
-        v.setOnTouchListener(new View.OnTouchListener() {
+        /*v.setOnTouchListener(new View.OnTouchListener() {
 
             @Override
             public boolean onTouch(View v, MotionEvent arg1) {
@@ -203,6 +207,11 @@ public class TokenListAdapter extends BaseAdapter {
     @Override
     public long getItemId(int position) {
         return position;
+    }
+
+    @Override
+    public boolean isEnabled(int position) {
+        return true;
     }
 
 }

@@ -24,6 +24,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
@@ -32,10 +33,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.ActionMode;
 import android.view.ContextMenu;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -68,7 +73,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setBackgroundColor(Color.rgb(0x55, 0xb0, 0xe6));
-
         fab.setBackgroundColor(Color.rgb(0x83, 0xc9, 0x27));
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -80,7 +84,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 }
             }
         });
-        /*  listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+
+     /*   listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                 nextSelection = tokens.get(position);
@@ -88,6 +93,28 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 return true;
             }
         });*/
+
+       /* listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                Toast.makeText(view.getContext(), "LONG itemclick", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
+        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Toast.makeText(view.getContext(), "SHORT itemclick", Toast.LENGTH_SHORT).show();
+            }
+        });*/
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Window window = getWindow();
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            window.setStatusBarColor(getResources().getColor(R.color.PIBLUE));
+        }
 
         //-------------- initialize adapter with loaded tokens---------------
         PRNGFixes.apply();
@@ -105,7 +132,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             @Override
             public void run() { //TODO generate totp value only on time
                 int progress = (int) (System.currentTimeMillis() / 1000) % 60;
-                countdown.setText("    " + String.valueOf(progress));
+                countdown.setText("" + String.valueOf(progress));
                 tokenlistadapter.updatePBs(progress);
                 tokenlistadapter.refreshAllTOTP();
                 handler.postDelayed(this, 1000);
@@ -133,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 tokens.remove(position);
                 tokenlistadapter.notifyDataSetChanged();
                 save(tokens);
-                Snackbar.make(getCurrentFocus(), "Token removed", Snackbar.LENGTH_LONG).show();
+                Toast.makeText(this, "Token removed", Toast.LENGTH_LONG).show();
                 return true;
 
             case R.id.edit_token: {
@@ -149,13 +176,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                         tokens.get(position).setLabel(input.getEditableText().toString());
                         tokenlistadapter.notifyDataSetChanged();
                         save(tokens);
-                        Snackbar.make(getCurrentFocus(), "New name saved", Snackbar.LENGTH_LONG).show();
                     }
                 });
 
                 alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        Snackbar.make(getCurrentFocus(), "Rename cancelled", Snackbar.LENGTH_LONG).show();
                         dialog.cancel();
                     }
                 });
@@ -206,8 +231,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             tokens.clear();
             tokenlistadapter.notifyDataSetChanged();
             save(tokens);
-            Snackbar.make(getCurrentFocus(), "All tokens deleted", Snackbar.LENGTH_LONG
-            ).show();
+            Toast.makeText(this, "All tokens deleted", Toast.LENGTH_LONG).show();
+            return true;
+        }
+        if (id == R.id.action_about) {
+            WebView view = (WebView) LayoutInflater.from(this).inflate(R.layout.dialog_about, null);
+            view.loadUrl("file:///android_res/raw/about.html");
+            new AlertDialog.Builder(this).setView(view).show();
             return true;
         }
 
@@ -225,12 +255,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 try {
                     Token t = Util.makeTokenFromURI(result.getContents());
                     tokens.add(t);
-                    Snackbar.make(getCurrentFocus(), "Token added for: " + t.getLabel(), Snackbar.LENGTH_LONG).show();
+                    Toast.makeText(this, "Token added for: " + t.getLabel(), Toast.LENGTH_LONG).show();
                     tokenlistadapter.refreshOTPs();
                     Util.saveTokens(this, tokens);
                     tokenlistadapter.notifyDataSetChanged();
                 } catch (Exception e) {
-                    Snackbar.make(this.getCurrentFocus(), "Invalid QR Code", Snackbar.LENGTH_LONG).show();
+                    Toast.makeText(this, "Invalid QR Code", Toast.LENGTH_LONG).show();
                     e.printStackTrace();
                 }
             }
