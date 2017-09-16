@@ -21,14 +21,12 @@
 
 package it.netknights.piauthenticator;
 
-import android.content.ClipData;
 import android.graphics.Color;
-import android.view.DragEvent;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -43,15 +41,6 @@ import static it.netknights.piauthenticator.Token.TOTP;
 public class TokenListAdapter extends BaseAdapter {
 
     private List<Token> tokens;
-    private Token CurrentSelection;
-
-    public Token getCurrentSelection() {
-        return CurrentSelection;
-    }
-
-    public void setCurrentSelection(Token currentSelection) {
-        CurrentSelection = currentSelection;
-    }
 
     //update is called from the timer-thread within the MainActivity
     public void updatePBs(int progress) {
@@ -90,22 +79,35 @@ public class TokenListAdapter extends BaseAdapter {
     public View getView(final int position, View v, ViewGroup parent) {
         if (v == null) {
             final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-            v = inflater.inflate(R.layout.tokenentry, parent, false);
+            v = inflater.inflate(R.layout.entry2, parent, false);
         }
-        v.setLongClickable(true);
         v.setTag(position);
 
         final ProgressBar progressBar = (ProgressBar) v.findViewById(R.id.progressBar);
         final Token token = getItem(position);
         final TextView tmp2 = (TextView) v.findViewById(R.id.textViewToken);
         final TextView tmp1 = (TextView) v.findViewById(R.id.textViewLabel);
+        final Button nextbtn = (Button) v.findViewById(R.id.next_button);
 
-
+        //------------------ differenciate hotp and totp ---------------------------
         if (token.getType().equals(HOTP)) {
             progressBar.setVisibility(GONE);
+            nextbtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    token.setCounter((token.getCounter() + 1));
+                    token.setCurrentOTP(OTPGenerator.generate(token));
+                    notifyDataSetChanged();
+                }
+            });
+
         } else {
+            nextbtn.setVisibility(GONE);
+            nextbtn.setClickable(false);
+            nextbtn.setLongClickable(false);
+            //nextbtn.setActivated(false);
             progressBar.setVisibility(VISIBLE);
-            //v.setClickable(false);
+            v.setClickable(false);
         }
 
         progressBar.setTag(position);
@@ -168,19 +170,6 @@ public class TokenListAdapter extends BaseAdapter {
                 return false;
             }
         });*/
-
-        //onclick for incrementing hotp tokens, no action for totp tokens
-        if (token.getType().equals(HOTP)) {
-            v.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    token.setCounter((token.getCounter() + 1));
-                    token.setCurrentOTP(OTPGenerator.generate(token));
-                    notifyDataSetChanged();
-                }
-            });
-        }
-
         return v;
     }
 

@@ -33,6 +33,7 @@ import static android.support.test.espresso.action.ViewActions.closeSoftKeyboard
 import static android.support.test.espresso.action.ViewActions.longClick;
 import static android.support.test.espresso.action.ViewActions.replaceText;
 import static android.support.test.espresso.assertion.ViewAssertions.matches;
+import static android.support.test.espresso.matcher.RootMatchers.isDialog;
 import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static android.support.test.espresso.matcher.ViewMatchers.withClassName;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
@@ -79,7 +80,7 @@ public class MainActivityTest2 {
                 inAdapterView(withId(R.id.listview)).
                 atPosition(0).
                 onChildView(withId(R.id.textViewLabel))
-                .check(matches(withText(startsWith("privacyIDEA: OATH"))));
+                .check(matches(withText(startsWith("SampleToken: HOTP"))));
 
         onData(anything()).
                 inAdapterView(withId(R.id.listview)).
@@ -92,7 +93,7 @@ public class MainActivityTest2 {
                 inAdapterView(withId(R.id.listview)).
                 atPosition(1).
                 onChildView(withId(R.id.textViewLabel))
-                .check(matches(withText(startsWith("privacyIDEA60"))));
+                .check(matches(withText(startsWith("SampleToken: TOTP60"))));
 
         onData(anything()).
                 inAdapterView(withId(R.id.listview)).
@@ -105,7 +106,7 @@ public class MainActivityTest2 {
                 inAdapterView(withId(R.id.listview)).
                 atPosition(2).
                 onChildView(withId(R.id.textViewLabel))
-                .check(matches(withText(startsWith("privacyIDEA30"))));
+                .check(matches(withText(startsWith("SampleToken: TOTP30"))));
 
         onData(anything()).
                 inAdapterView(withId(R.id.listview)).
@@ -114,8 +115,8 @@ public class MainActivityTest2 {
                 .check(matches(withText(OTPGenerator.generate(Util.makeTokenFromURI("otpauth://totp" +
                         "/TOTP00114F8F?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=30&digits=6&issuer=privacyIDEA30")))));
 
-        //------------------- check the next hotp value by clicking on it -----------------------------
-        onData(anything()).inAdapterView(withId(R.id.listview)).atPosition(0).onChildView(withId(R.id.textViewToken)).perform(click());
+        //------------------- check the next hotp value by clicking on the next-btn ----------------
+        onData(anything()).inAdapterView(withId(R.id.listview)).atPosition(0).onChildView(withId(R.id.next_button)).perform(click());
 
         sleep();
 
@@ -126,29 +127,41 @@ public class MainActivityTest2 {
         sleep();
 
         //----------------- delete the first token -------------------------------------------------
-        onData(anything()).inAdapterView(withId(R.id.listview)).atPosition(0).perform();
+        onData(anything()).inAdapterView(withId(R.id.listview)).atPosition(0).perform(longClick());
         sleep();
+
         onView(allOf(withId(android.R.id.title), withText("DELETE"), isDisplayed())).perform(click());
         sleep();
+
         //---------- check if the formerly 2nd is now the first token
         onData(anything()).
                 inAdapterView(withId(R.id.listview)).
                 atPosition(0).
                 onChildView(withId(R.id.textViewLabel))
-                .check(matches(withText(startsWith("privacyIDEA60"))));
-
+                .check(matches(withText(startsWith("SampleToken: TOTP60"))));
         sleep();
-        //---------------- rename the (then) first token ---------------------------------------------
+
+        //---------------- rename the (then) first token -------------------------------------------
         onData(anything()).inAdapterView(withId(R.id.listview)).atPosition(0).perform(longClick());
         sleep();
+
         onView(allOf(withId(android.R.id.title), withText("RENAME"), isDisplayed())).perform(click());
         sleep();
-        onView(allOf(withText("privacyIDEA60: TOTP00114F8F"), withParent(allOf(withId(android.R.id.custom), withParent(withClassName(is("android.widget.FrameLayout"))))), isDisplayed())).perform(click());
+
+
+        onView(allOf(withText("SampleToken: TOTP60SSHA1"), withParent(allOf(withId(android.R.id.custom), withParent(withClassName(is("android.widget.FrameLayout"))))), isDisplayed())).perform(click());
         sleep();
-        onView(allOf(withText("privacyIDEA60: TOTP00114F8F"), withParent(allOf(withId(android.R.id.custom),
-                withParent(withClassName(is("android.widget.FrameLayout"))))), isDisplayed())).perform(replaceText("test123"), closeSoftKeyboard());
+
+        onView(allOf(withText("SampleToken: TOTP60SSHA1"), withParent(allOf(withId(android.R.id.custom),
+                withParent(withClassName(is("android.widget.FrameLayout"))))), isDisplayed())).perform(replaceText("test123"));
         sleep();
-        //---------- check the new name ---------------
+
+        onView(allOf(withId(android.R.id.button1), withText("Save"),
+                        withParent(allOf(withClassName(is("android.widget.LinearLayout")),
+                                withParent(withClassName(is("android.widget.LinearLayout"))))),
+                        isDisplayed())).perform(click());
+
+        //--------------------------------- check the new name -------------------------------------
         onData(anything()).
                 inAdapterView(withId(R.id.listview)).
                 atPosition(0).
@@ -156,7 +169,7 @@ public class MainActivityTest2 {
                 .check(matches(withText(startsWith("test123"))));
         sleep();
 
-        //---------------- open actionbar and remove all tokens-------------------------------------
+        //---------------- open overflowmenu and remove all tokens----------------------------------
         openActionBarOverflowOrOptionsMenu(getInstrumentation().getTargetContext());
 
         sleep();
@@ -171,6 +184,14 @@ public class MainActivityTest2 {
     private void sleep() {
         try {
             Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sleep(int x) {
+        try {
+            Thread.sleep(x);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

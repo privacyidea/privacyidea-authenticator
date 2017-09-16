@@ -53,12 +53,11 @@ import com.google.zxing.integration.android.IntentResult;
 import java.util.ArrayList;
 
 
-public class MainActivity extends AppCompatActivity implements ActionMode.Callback {
+public class MainActivity extends AppCompatActivity  {
     private TokenListAdapter tokenlistadapter;
     private ArrayList<Token> tokens;
     private Handler handler;
     private Runnable timer;
-    private Token nextSelection;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,31 +83,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 }
             }
         });
-
-     /*   listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                nextSelection = tokens.get(position);
-                startActionMode(MainActivity.this);
-                return true;
-            }
-        });*/
-
-       /* listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                Toast.makeText(view.getContext(), "LONG itemclick", Toast.LENGTH_SHORT).show();
-                return true;
-            }
-        });
-        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Toast.makeText(view.getContext(), "SHORT itemclick", Toast.LENGTH_SHORT).show();
-            }
-        });*/
-
-
+        //------------------ try to paint the statusbar -------------------------------
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Window window = getWindow();
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
@@ -116,7 +91,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             window.setStatusBarColor(getResources().getColor(R.color.PIBLUE));
         }
 
-        //-------------- initialize adapter with loaded tokens---------------
+        //-------------- initialize adapter with loaded tokens-------------------------
         PRNGFixes.apply();
         tokens = Util.loadTokens(this);
         tokenlistadapter = new TokenListAdapter();
@@ -126,7 +101,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         tokenlistadapter.notifyDataSetChanged();
         registerForContextMenu(listview);
 
-        //------------ start the timer thread --------------------------------
+        //------------ start the timer thread -----------------------------------------
         handler = new Handler();
         timer = new Runnable() {
             @Override
@@ -276,8 +251,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         } catch (Exception e) {
             Snackbar.make(this.getCurrentFocus(), e.getMessage(), Snackbar.LENGTH_LONG).show();
         }
-
-
     }
 
     @Override
@@ -296,65 +269,4 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         Util.saveTokens(this, tokens);
     }
 
-    @Override
-    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-        MenuInflater inflater = mode.getMenuInflater();
-        inflater.inflate(R.menu.actionmode_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-        tokenlistadapter.setCurrentSelection(nextSelection);
-        tokenlistadapter.notifyDataSetChanged();
-        mode.setTitle(tokenlistadapter.getCurrentSelection().getLabel());
-        return true;
-    }
-
-    @Override
-    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-        final int position = item.getItemId();
-        switch (item.getItemId()) {
-            case R.id.delete_token2:
-                tokens.remove(position);
-                tokenlistadapter.notifyDataSetChanged();
-                save(tokens);
-                Snackbar.make(getCurrentFocus(), "Token removed", Snackbar.LENGTH_LONG).show();
-                return true;
-
-            case R.id.edit_token2: {
-                AlertDialog.Builder alert = new AlertDialog.Builder(this);
-                alert.setTitle("Edit Name");
-
-                final EditText input = new EditText(this);
-                input.setText(tokens.get(position).getLabel());
-                alert.setView(input);
-
-                alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        tokens.get(position).setLabel(input.getEditableText().toString());
-                        tokenlistadapter.notifyDataSetChanged();
-                        save(tokens);
-                        Snackbar.make(getCurrentFocus(), "New name saved", Snackbar.LENGTH_LONG).show();
-                    }
-                });
-
-                alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        Snackbar.make(getCurrentFocus(), "Rename cancelled", Snackbar.LENGTH_LONG).show();
-                        dialog.cancel();
-                    }
-                });
-                alert.show();
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public void onDestroyActionMode(ActionMode mode) {
-        tokenlistadapter.setCurrentSelection(null);
-        tokenlistadapter.notifyDataSetChanged();
-    }
 }
