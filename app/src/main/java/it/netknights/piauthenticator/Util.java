@@ -25,7 +25,6 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Build;
 
-import org.apache.commons.codec.binary.Base32;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -100,6 +99,13 @@ public class Util {
         if (uri.getQueryParameter(ALGORITHM) != null) {
             tmp.setAlgorithm("Hmac" + uri.getQueryParameter(ALGORITHM).toUpperCase());
         }
+        boolean pinned = uri.getBooleanQueryParameter("pin", false);
+        if (pinned) {
+            tmp.setWithPIN(pinned);
+            tmp.setLocked(pinned);
+        }
+
+
         return tmp;
     }
 
@@ -170,13 +176,18 @@ public class Util {
         if (o.getString(TYPE).equals(TOTP)) {
             tmp.setPeriod(o.getInt(PERIOD));
         }
+        if (o.getBoolean("haspin")) {
+            tmp.setWithPIN(true);
+            tmp.setPin(o.getInt("pin"));
+            tmp.setLocked(true);
+        }
         return tmp;
     }
 
     public static JSONObject makeJSONfromToken(Token t) throws JSONException {
         JSONObject o = new JSONObject();
         //o.put(SECRET, new String(new Base32().encode(t.getSecret())));
-        o.put(SECRET, new String(t.getSecret()));
+        o.put(SECRET, t.getSecret());
         o.put(LABEL, t.getLabel());
         o.put(DIGITS, t.getDigits());
         o.put(ALGORITHM, t.getAlgorithm());
@@ -186,6 +197,12 @@ public class Util {
         }
         if (t.getType().equals(TOTP)) {
             o.put(PERIOD, t.getPeriod());
+        }
+        if (t.isWithPIN()) {
+            o.put("haspin", true);
+            o.put("pin", t.getPin());
+        } else {
+            o.put("haspin", false);
         }
         return o;
     }

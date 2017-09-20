@@ -45,6 +45,9 @@ public class Token {
     private String algorithm = "HmacSHA1"; //default is SHA1
     private int counter;
     private ProgressBar pb;
+    private boolean withPIN = false;
+    private boolean isLocked = false;
+    private int Pin;
 
 
     public Token(String secret, String label, String type, int digits) {
@@ -54,6 +57,30 @@ public class Token {
         this.digits = digits;
         this.period = 0;
         this.counter = 0;
+    }
+
+    public int getPin() {
+        return Pin;
+    }
+
+    public void setPin(int pin) {
+        Pin = pin;
+    }
+
+    public boolean isLocked() {
+        return isLocked;
+    }
+
+    public void setLocked(boolean locked) {
+        isLocked = locked;
+    }
+
+    public void setWithPIN(boolean withPIN) {
+        this.withPIN = withPIN;
+    }
+
+    public boolean isWithPIN() {
+        return withPIN;
     }
 
     public void setPb(ProgressBar pb) {

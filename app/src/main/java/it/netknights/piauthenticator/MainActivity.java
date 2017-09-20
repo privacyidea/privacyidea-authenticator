@@ -53,7 +53,7 @@ import com.google.zxing.integration.android.IntentResult;
 import java.util.ArrayList;
 
 
-public class MainActivity extends AppCompatActivity  {
+public class MainActivity extends AppCompatActivity {
     private TokenListAdapter tokenlistadapter;
     private ArrayList<Token> tokens;
     private Handler handler;

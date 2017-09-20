@@ -89,36 +89,43 @@ public class TokenListAdapter extends BaseAdapter {
         final TextView tmp1 = (TextView) v.findViewById(R.id.textViewLabel);
         final Button nextbtn = (Button) v.findViewById(R.id.next_button);
 
-        //------------------ differenciate hotp and totp ---------------------------
-        if (token.getType().equals(HOTP)) {
-            progressBar.setVisibility(GONE);
-            nextbtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    token.setCounter((token.getCounter() + 1));
-                    token.setCurrentOTP(OTPGenerator.generate(token));
-                    notifyDataSetChanged();
-                }
-            });
+        tmp1.setText(token.getLabel());
+
+        if (token.isWithPIN() && token.isLocked()) {
+            //show dialog for PIN input
 
         } else {
-            nextbtn.setVisibility(GONE);
-            nextbtn.setClickable(false);
-            nextbtn.setLongClickable(false);
-            //nextbtn.setActivated(false);
-            progressBar.setVisibility(VISIBLE);
-            v.setClickable(false);
+            //no PIN protection
+            //------------------ differenciate hotp and totp ---------------------------
+            if (token.getType().equals(HOTP)) {
+                progressBar.setVisibility(GONE);
+                nextbtn.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        token.setCounter((token.getCounter() + 1));
+                        token.setCurrentOTP(OTPGenerator.generate(token));
+                        notifyDataSetChanged();
+                    }
+                });
+
+            } else {
+                nextbtn.setVisibility(GONE);
+                nextbtn.setClickable(false);
+                nextbtn.setLongClickable(false);
+                //nextbtn.setActivated(false);
+                progressBar.setVisibility(VISIBLE);
+                v.setClickable(false);
+            }
+
+            progressBar.setTag(position);
+            progressBar.setMax(token.getPeriod());
+            progressBar.getProgressDrawable().setColorFilter(
+                    Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
+
+            token.setPb(progressBar);
+            tmp2.setText(token.getCurrentOTP());
         }
 
-        progressBar.setTag(position);
-        progressBar.setMax(token.getPeriod());
-        progressBar.getProgressDrawable().setColorFilter(
-                Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
-
-        token.setPb(progressBar);
-
-        tmp1.setText(token.getLabel());
-        tmp2.setText(token.getCurrentOTP());
 
         //------------- switch list entries with drag -----------
         // TODO: not working!!!
