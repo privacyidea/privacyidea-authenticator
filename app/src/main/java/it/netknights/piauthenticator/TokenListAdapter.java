@@ -21,15 +21,21 @@
 
 package it.netknights.piauthenticator;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static android.view.View.GONE;
@@ -82,18 +88,81 @@ public class TokenListAdapter extends BaseAdapter {
             v = inflater.inflate(R.layout.entry2, parent, false);
         }
         v.setTag(position);
+        final View mView = v;
 
         final ProgressBar progressBar = (ProgressBar) v.findViewById(R.id.progressBar);
         final Token token = getItem(position);
-        final TextView tmp2 = (TextView) v.findViewById(R.id.textViewToken);
-        final TextView tmp1 = (TextView) v.findViewById(R.id.textViewLabel);
+        final TextView otptext = (TextView) v.findViewById(R.id.textViewToken);
+        final TextView labeltext = (TextView) v.findViewById(R.id.textViewLabel);
         final Button nextbtn = (Button) v.findViewById(R.id.next_button);
 
-        tmp1.setText(token.getLabel());
+        labeltext.setText(token.getLabel());
+        //TODO make input text numbers only
+        if (token.isWithPIN() && token.getPin() == 0) {
+            //Pin not set yet
+            nextbtn.setVisibility(GONE);
+            progressBar.setVisibility(GONE);
+            otptext.setText("PIN required - tap to set PIN");
+            v.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    AlertDialog.Builder alert = new AlertDialog.Builder(v.getContext());
+                    alert.setTitle("Set PIN");
+                    final EditText input = new EditText(v.getContext());
 
-        if (token.isWithPIN() && token.isLocked()) {
-            //show dialog for PIN input
+                    alert.setView(input);
+                    alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            token.setPin(Integer.parseInt(input.getEditableText().toString()));
+                            notifyDataSetChanged();
+                            //needs to save the tokens here
+                            ArrayList<Token> temp = new ArrayList<Token>(tokens);
+                            Util.saveTokens(mView.getContext(), temp);
+                        }
+                    });
+                    alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.cancel();
+                        }
+                    });
+                    alert.show();
+                }
+            });
+        }else if (token.isWithPIN() && token.isLocked()) {
+            //show dialog for PIN input TODO save, set counter for tries (timeout)
+            progressBar.setVisibility(GONE);
+            nextbtn.setVisibility(GONE);
+            otptext.setText("Tap to unlock");
+            v.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    AlertDialog.Builder alert = new AlertDialog.Builder(v.getContext());
+                    alert.setTitle("Enter PIN");
+                    final EditText input = new EditText(v.getContext());
 
+                    alert.setView(input);
+                    alert.setPositiveButton("Enter", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (Integer.parseInt(input.getEditableText().toString()) == token.getPin()) {
+                                token.setLocked(false);
+                            } else {
+                                Toast.makeText(mView.getContext(), "The PIN you have entered is not correct", Toast.LENGTH_SHORT).show();
+                            }
+                            notifyDataSetChanged();
+                        }
+                    });
+                    alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.cancel();
+                        }
+                    });
+                    alert.show();
+                }
+            });
         } else {
             //no PIN protection
             //------------------ differenciate hotp and totp ---------------------------
@@ -123,7 +192,7 @@ public class TokenListAdapter extends BaseAdapter {
                     Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
 
             token.setPb(progressBar);
-            tmp2.setText(token.getCurrentOTP());
+            otptext.setText(token.getCurrentOTP());
         }
 
 

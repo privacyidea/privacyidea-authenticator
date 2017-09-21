@@ -51,6 +51,7 @@ import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -77,7 +78,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 try {
-                    scanQR();
+                    //scanQR();
+                    tokens.add(Util.makeTokenFromURI("otpauth://totp" +
+                            "/TOTP30SSHA1?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=30&digits=6&issuer=SampleToken&pin=true"));
+                    tokenlistadapter.notifyDataSetChanged();
+                    tokenlistadapter.refreshOTPs();
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -265,8 +271,7 @@ public class MainActivity extends AppCompatActivity {
         handler.removeCallbacks(timer);
     }
 
-    private void save(ArrayList<Token> tokens) {
+    public void save(ArrayList<Token> tokens) {
         Util.saveTokens(this, tokens);
     }
-
 }

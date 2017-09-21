@@ -47,7 +47,7 @@ public class Token {
     private ProgressBar pb;
     private boolean withPIN = false;
     private boolean isLocked = false;
-    private int Pin;
+    private int Pin = 0;
 
 
     public Token(String secret, String label, String type, int digits) {
