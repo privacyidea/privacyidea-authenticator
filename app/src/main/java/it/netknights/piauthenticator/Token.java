@@ -48,6 +48,7 @@ public class Token {
     private boolean withPIN = false;
     private boolean isLocked = false;
     private int Pin = 0;
+    private int PinTries = 0;
 
 
     public Token(String secret, String label, String type, int digits) {
@@ -57,6 +58,14 @@ public class Token {
         this.digits = digits;
         this.period = 0;
         this.counter = 0;
+    }
+
+    public int getPinTries() {
+        return PinTries;
+    }
+
+    public void setPinTries(int pinTries) {
+        PinTries = pinTries;
     }
 
     public int getPin() {

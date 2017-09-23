@@ -23,6 +23,8 @@ package it.netknights.piauthenticator;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -43,6 +45,7 @@ import android.view.WindowManager;
 import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -78,12 +81,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 try {
-                    //scanQR();
-                    tokens.add(Util.makeTokenFromURI("otpauth://totp" +
-                            "/TOTP30SSHA1?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=30&digits=6&issuer=SampleToken&pin=true"));
-                    tokenlistadapter.notifyDataSetChanged();
-                    tokenlistadapter.refreshOTPs();
-
+                    scanQR();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -104,7 +102,6 @@ public class MainActivity extends AppCompatActivity {
         listview.setAdapter(tokenlistadapter);
         tokenlistadapter.setTokens(tokens);
         tokenlistadapter.refreshOTPs();
-        tokenlistadapter.notifyDataSetChanged();
         registerForContextMenu(listview);
 
         //------------ start the timer thread -----------------------------------------
@@ -186,6 +183,8 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         if (id == R.id.action_settings) {
+
+
             return true;
         }
         if (id == R.id.action_insertdummy) {
@@ -196,11 +195,7 @@ public class MainActivity extends AppCompatActivity {
                 tokens.add(Util.makeTokenFromURI("otpauth://totp" +
                         "/TOTP60SSHA1?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=60&digits=6&issuer=SampleToken"));
                 tokens.add(Util.makeTokenFromURI("otpauth://totp" +
-                        "/TOTP30SSHA1?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=30&digits=6&issuer=SampleToken"));
-
-                //sha512 test token
-                /*tokens.add(Util.makeTokenFromURI("otpauth://totp/?secret=AXICHWZZHPIREPHNPCF4GKBZZCFWTKA42EPJ655SJGYGGHLZFV2LYGU6ZNQ3LQSJ7E3CXSMSH6RLJAVXEG56WARF2M5NE2JFQ7XHBSI
-                &algorithm=sha512&period=30&digits=6&issuer=privacyIDEA"));*/
+                        "/TOTP30SSHA1?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=30&digits=6&issuer=SampleToken&pin=true"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -239,7 +234,6 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Token added for: " + t.getLabel(), Toast.LENGTH_LONG).show();
                     tokenlistadapter.refreshOTPs();
                     Util.saveTokens(this, tokens);
-                    tokenlistadapter.notifyDataSetChanged();
                 } catch (Exception e) {
                     Toast.makeText(this, "Invalid QR Code", Toast.LENGTH_LONG).show();
                     e.printStackTrace();

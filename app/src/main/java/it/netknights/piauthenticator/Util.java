@@ -104,8 +104,21 @@ public class Util {
             tmp.setWithPIN(pinned);
             tmp.setLocked(pinned);
         }
+        if (uri.getBooleanQueryParameter("2step", false)) {
+            Token tmp2 = Util.start2StepInit(tmp);
+            return tmp2;
+        }
+        if (uri.getQueryParameter("maxnum") != null){
+            int maxnumber = Integer.parseInt(uri.getQueryParameter("maxnum"));
+        }
 
+        return tmp;
+    }
 
+    private static Token start2StepInit(Token tmp) {
+        // when this method is entered the tokens secret is not the full secret
+        // and has to be combined with salt (generated on the phone). Also the salt has to
+        // be entered in PI so both sides can derive the full secret
         return tmp;
     }
 
