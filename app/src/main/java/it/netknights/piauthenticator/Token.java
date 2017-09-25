@@ -49,6 +49,8 @@ public class Token {
     private boolean isLocked = false;
     private int Pin = 0;
     private int PinTries = 0;
+    private boolean withTapToShow = false;
+    private boolean tapped = false;
 
 
     public Token(String secret, String label, String type, int digits) {
@@ -58,6 +60,22 @@ public class Token {
         this.digits = digits;
         this.period = 0;
         this.counter = 0;
+    }
+
+    public void setTapped(boolean tapped) {
+        this.tapped = tapped;
+    }
+
+    public boolean isTapped() {
+        return tapped;
+    }
+
+    public boolean isWithTapToShow() {
+        return withTapToShow;
+    }
+
+    public void setWithTapToShow(boolean withTapToShow) {
+        this.withTapToShow = withTapToShow;
     }
 
     public int getPinTries() {

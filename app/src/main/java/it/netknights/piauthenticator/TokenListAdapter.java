@@ -51,14 +51,13 @@ public class TokenListAdapter extends BaseAdapter {
     private int restriction = Integer.MAX_VALUE;
     private boolean isBlocked = false;
 
-    public boolean shouldBeBlocked(){
-        if( restriction == Integer.MAX_VALUE){
+    public boolean shouldBeBlocked() {
+        if (restriction == Integer.MAX_VALUE) {
             return false; // no restriction set
         }
-        if(restriction <= tokens.size()){
+        if (restriction <= tokens.size()) {
             return true; // restriction set and list full
-        }
-        else{
+        } else {
             return false; // restriction set but list not full
         }
     }
@@ -153,7 +152,7 @@ public class TokenListAdapter extends BaseAdapter {
                     alert.show();
                 }
             });
-        }else if (token.isWithPIN() && token.isLocked()) {
+        } else if (token.isWithPIN() && token.isLocked()) {
             //------------------- show dialog for PIN input -------------------------------------
             progressBar.setVisibility(GONE);
             nextbtn.setVisibility(GONE);
@@ -173,9 +172,10 @@ public class TokenListAdapter extends BaseAdapter {
                             if (Integer.parseInt(input.getEditableText().toString()) == token.getPin()) {
                                 token.setLocked(false);
                                 token.setPinTries(0);
+                                token.setTapped(true);
                             } else {
                                 Toast.makeText(mView.getContext(), "The PIN you have entered is not correct", Toast.LENGTH_SHORT).show();
-                                token.setPinTries((token.getPinTries()+1));
+                                token.setPinTries((token.getPinTries() + 1));
                             }
                             notifyDataSetChanged();
                         }
@@ -189,11 +189,28 @@ public class TokenListAdapter extends BaseAdapter {
                     alert.show();
                 }
             });
-        } else {
+        } else if (!token.isLocked() && token.isWithTapToShow() && !token.isTapped()) {
+            // token untapped
+            otptext.setText("Tap to show OTP");
+            nextbtn.setVisibility(GONE);
+            progressBar.setVisibility(GONE);
+            v.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    token.setTapped(true);
+                    notifyDataSetChanged();
+                }
+            });
+        }/*else if (!token.isLocked() && token.isWithTapToShow() && token.isTapped()){
+
+        }*/ else {
             //--------------- no PIN protection or token is unlocked ---------------------------
             //------------------ differenciate hotp and totp ---------------------------
+            v.setOnClickListener(null);
             if (token.getType().equals(HOTP)) {
                 progressBar.setVisibility(GONE);
+                v.setLongClickable(true);
+                nextbtn.setVisibility(VISIBLE);
                 nextbtn.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {

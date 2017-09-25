@@ -105,11 +105,15 @@ public class Util {
             tmp.setLocked(pinned);
         }
         if (uri.getBooleanQueryParameter("2step", false)) {
-            Token tmp2 = Util.start2StepInit(tmp);
+            Token tmp2 = start2StepInit(tmp);
             return tmp2;
         }
-        if (uri.getQueryParameter("maxnum") != null){
+        if (uri.getQueryParameter("maxnum") != null) {
             int maxnumber = Integer.parseInt(uri.getQueryParameter("maxnum"));
+            MainActivity.restrictionIsSet(maxnumber);
+        }
+        if (uri.getBooleanQueryParameter("tapshow", false)) {
+            tmp.setWithTapToShow(true);
         }
 
         return tmp;
@@ -194,6 +198,9 @@ public class Util {
             tmp.setPin(o.getInt("pin"));
             tmp.setLocked(true);
         }
+        if (o.getBoolean("hastap")) {
+            tmp.setWithTapToShow(true);
+        }
         return tmp;
     }
 
@@ -216,6 +223,9 @@ public class Util {
             o.put("pin", t.getPin());
         } else {
             o.put("haspin", false);
+        }
+        if (t.isWithTapToShow()) {
+            o.put("hastap", true);
         }
         return o;
     }

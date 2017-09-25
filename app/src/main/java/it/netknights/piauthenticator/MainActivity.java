@@ -56,6 +56,8 @@ import com.google.zxing.integration.android.IntentResult;
 import java.util.ArrayList;
 import java.util.List;
 
+import static it.netknights.piauthenticator.R.id.listview;
+
 
 public class MainActivity extends AppCompatActivity {
     private TokenListAdapter tokenlistadapter;
@@ -183,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         if (id == R.id.action_settings) {
-
+            final LayoutInflater li = getLayoutInflater();
 
             return true;
         }
@@ -218,6 +220,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public static void restrictionIsSet(int num){
+        // When a token with a restriction (of token amount) is scanned this will be called
     }
 
     @Override
