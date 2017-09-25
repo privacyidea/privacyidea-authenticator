@@ -53,7 +53,6 @@ public class OTPGenerator {
         String secretAsHEX = toHexString(new Base32().decode(token.getSecret()));
         String digits = String.valueOf(token.getDigits());
 
-
         if (token.getType().equals(TOTP)) {
             return String.format("%0" + token.getDigits() + "d", generateTOTP(secretAsHEX,
                     (System.currentTimeMillis() / 1000), digits, token.getPeriod(), token.getAlgorithm()));
@@ -143,8 +142,8 @@ public class OTPGenerator {
      * @param keyBytes: the bytes to use for the HMAC key
      * @param text:     the message or text to be authenticated
      */
-    private static byte[] hmac_sha(String crypto, byte[] keyBytes,
-                                   byte[] text) {
+    public static byte[] hmac_sha(String crypto, byte[] keyBytes,
+                                  byte[] text) {
         try {
             Mac hmac;
             hmac = Mac.getInstance(crypto);
@@ -176,7 +175,7 @@ public class OTPGenerator {
      * @param hex: the HEX string
      * @return: a byte array
      */
-    private static byte[] hexStr2Bytes(String hex) {
+    public static byte[] hexStr2Bytes(String hex) {
         // Adding one byte to get the right conversion
         // Values starting with "0" can be converted
         byte[] bArray = new BigInteger("10" + hex, 16).toByteArray();

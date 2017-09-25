@@ -48,28 +48,6 @@ import static it.netknights.piauthenticator.Token.TOTP;
 public class TokenListAdapter extends BaseAdapter {
 
     private List<Token> tokens;
-    private int restriction = Integer.MAX_VALUE;
-    private boolean isBlocked = false;
-
-    public boolean shouldBeBlocked() {
-        if (restriction == Integer.MAX_VALUE) {
-            return false; // no restriction set
-        }
-        if (restriction <= tokens.size()) {
-            return true; // restriction set and list full
-        } else {
-            return false; // restriction set but list not full
-        }
-    }
-
-    public int getRestriction() {
-        return restriction;
-    }
-
-    public void setRestriction(int restriction) {
-        this.restriction = restriction;
-        this.isBlocked = shouldBeBlocked();
-    }
 
     //update is called from the timer-thread within the MainActivity
     public void updatePBs(int progress) {

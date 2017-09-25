@@ -33,6 +33,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.InputType;
 import android.view.ActionMode;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -64,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Token> tokens;
     private Handler handler;
     private Runnable timer;
+    private Util utils;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +76,8 @@ public class MainActivity extends AppCompatActivity {
         final ListView listview = (ListView) findViewById(R.id.listview);
         final TextView countdown = (TextView) findViewById(R.id.countdownfield);
         final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        utils = new Util();
+        utils.setmActivity(this);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -99,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
 
         //-------------- initialize adapter with loaded tokens-------------------------
         PRNGFixes.apply();
-        tokens = Util.loadTokens(this);
+        tokens = utils.loadTokens(this);
         tokenlistadapter = new TokenListAdapter();
         listview.setAdapter(tokenlistadapter);
         tokenlistadapter.setTokens(tokens);
@@ -134,26 +138,27 @@ public class MainActivity extends AppCompatActivity {
         //this is the item selected from the context menu of a ListView entry
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
         final int position = info.position;
+        final Token token = tokens.get(position);
 
         switch (item.getItemId()) {
-            case R.id.delete_token:
+            case R.id.delete_token: {
                 tokens.remove(position);
                 tokenlistadapter.notifyDataSetChanged();
                 save(tokens);
                 Toast.makeText(this, "Token removed", Toast.LENGTH_LONG).show();
                 return true;
+            }
 
             case R.id.edit_token: {
                 AlertDialog.Builder alert = new AlertDialog.Builder(this);
                 alert.setTitle("Edit Name");
-
                 final EditText input = new EditText(this);
-                input.setText(tokens.get(position).getLabel());
+                input.setText(token.getLabel());
                 alert.setView(input);
 
                 alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        tokens.get(position).setLabel(input.getEditableText().toString());
+                        token.setLabel(input.getEditableText().toString());
                         tokenlistadapter.notifyDataSetChanged();
                         save(tokens);
                     }
@@ -167,6 +172,33 @@ public class MainActivity extends AppCompatActivity {
                 alert.show();
                 return true;
             }
+
+            case R.id.change_pin: {
+                if (token.isWithPIN() && !token.isLocked()) {
+                    AlertDialog.Builder alert = new AlertDialog.Builder(this);
+                    alert.setTitle("Change PIN");
+                    final EditText input = new EditText(this);
+                    input.setInputType(InputType.TYPE_CLASS_NUMBER);
+                    alert.setView(input);
+
+                    alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int whichButton) {
+                            token.setPin(Integer.parseInt(input.getEditableText().toString()));
+                            tokenlistadapter.notifyDataSetChanged();
+                            save(tokens);
+                        }
+                    });
+
+                    alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int whichButton) {
+                            dialog.cancel();
+                        }
+                    });
+                    alert.show();
+                    return true;
+                }
+            }
+
             default:
                 return super.onContextItemSelected(item);
         }
@@ -185,6 +217,7 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         if (id == R.id.action_settings) {
+            //TODO THIS
             final LayoutInflater li = getLayoutInflater();
 
             return true;
@@ -192,11 +225,11 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_insertdummy) {
             //insert a TOTP and HOTP dummy-token
             try {
-                tokens.add(Util.makeTokenFromURI("otpauth://hotp" +
-                        "/HOTP?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=SampleToken"));
-                tokens.add(Util.makeTokenFromURI("otpauth://totp" +
+                tokens.add(utils.makeTokenFromURI("otpauth://hotp" +
+                        "/HOTP?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=SampleToken2step&2step=true"));
+                tokens.add(utils.makeTokenFromURI("otpauth://totp" +
                         "/TOTP60SSHA1?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=60&digits=6&issuer=SampleToken"));
-                tokens.add(Util.makeTokenFromURI("otpauth://totp" +
+                tokens.add(utils.makeTokenFromURI("otpauth://totp" +
                         "/TOTP30SSHA1?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=30&digits=6&issuer=SampleToken&pin=true"));
             } catch (Exception e) {
                 e.printStackTrace();
@@ -222,8 +255,9 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public static void restrictionIsSet(int num){
-        // When a token with a restriction (of token amount) is scanned this will be called
+    public void showMessageDialog(String message) {
+
+
     }
 
     @Override
@@ -235,11 +269,11 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
             } else {
                 try {
-                    Token t = Util.makeTokenFromURI(result.getContents());
+                    Token t = utils.makeTokenFromURI(result.getContents());
                     tokens.add(t);
                     Toast.makeText(this, "Token added for: " + t.getLabel(), Toast.LENGTH_LONG).show();
                     tokenlistadapter.refreshOTPs();
-                    Util.saveTokens(this, tokens);
+                    save(tokens);
                 } catch (Exception e) {
                     Toast.makeText(this, "Invalid QR Code", Toast.LENGTH_LONG).show();
                     e.printStackTrace();
@@ -272,6 +306,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void save(ArrayList<Token> tokens) {
-        Util.saveTokens(this, tokens);
+        utils.saveTokens(this, tokens);
     }
 }
