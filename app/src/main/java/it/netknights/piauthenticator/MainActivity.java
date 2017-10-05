@@ -218,8 +218,8 @@ public class MainActivity extends AppCompatActivity {
 
         if (id == R.id.action_settings) {
             //TODO THIS
-            final LayoutInflater li = getLayoutInflater();
-
+            Intent settingsIntent = new Intent(this, SettingsActivity.class);
+            startActivityForResult(settingsIntent, 102);
             return true;
         }
         if (id == R.id.action_insertdummy) {
