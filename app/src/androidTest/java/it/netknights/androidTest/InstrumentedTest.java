@@ -14,10 +14,12 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -28,10 +30,14 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import it.netknights.piauthenticator.EncryptionHelper;
+import it.netknights.piauthenticator.OTPGenerator;
 import it.netknights.piauthenticator.Token;
 import it.netknights.piauthenticator.Util;
 
 import static it.netknights.piauthenticator.OTPGenerator.generateHOTP;
+import static it.netknights.piauthenticator.OTPGenerator.generatePBKDFKey;
+import static it.netknights.piauthenticator.OTPGenerator.toHexString;
+import static it.netknights.piauthenticator.Util.insertPeriodically;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
@@ -210,5 +216,25 @@ public class InstrumentedTest {
         }
     }
 
+    @Test
+    public void testPBKDF2() throws InvalidKeySpecException, NoSuchAlgorithmException {
+        // Testvectors are from https://www.rfc-editor.org/rfc/rfc6070.txt
+        // 16Mio. iterations testvector is not used, takes forever
+        // char[] pw , byte[] salt, int iterations, int length in bit
 
+        char[] p = "password".toCharArray();
+        byte[] s = "salt".getBytes(StandardCharsets.US_ASCII);
+        assertEquals("0c60c80f961f0e71f3a9b524af6012062fe037a6", toHexString(generatePBKDFKey(p, s, 1, 160)));
+        assertEquals("ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957", toHexString(generatePBKDFKey(p, s, 2, 160)));
+        assertEquals("4b007901b765489abead49d926f721d065a429c1", toHexString(generatePBKDFKey(p, s, 4096, 160)));
+        //assertEquals("eefe3d61cd4da4e4e9945b3d6ba2158c2634e984", toHexString(generatePBKDFKey(p, s, 16777216, 160)));
+
+        p = "passwordPASSWORDpassword".toCharArray();
+        s = "saltSALTsaltSALTsaltSALTsaltSALTsalt".getBytes(StandardCharsets.US_ASCII);
+        assertEquals("3d2eec4fe41c849b80c8d83662c0e44a8b291a964cf2f07038", toHexString(generatePBKDFKey(p, s, 4096, 200)));
+
+        p = "pass\0word".toCharArray();
+        s = "sa\0lt".getBytes(StandardCharsets.US_ASCII);
+        assertEquals("56fa6aa75548099dcc37d7f03425e0c3", toHexString(generatePBKDFKey(p, s, 4096, 128)));
+    }
 }
