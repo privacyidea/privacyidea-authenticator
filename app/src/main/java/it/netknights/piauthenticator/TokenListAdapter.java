@@ -21,6 +21,7 @@
 
 package it.netknights.piauthenticator;
 
+import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Color;
@@ -28,6 +29,8 @@ import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.widget.BaseAdapter;
 import android.widget.Button;
@@ -57,13 +60,23 @@ public class TokenListAdapter extends BaseAdapter {
                 if (t.getType().equals(TOTP)) {
                     pb = t.getPb();
                     if (t.getPeriod() == 30 && progress >= 30) {
-                        pb.setProgress(progress - 30);
+                        //pb.setProgress(progress - 30);
+                        setProgressAnimate(pb, progress-30);
                     } else {
-                        pb.setProgress(progress);
+                        //pb.setProgress(progress);
+                        setProgressAnimate(pb, progress);
                     }
                 }
             }
         }
+    }
+
+    private void setProgressAnimate(ProgressBar pb, int progressTo)
+    {
+        ObjectAnimator animation = ObjectAnimator.ofInt(pb, "progress", pb.getProgress(), progressTo * 100);
+        animation.setDuration(1000);
+        animation.setInterpolator(new LinearInterpolator());
+        animation.start();
     }
 
     public void refreshOTPs() {
@@ -207,7 +220,7 @@ public class TokenListAdapter extends BaseAdapter {
             }
 
             progressBar.setTag(position);
-            progressBar.setMax(token.getPeriod());
+            progressBar.setMax(token.getPeriod()*100);
             progressBar.getProgressDrawable().setColorFilter(
                     Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
 

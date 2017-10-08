@@ -31,6 +31,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
@@ -218,8 +219,13 @@ public class MainActivity extends AppCompatActivity {
 
         if (id == R.id.action_settings) {
             //TODO THIS
-            Intent settingsIntent = new Intent(this, SettingsActivity.class);
-            startActivityForResult(settingsIntent, 102);
+            /*Intent settingsIntent = new Intent(this, SettingsActivity.class);
+            startActivityForResult(settingsIntent, 102);*/
+            /*Fragment sf = new SettingsFragment();
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .add(R.id.container, sf)
+                    .commit();*/
             return true;
         }
         if (id == R.id.action_insertdummy) {

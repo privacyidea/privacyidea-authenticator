@@ -26,8 +26,13 @@ import org.apache.commons.codec.binary.Base32;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
 
 import javax.crypto.Mac;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import static it.netknights.piauthenticator.Token.HOTP;
@@ -185,6 +190,28 @@ public class OTPGenerator {
         for (int i = 0; i < ret.length; i++)
             ret[i] = bArray[i + 1];
         return ret;
+    }
+
+    /**
+     * Generates a secret from a password and salt using PBKDF2WithHmacSHA1.
+     * (passwort -> usual enrollment secret, salt -> phone-part)
+     *
+     * @param passphraseOrPin char-array of the password
+     * @param salt            the salt as byte-array
+     * @param iterations      number of iterations
+     * @return secret as byte-array
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeySpecException
+     */
+    public static byte[] generatePBKDFKey(char[] passphraseOrPin, byte[] salt, int iterations) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        // Generate a 256-bit key
+        final int outputKeyLength = 256;
+
+        SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+        KeySpec keySpec = new PBEKeySpec(passphraseOrPin, salt, iterations, outputKeyLength);
+        //SecretKey secretKey = secretKeyFactory.generateSecret(keySpec);
+        byte[] bb = secretKeyFactory.generateSecret(keySpec).getEncoded();
+        return bb;
     }
 
 }

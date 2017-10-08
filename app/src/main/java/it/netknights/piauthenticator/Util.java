@@ -168,7 +168,7 @@ public class Util {
         int hardeningIterations = 1000;
         long startTime = SystemClock.elapsedRealtime();
         try {
-            completesecretBytes = generatePBKDFKey(ch, phonepart, hardeningIterations);
+            completesecretBytes = OTPGenerator.generatePBKDFKey(ch, phonepart, hardeningIterations);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         } catch (InvalidKeySpecException e) {
@@ -177,7 +177,7 @@ public class Util {
         long endTime = SystemClock.elapsedRealtime() - startTime;
         //endTime = endTime / 1000;
 
-        Log.d(TAG, "time for PBKDF2 computation: " + endTime+"ms, with "+ hardeningIterations+" Iterations");
+        Log.d(TAG, "time for PBKDF2 computation: " + endTime + "ms, with " + hardeningIterations + " Iterations");
         //byte[] completesecretBytes = OTPGenerator.hmac_sha(token.getAlgorithm(), qrpartBytes, phonepart);
         Log.d(TAG, "complete secret toString: " + completesecretBytes.toString());
         String completeSecretAsHexString = toHexString(completesecretBytes);
@@ -192,17 +192,6 @@ public class Util {
         alertDialog.show();
 
         return token;
-    }
-
-    public static byte[] generatePBKDFKey(char[] passphraseOrPin, byte[] salt, int iterations) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        // Generate a 256-bit key
-        final int outputKeyLength = 256;
-
-        SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-        KeySpec keySpec = new PBEKeySpec(passphraseOrPin, salt, iterations, outputKeyLength);
-        //SecretKey secretKey = secretKeyFactory.generateSecret(keySpec);
-        byte[] bb = secretKeyFactory.generateSecret(keySpec).getEncoded();
-        return bb;
     }
 
     public static String insertPeriodically(String text, String insert, int period) {
