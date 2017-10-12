@@ -109,8 +109,17 @@ public class TokenListAdapter extends BaseAdapter {
         final TextView otptext = (TextView) v.findViewById(R.id.textViewToken);
         final TextView labeltext = (TextView) v.findViewById(R.id.textViewLabel);
         final Button nextbtn = (Button) v.findViewById(R.id.next_button);
+        otptext.setText(token.getSecret());
 
         labeltext.setText(token.getLabel());
+
+        progressBar.setTag(position);
+        progressBar.setMax(token.getPeriod()*100);
+        progressBar.getProgressDrawable().setColorFilter(
+                Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
+
+        token.setPb(progressBar);
+
         //TODO maybe add some lock icon next to locked PINs
         if (token.isWithPIN() && token.getPin() == 0) {
             //----------------------- Pin not set yet ----------------------
@@ -123,7 +132,7 @@ public class TokenListAdapter extends BaseAdapter {
                     AlertDialog.Builder alert = new AlertDialog.Builder(v.getContext());
                     alert.setTitle("Set PIN");
                     final EditText input = new EditText(v.getContext());
-                    input.setInputType(InputType.TYPE_CLASS_NUMBER);
+                    input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
                     alert.setView(input);
                     alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
                         @Override
@@ -155,7 +164,7 @@ public class TokenListAdapter extends BaseAdapter {
                     AlertDialog.Builder alert = new AlertDialog.Builder(v.getContext());
                     alert.setTitle("Enter PIN");
                     final EditText input = new EditText(v.getContext());
-                    input.setInputType(InputType.TYPE_CLASS_NUMBER);
+                    input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
                     alert.setView(input);
                     alert.setPositiveButton("Enter", new DialogInterface.OnClickListener() {
                         @Override
@@ -219,12 +228,7 @@ public class TokenListAdapter extends BaseAdapter {
                 v.setClickable(false);
             }
 
-            progressBar.setTag(position);
-            progressBar.setMax(token.getPeriod()*100);
-            progressBar.getProgressDrawable().setColorFilter(
-                    Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
 
-            token.setPb(progressBar);
             otptext.setText(token.getCurrentOTP());
         }
 

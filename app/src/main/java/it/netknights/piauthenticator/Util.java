@@ -76,7 +76,17 @@ public class Util {
 
     private static final String DATAFILE = "data.dat";
     private static final String KEYFILE = "key.key";
+    private static Util instance;
+    private Util(){
+    }
 
+    public static Util getInstance() {
+        if(instance != null){
+            return instance;
+        }
+        instance = new Util();
+        return instance;
+    }
     /**
      * Creates a token with the parameters passed in KeyURI format
      *
@@ -99,6 +109,7 @@ public class Util {
         }
 
         String type = url.getHost();
+        // the secret is base32 decoded before the OTP value is generated, so there no need to do something here
         String secret = uri.getQueryParameter(SECRET);
         String label = uri.getPath().substring(1);
         String issuer = uri.getQueryParameter(ISSUER);
@@ -139,7 +150,7 @@ public class Util {
     }
 
     /**
-     * This method enhances the "usual" rollout process by combining the secret in the scanned QRcode
+     * This method enhances the "usual" rollout process by combining the secret in the scanned QRCode
      * with a randomly generated secret on the phone. The Phone-part has to be entered into
      * PrivacyIDEA, then the first OTP values can be compared to ensure the rollout was successful
      *

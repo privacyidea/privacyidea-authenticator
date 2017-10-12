@@ -13,9 +13,9 @@
         android:title="Insert Dummy-Tokens"
         android:visible="true" />
     <item
-        android:id="@+id/action_settings"
+        android:id="@+id/action_add"
         android:orderInCategory="105"
-        android:title="Settings" />
+        android:title="Add Token" />
     <item
         android:id="@+id/action_about"
         android:orderInCategory="106"

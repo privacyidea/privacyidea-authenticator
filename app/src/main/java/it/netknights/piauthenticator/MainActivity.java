@@ -20,6 +20,7 @@
 
 package it.netknights.piauthenticator;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -35,6 +36,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
+import android.util.Log;
 import android.view.ActionMode;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -58,15 +60,19 @@ import com.google.zxing.integration.android.IntentResult;
 import java.util.ArrayList;
 import java.util.List;
 
+import static it.netknights.piauthenticator.R.color.PIBLUE;
 import static it.netknights.piauthenticator.R.id.listview;
+import static it.netknights.piauthenticator.Util.TAG;
+import static it.netknights.piauthenticator.Util.makeTokenFromURI;
 
 
 public class MainActivity extends AppCompatActivity {
     private TokenListAdapter tokenlistadapter;
-    private ArrayList<Token> tokens;
+    private ArrayList<Token> tokenlist;
     private Handler handler;
     private Runnable timer;
     private Util utils;
+    private static final int INTENT_ADD_TOKEN_MANUALLY = 101;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,9 +83,10 @@ public class MainActivity extends AppCompatActivity {
         final ListView listview = (ListView) findViewById(R.id.listview);
         final TextView countdown = (TextView) findViewById(R.id.countdownfield);
         final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        utils = new Util();
-        utils.setmActivity(this);
+        fab.setBackgroundColor(getResources().getColor(PIBLUE));
 
+        utils = Util.getInstance();
+        utils.setmActivity(this);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setBackgroundColor(Color.rgb(0x55, 0xb0, 0xe6));
@@ -99,15 +106,16 @@ public class MainActivity extends AppCompatActivity {
             Window window = getWindow();
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            window.setStatusBarColor(getResources().getColor(R.color.PIBLUE));
+            window.setStatusBarColor(getResources().getColor(PIBLUE));
         }
 
-        //-------------- initialize adapter with loaded tokens-------------------------
+        //-------------- initialize adapter with loaded tokenlist
+        //-------------------------
         PRNGFixes.apply();
-        tokens = utils.loadTokens(this);
+        tokenlist = Util.loadTokens(this);
         tokenlistadapter = new TokenListAdapter();
         listview.setAdapter(tokenlistadapter);
-        tokenlistadapter.setTokens(tokens);
+        tokenlistadapter.setTokens(tokenlist);
         tokenlistadapter.refreshOTPs();
         registerForContextMenu(listview);
 
@@ -139,13 +147,13 @@ public class MainActivity extends AppCompatActivity {
         //this is the item selected from the context menu of a ListView entry
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
         final int position = info.position;
-        final Token token = tokens.get(position);
+        final Token token = tokenlist.get(position);
 
         switch (item.getItemId()) {
             case R.id.delete_token: {
-                tokens.remove(position);
+                tokenlist.remove(position);
                 tokenlistadapter.notifyDataSetChanged();
-                save(tokens);
+                save(tokenlist);
                 Toast.makeText(this, "Token removed", Toast.LENGTH_LONG).show();
                 return true;
             }
@@ -155,13 +163,14 @@ public class MainActivity extends AppCompatActivity {
                 alert.setTitle("Edit Name");
                 final EditText input = new EditText(this);
                 input.setText(token.getLabel());
+                input.setSelectAllOnFocus(true);
                 alert.setView(input);
 
                 alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         token.setLabel(input.getEditableText().toString());
                         tokenlistadapter.notifyDataSetChanged();
-                        save(tokens);
+                        save(tokenlist);
                     }
                 });
 
@@ -175,18 +184,19 @@ public class MainActivity extends AppCompatActivity {
             }
 
             case R.id.change_pin: {
+                //TODO double check new pin
                 if (token.isWithPIN() && !token.isLocked()) {
                     AlertDialog.Builder alert = new AlertDialog.Builder(this);
                     alert.setTitle("Change PIN");
                     final EditText input = new EditText(this);
-                    input.setInputType(InputType.TYPE_CLASS_NUMBER);
+                    input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
                     alert.setView(input);
 
                     alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int whichButton) {
                             token.setPin(Integer.parseInt(input.getEditableText().toString()));
                             tokenlistadapter.notifyDataSetChanged();
-                            save(tokens);
+                            save(tokenlist);
                         }
                     });
 
@@ -217,38 +227,33 @@ public class MainActivity extends AppCompatActivity {
         //this is the item selected from the toolbar menu
         int id = item.getItemId();
 
-        if (id == R.id.action_settings) {
-            //TODO THIS
-            /*Intent settingsIntent = new Intent(this, SettingsActivity.class);
-            startActivityForResult(settingsIntent, 102);*/
-            /*Fragment sf = new SettingsFragment();
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .add(R.id.container, sf)
-                    .commit();*/
+        if (id == R.id.action_add) {
+            Intent settingsIntent = SettingsActivity.makeIntent(this);
+            startActivityForResult(settingsIntent, INTENT_ADD_TOKEN_MANUALLY);
+
             return true;
         }
         if (id == R.id.action_insertdummy) {
             //insert a TOTP and HOTP dummy-token
             try {
-                tokens.add(utils.makeTokenFromURI("otpauth://hotp" +
+                tokenlist.add(makeTokenFromURI("otpauth://hotp" +
                         "/HOTP?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=SampleToken2step&2step=true"));
-                tokens.add(utils.makeTokenFromURI("otpauth://totp" +
+                tokenlist.add(makeTokenFromURI("otpauth://totp" +
                         "/TOTP60SSHA1?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=60&digits=6&issuer=SampleToken"));
-                tokens.add(utils.makeTokenFromURI("otpauth://totp" +
+                tokenlist.add(makeTokenFromURI("otpauth://totp" +
                         "/TOTP30SSHA1?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=30&digits=6&issuer=SampleToken&pin=true"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
             tokenlistadapter.refreshOTPs();
-            save(tokens);
+            save(tokenlist);
             return true;
         }
         if (id == R.id.action_remove_all) {
-            tokens.clear();
+            tokenlist.clear();
             tokenlistadapter.notifyDataSetChanged();
-            save(tokens);
-            Toast.makeText(this, "All tokens deleted", Toast.LENGTH_LONG).show();
+            save(tokenlist);
+            Toast.makeText(this, "All token deleted", Toast.LENGTH_LONG).show();
             return true;
         }
         if (id == R.id.action_about) {
@@ -261,32 +266,49 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void showMessageDialog(String message) {
-
-
-    }
-
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent i) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         //after the QRscan make a token from the resulting string, save it and update the View
-        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, i);
+        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
         if (result != null) {
             if (result.getContents() == null) {
                 Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
             } else {
                 try {
-                    Token t = utils.makeTokenFromURI(result.getContents());
-                    tokens.add(t);
+                    Token t = makeTokenFromURI(result.getContents());
+                    tokenlist.add(t);
                     Toast.makeText(this, "Token added for: " + t.getLabel(), Toast.LENGTH_LONG).show();
                     tokenlistadapter.refreshOTPs();
-                    save(tokens);
+                    save(tokenlist);
                 } catch (Exception e) {
                     Toast.makeText(this, "Invalid QR Code", Toast.LENGTH_LONG).show();
                     e.printStackTrace();
                 }
             }
+        } else if (requestCode == INTENT_ADD_TOKEN_MANUALLY) {
+            if (resultCode == Activity.RESULT_OK) {
+                String type = data.getStringExtra("type");
+                String secret = data.getStringExtra("secret");
+                String label = data.getStringExtra("label");
+                int digits = data.getIntExtra("digits", 6);
+                Token tmp = new Token(secret, label, type, digits);
+                if (type.equals("totp")) {
+                    int period = data.getIntExtra("period", 30);
+                    tmp.setPeriod(period);
+                }
+                String algorithm = data.getStringExtra("algorithm");
+                if (algorithm != null) {
+                    tmp.setAlgorithm(algorithm);
+                }
+                //Log.d(TAG, type + label + secret + digits);
+                tokenlist.add(tmp);
+                tokenlistadapter.refreshOTPs();
+                save(tokenlist);
+
+            }
+
         } else {
-            super.onActivityResult(requestCode, resultCode, i);
+            super.onActivityResult(requestCode, resultCode, data);
         }
     }
 
@@ -311,7 +333,7 @@ public class MainActivity extends AppCompatActivity {
         handler.removeCallbacks(timer);
     }
 
-    public void save(ArrayList<Token> tokens) {
-        utils.saveTokens(this, tokens);
+    public void save(ArrayList<Token> tokenlist) {
+        Util.saveTokens(this, tokenlist);
     }
 }
