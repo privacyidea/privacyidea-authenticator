@@ -44,6 +44,7 @@ import java.util.List;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static it.netknights.piauthenticator.Token.HASPINTAG;
 import static it.netknights.piauthenticator.Token.HOTP;
 import static it.netknights.piauthenticator.Token.TOTP;
 
@@ -61,7 +62,7 @@ public class TokenListAdapter extends BaseAdapter {
                     pb = t.getPb();
                     if (t.getPeriod() == 30 && progress >= 30) {
                         //pb.setProgress(progress - 30);
-                        setProgressAnimate(pb, progress-30);
+                        setProgressAnimate(pb, progress - 30);
                     } else {
                         //pb.setProgress(progress);
                         setProgressAnimate(pb, progress);
@@ -71,8 +72,7 @@ public class TokenListAdapter extends BaseAdapter {
         }
     }
 
-    private void setProgressAnimate(ProgressBar pb, int progressTo)
-    {
+    private void setProgressAnimate(ProgressBar pb, int progressTo) {
         ObjectAnimator animation = ObjectAnimator.ofInt(pb, "progress", pb.getProgress(), progressTo * 100);
         animation.setDuration(1000);
         animation.setInterpolator(new LinearInterpolator());
@@ -113,16 +113,18 @@ public class TokenListAdapter extends BaseAdapter {
 
         labeltext.setText(token.getLabel());
 
-        progressBar.setTag(position);
-        progressBar.setMax(token.getPeriod()*100);
-        progressBar.getProgressDrawable().setColorFilter(
-                Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
 
         token.setPb(progressBar);
+        if (token.isWithPIN()) {
+            v.setTag(R.id.HasPIN, true);
+        } else {
+            v.setTag(R.id.HasPIN, false);
+        }
 
         //TODO maybe add some lock icon next to locked PINs
         if (token.isWithPIN() && token.getPin() == 0) {
             //----------------------- Pin not set yet ----------------------
+
             nextbtn.setVisibility(GONE);
             progressBar.setVisibility(GONE);
             otptext.setText("Tap to set PIN (required)");
@@ -206,10 +208,19 @@ public class TokenListAdapter extends BaseAdapter {
         }*/ else {
             //--------------- no PIN protection or token is unlocked ---------------------------
             //------------------ differenciate hotp and totp ---------------------------
+           /* v.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    token.setCounter((token.getCounter() + 1));
+                    token.setCurrentOTP(OTPGenerator.generate(token));
+                    notifyDataSetChanged();
+                }
+            });*/
             v.setOnClickListener(null);
             if (token.getType().equals(HOTP)) {
                 progressBar.setVisibility(GONE);
                 v.setLongClickable(true);
+
                 nextbtn.setVisibility(VISIBLE);
                 nextbtn.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -219,6 +230,12 @@ public class TokenListAdapter extends BaseAdapter {
                         notifyDataSetChanged();
                     }
                 });
+
+                /*nextbtn.setVisibility(GONE);
+                nextbtn.setClickable(false);
+                nextbtn.setLongClickable(false);*/
+
+
             } else {
                 nextbtn.setVisibility(GONE);
                 nextbtn.setClickable(false);

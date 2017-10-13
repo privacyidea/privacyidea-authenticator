@@ -7,16 +7,6 @@
         android:orderInCategory="100"
         android:title="Remove all tokens" />
     <item
-        android:id="@+id/action_insertdummy"
-        android:enabled="true"
-        android:orderInCategory="101"
-        android:title="Insert Dummy-Tokens"
-        android:visible="true" />
-    <item
-        android:id="@+id/action_add"
-        android:orderInCategory="105"
-        android:title="Add Token" />
-    <item
         android:id="@+id/action_about"
         android:orderInCategory="106"
         android:title="About" />

@@ -21,6 +21,7 @@
 
 package it.netknights.piauthenticator;
 
+import android.graphics.Color;
 import android.widget.ProgressBar;
 
 public class Token {
@@ -35,6 +36,7 @@ public class Token {
     public static final String COUNTER = "counter";
     public static final String TOTP = "totp";
     public static final String HOTP = "hotp";
+    public static final int HASPINTAG = 120;
 
     private String currentOTP;
     private String secret;
@@ -112,6 +114,9 @@ public class Token {
 
     public void setPb(ProgressBar pb) {
         this.pb = pb;
+        this.pb.setMax(getPeriod()*100);
+        this.pb.getProgressDrawable().setColorFilter(
+                Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
     }
 
     public ProgressBar getPb() {

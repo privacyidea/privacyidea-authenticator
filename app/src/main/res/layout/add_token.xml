@@ -7,53 +7,54 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
-        android:layout_alignStart="@+id/checkBox_base32"
         android:layout_below="@+id/textView_addTokenHeader"
         android:layout_marginTop="8dp"
         android:ems="10"
         android:inputType="textPersonName"
         android:selectAllOnFocus="true"
-        android:text="Name" />
+        android:text="@string/name"
+        android:layout_alignStart="@+id/checkBox_base32" />
 
     <EditText
         android:id="@+id/editText_secret"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignStart="@+id/editText_name"
         android:layout_below="@+id/editText_name"
         android:layout_marginTop="6dp"
         android:ems="10"
         android:inputType="textCapCharacters"
         android:selectAllOnFocus="true"
-        android:text="Secret" />
+        android:text="@string/secret"
+        android:layout_alignStart="@+id/checkBox_base32"
+        android:layout_alignParentEnd="true" />
 
     <CheckBox
         android:id="@+id/checkBox_base32"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
+        android:layout_marginStart="8dp"
+        android:text="@string/base32_encoded_secret"
+        android:layout_marginTop="7dp"
         android:layout_below="@+id/editText_secret"
-        android:layout_marginStart="16dp"
-        android:text="Base32 encoded secret" />
+        android:layout_alignParentStart="true" />
 
     <TextView
         android:id="@+id/textView_type"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Type:"
+        android:text="@string/type"
         android:textSize="24sp"
         android:textStyle="bold"
+        android:layout_marginTop="13dp"
         android:layout_below="@+id/checkBox_base32"
         android:layout_alignStart="@+id/checkBox_base32"
-        android:layout_marginTop="7dp"
-        android:layout_toStartOf="@+id/spinner_type" />
+        android:layout_toStartOf="@+id/spinner_period" />
 
     <TextView
         android:id="@+id/textView_period"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Period:"
+        android:text="@string/period"
         android:textSize="24sp"
         android:textStyle="bold"
         android:layout_below="@+id/spinner_type"
@@ -87,7 +88,7 @@
         android:layout_alignStart="@+id/textView_digits"
         android:layout_below="@+id/textView_digits"
         android:layout_marginTop="17dp"
-        android:text="Algorithm:"
+        android:text="@string/algorithm"
         android:textSize="24sp"
         android:textStyle="bold"
         android:layout_toStartOf="@+id/spinner_algorithm" />
@@ -97,8 +98,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/textView_algorithm"
-        android:layout_alignEnd="@+id/spinner_period"
-        android:layout_alignStart="@+id/spinner_period"
+        android:layout_alignParentEnd="true"
+        android:layout_toEndOf="@+id/textView_period"
         android:layout_alignBottom="@+id/textView_algorithm" />
 
     <TextView
@@ -108,7 +109,7 @@
         android:layout_alignParentTop="true"
         android:layout_alignStart="@+id/editText_name"
         android:layout_marginTop="14dp"
-        android:text="Enter Details"
+        android:text="@string/enter_details"
         android:textAppearance="@style/TextAppearance.AppCompat.Title"
         android:textStyle="bold" />
 
@@ -116,9 +117,9 @@
         android:id="@+id/button_addToken"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="ADD"
-        android:layout_marginTop="10dp"
-        android:layout_below="@+id/textView_algorithm"
+        android:text="@string/add"
+        android:layout_alignBaseline="@+id/button_back"
+        android:layout_alignBottom="@+id/button_back"
         android:layout_centerHorizontal="true" />
 
     <TextView
@@ -128,25 +129,52 @@
         android:layout_alignStart="@+id/textView_period"
         android:layout_below="@+id/textView_period"
         android:layout_marginTop="14dp"
-        android:text="Digits:"
+        android:text="@string/digits"
         android:textSize="24sp"
         android:textStyle="bold"
         android:layout_toStartOf="@+id/spinner_digits" />
 
     <Spinner
         android:id="@+id/spinner_digits"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/spinner_algorithm"
+        android:layout_alignBottom="@+id/textView_digits"
         android:layout_alignEnd="@+id/spinner_period"
-        android:layout_alignTop="@+id/textView_digits"
-        android:layout_alignBottom="@+id/textView_digits" />
+        android:layout_alignStart="@+id/spinner_algorithm"
+        android:layout_alignTop="@+id/textView_digits" />
 
     <Button
         android:id="@+id/button_back"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/button_addToken"
+        android:text="@string/back"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true" />
+
+    <CheckBox
+        android:id="@+id/checkBox_pin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/with_pin"
+        android:layout_alignBaseline="@+id/checkBox_base32"
+        android:layout_alignBottom="@+id/checkBox_base32"
+        android:layout_toEndOf="@+id/button_addToken" />
+
+    <CheckBox
+        android:id="@+id/checkBox_2step"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/_2_step_rollout"
+        android:layout_below="@+id/textView_algorithm"
         android:layout_alignStart="@+id/textView_algorithm"
-        android:text="BACK" />
+        android:layout_marginTop="31dp" />
+
+    <Spinner
+        android:id="@+id/spinner_userpart"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/checkBox_2step"
+        android:layout_alignParentEnd="true"
+        android:layout_alignTop="@+id/checkBox_2step"
+        android:layout_toEndOf="@+id/textView_algorithm" />
 </RelativeLayout>

@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
-import android.text.InputType;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -18,9 +17,7 @@ import android.widget.TextView;
 
 import org.apache.commons.codec.binary.Base32;
 
-import java.nio.charset.StandardCharsets;
-
-public class SettingsActivity extends AppCompatActivity {
+public class EnterDetailsActivity extends AppCompatActivity {
 
     private TextView periodLabel;
     private Spinner spinner_digits;
@@ -36,6 +33,8 @@ public class SettingsActivity extends AppCompatActivity {
     private int new_digits;
     private String new_algorithm;
     private String new_type;
+    private CheckBox check_pin;
+    private boolean new_haspin = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -119,6 +118,15 @@ public class SettingsActivity extends AppCompatActivity {
         if (!new_algorithm.equals("SHA1")) { // the default is SHA1, so it does not need to be set explicitly
             returnIntent.putExtra("algorithm", new_algorithm);
         }
+        if (new_haspin) {
+            returnIntent.putExtra("haspin", true);
+        }
+
+        CheckBox twostep_box = (CheckBox) findViewById(R.id.checkBox_2step);
+        if (twostep_box.isChecked()) {
+            returnIntent.putExtra("2step", true);
+        }
+
         setResult(Activity.RESULT_OK, returnIntent);
     }
 
@@ -126,6 +134,11 @@ public class SettingsActivity extends AppCompatActivity {
         editText_name = (EditText) findViewById(R.id.editText_name);
         editText_secret = (EditText) findViewById(R.id.editText_secret);
         check_base32 = (CheckBox) findViewById(R.id.checkBox_base32);
+        check_pin = (CheckBox) findViewById(R.id.checkBox_pin);
+
+        if (check_pin.isChecked()) {
+            new_haspin = true;
+        }
 
         new_label = editText_name.getText().toString();
         if (check_base32.isChecked()) { // the secret should be base32 encoded
@@ -149,7 +162,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     public static Intent makeIntent(Context context) {
-        return new Intent(context, SettingsActivity.class);
+        return new Intent(context, EnterDetailsActivity.class);
     }
 }
 
