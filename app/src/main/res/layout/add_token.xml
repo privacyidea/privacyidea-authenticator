@@ -170,7 +170,7 @@
         android:layout_marginTop="31dp" />
 
     <Spinner
-        android:id="@+id/spinner_userpart"
+        android:id="@+id/spinner_phonepart"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/checkBox_2step"

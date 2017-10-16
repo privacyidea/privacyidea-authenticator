@@ -22,6 +22,7 @@
 package it.netknights.piauthenticator;
 
 import android.graphics.Color;
+import android.util.Log;
 import android.widget.ProgressBar;
 
 public class Token {
@@ -36,7 +37,6 @@ public class Token {
     public static final String COUNTER = "counter";
     public static final String TOTP = "totp";
     public static final String HOTP = "hotp";
-    public static final int HASPINTAG = 120;
 
     private String currentOTP;
     private String secret;
@@ -50,7 +50,6 @@ public class Token {
     private boolean withPIN = false;
     private boolean isLocked = false;
     private int Pin = 0;
-    private int PinTries = 0;
     private boolean withTapToShow = false;
     private boolean tapped = false;
 
@@ -80,14 +79,6 @@ public class Token {
         this.withTapToShow = withTapToShow;
     }
 
-    public int getPinTries() {
-        return PinTries;
-    }
-
-    public void setPinTries(int pinTries) {
-        PinTries = pinTries;
-    }
-
     public int getPin() {
         return Pin;
     }
@@ -113,10 +104,18 @@ public class Token {
     }
 
     public void setPb(ProgressBar pb) {
-        this.pb = pb;
-        this.pb.setMax(getPeriod()*100);
+        if (this.pb == null) {
+            this.pb = pb;
+            this.pb.setMax(getPeriod() * 100);
+            this.pb.getProgressDrawable().setColorFilter(
+                    Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
+        } else if (this.pb.getId() == pb.getId()) {
+            return;
+        }
+        /*this.pb = pb;
+        this.pb.setMax(getPeriod() * 100);
         this.pb.getProgressDrawable().setColorFilter(
-                Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
+                Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);*/
     }
 
     public ProgressBar getPb() {
@@ -161,10 +160,11 @@ public class Token {
 
     public void setAlgorithm(String algorithm) {
         // In the KeyURI the parameter is sha1,sha256,sha512 whereas the Mac instance is HmacSHA1 etc.
-        if (algorithm.startsWith("sha")) {
+        if (algorithm.startsWith("sha") || algorithm.startsWith("SHA")) {
             this.algorithm = "Hmac" + algorithm.toUpperCase();
+        }else if(algorithm.startsWith("Hmac")){
+            this.algorithm = algorithm;
         }
-        this.algorithm = algorithm;
     }
 
     public int getDigits() {

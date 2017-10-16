@@ -44,7 +44,6 @@ import java.util.List;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
-import static it.netknights.piauthenticator.Token.HASPINTAG;
 import static it.netknights.piauthenticator.Token.HOTP;
 import static it.netknights.piauthenticator.Token.TOTP;
 
@@ -158,7 +157,6 @@ public class TokenListAdapter extends BaseAdapter {
             //------------------- show dialog for PIN input -------------------------------------
             progressBar.setVisibility(GONE);
             nextbtn.setVisibility(GONE);
-            //if(token.getPinTries()>5){ //TODO What to do after how many failed tries?}
             otptext.setText("Tap to unlock");
             v.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -173,11 +171,9 @@ public class TokenListAdapter extends BaseAdapter {
                         public void onClick(DialogInterface dialog, int which) {
                             if (Integer.parseInt(input.getEditableText().toString()) == token.getPin()) {
                                 token.setLocked(false);
-                                token.setPinTries(0);
                                 token.setTapped(true);
                             } else {
                                 Toast.makeText(mView.getContext(), "The PIN you have entered is not correct", Toast.LENGTH_SHORT).show();
-                                token.setPinTries((token.getPinTries() + 1));
                             }
                             notifyDataSetChanged();
                         }

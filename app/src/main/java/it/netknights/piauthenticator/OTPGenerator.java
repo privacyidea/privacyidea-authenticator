@@ -157,7 +157,9 @@ public class OTPGenerator {
             hmac.init(macKey);
             return hmac.doFinal(text);
         } catch (GeneralSecurityException gse) {
+            gse.printStackTrace();
             throw new UndeclaredThrowableException(gse);
+
         }
     }
 

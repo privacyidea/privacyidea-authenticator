@@ -19,22 +19,26 @@ import org.apache.commons.codec.binary.Base32;
 
 public class EnterDetailsActivity extends AppCompatActivity {
 
-    private TextView periodLabel;
     private Spinner spinner_digits;
     private Spinner spinner_algorithm;
     private Spinner spinner_period;
     private Spinner spinner_type;
+    private Spinner spinner_phonepart;
+    private TextView periodLabel;
     private EditText editText_secret;
     private EditText editText_name;
     private CheckBox check_base32;
+    private CheckBox check_pin;
+
     private String new_label;
     private String new_secret;
-    private int new_period;
-    private int new_digits;
     private String new_algorithm;
     private String new_type;
-    private CheckBox check_pin;
+    private int new_period;
+    private int new_digits;
+    private int new_pp;
     private boolean new_haspin = false;
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -49,6 +53,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
         spinner_period = (Spinner) findViewById(R.id.spinner_period);
         spinner_algorithm = (Spinner) findViewById(R.id.spinner_algorithm);
         spinner_digits = (Spinner) findViewById(R.id.spinner_digits);
+        spinner_phonepart = (Spinner) findViewById(R.id.spinner_phonepart);
         periodLabel = (TextView) findViewById(R.id.textView_period);
 
         final int supportspinnerid = R.layout.support_simple_spinner_dropdown_item;
@@ -57,6 +62,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
         String[] periods = {"30s", "60s"};
         String[] algorithms = {"SHA1", "SHA256", "SHA512"};
         String[] digits = {"6", "8"};
+        String[] phonepart = {"10"};
 
 
         ArrayAdapter<String> adapter_type = new ArrayAdapter<>(this, supportspinnerid, types);
@@ -67,6 +73,8 @@ public class EnterDetailsActivity extends AppCompatActivity {
         spinner_algorithm.setAdapter(adapter_algorithm);
         ArrayAdapter<String> adapter_digits = new ArrayAdapter<>(this, supportspinnerid, digits);
         spinner_digits.setAdapter(adapter_digits);
+        ArrayAdapter<String> adapter_phonepart = new ArrayAdapter<>(this, supportspinnerid, phonepart);
+        spinner_phonepart.setAdapter(adapter_phonepart);
 
         spinner_type.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -125,6 +133,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
         CheckBox twostep_box = (CheckBox) findViewById(R.id.checkBox_2step);
         if (twostep_box.isChecked()) {
             returnIntent.putExtra("2step", true);
+            returnIntent.putExtra("pp", new_pp);
         }
 
         setResult(Activity.RESULT_OK, returnIntent);
@@ -159,6 +168,8 @@ public class EnterDetailsActivity extends AppCompatActivity {
         String tmp_digits = (String) spinner_digits.getSelectedItem();
         new_digits = Integer.parseInt(tmp_digits);
         new_algorithm = (String) spinner_algorithm.getSelectedItem();
+        String tmp_pp = (String) spinner_phonepart.getSelectedItem();
+        new_pp = Integer.parseInt(tmp_pp);
     }
 
     public static Intent makeIntent(Context context) {

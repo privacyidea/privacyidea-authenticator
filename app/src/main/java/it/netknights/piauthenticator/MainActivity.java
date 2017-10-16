@@ -32,6 +32,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -54,7 +55,6 @@ import com.google.zxing.integration.android.IntentResult;
 import java.util.ArrayList;
 
 import static it.netknights.piauthenticator.R.color.PIBLUE;
-import static it.netknights.piauthenticator.Util.makeTokenFromURI;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -124,10 +124,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 CharSequence options[] = new CharSequence[]{"Scan QR Code", "Enter Details"};
-
                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                 builder.setCancelable(false);
-                //builder.setTitle("Select your option:");
                 builder.setItems(options, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -140,13 +138,6 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 });
-               /* builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        //the user clicked on Cancel
-                    }
-                });*/
-
                 builder.show();
             }
         });
@@ -165,13 +156,13 @@ public class MainActivity extends AppCompatActivity {
                                     ContextMenu.ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
         MenuInflater inflater = getMenuInflater();
-        // v gettag PIN?
-        /*if (v.getTag(R.id.HasPIN).equals(true)) {
+
+        int pos = ((AdapterView.AdapterContextMenuInfo) menuInfo).position;
+        if (tokenlist.get(pos).isWithPIN()) {
             inflater.inflate(R.menu.context_menu, menu);
         } else {
             inflater.inflate(R.menu.context_menu_nopin, menu);
-        }*/
-        inflater.inflate(R.menu.context_menu, menu);
+        }
     }
 
     @Override
@@ -216,30 +207,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             case R.id.change_pin: {
-                //TODO double check new pin
                 if (token.isWithPIN() && !token.isLocked()) {
-                 /*   AlertDialog.Builder alert = new AlertDialog.Builder(this);
-                    alert.setTitle("Change PIN");
-                    final EditText input = new EditText(this);
-                    input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
-                    alert.setView(input);
-
-                    alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int whichButton) {
-                            token.setPin(Integer.parseInt(input.getEditableText().toString()));
-                            tokenlistadapter.notifyDataSetChanged();
-                            save(tokenlist);
-                        }
-                    });
-
-                    alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int whichButton) {
-                            dialog.cancel();
-                        }
-                    });
-                    alert.show();
-                    return true;*/
-
                     LinearLayout layout = new LinearLayout(this);
                     layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -261,11 +229,11 @@ public class MainActivity extends AppCompatActivity {
                         public void onClick(DialogInterface dialog, int whichButton) {
                             int firstpin = Integer.parseInt(firstinput.getEditableText().toString());
                             int secondpin = Integer.parseInt(secondinput.getEditableText().toString());
-                            if(firstpin==secondpin){
+                            if (firstpin == secondpin) {
                                 token.setPin(firstpin);
                                 tokenlistadapter.notifyDataSetChanged();
                                 save(tokenlist);
-                            }else{
+                            } else {
                                 Toast.makeText(MainActivity.this, "PINs do not match - Cancelled", Toast.LENGTH_LONG).show();
                             }
                         }
@@ -306,6 +274,12 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         if (id == R.id.action_about) {
+            try {
+                tokenlist.add(utils.makeTokenFromURI("otpauth://totp/TOTP002125CE?secret=YXJMGHZADQ3NHW3EQBOTQ4DRUSDFYXEY&algorithm=sha256&period=30&digits=6&issuer=privacyIDEA&2step=true"));
+                tokenlistadapter.notifyDataSetChanged();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             WebView view = (WebView) LayoutInflater.from(this).inflate(R.layout.dialog_about, null);
             view.loadUrl("file:///android_res/raw/about.html");
             new AlertDialog.Builder(this).setView(view).show();
@@ -324,7 +298,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
             } else {
                 try {
-                    Token t = makeTokenFromURI(result.getContents());
+                    Token t = utils.makeTokenFromURI(result.getContents());
                     tokenlist.add(t);
                     Toast.makeText(this, "Token added for: " + t.getLabel(), Toast.LENGTH_LONG).show();
                     tokenlistadapter.refreshOTPs();
@@ -352,10 +326,10 @@ public class MainActivity extends AppCompatActivity {
                 if (data.getBooleanExtra("haspin", false)) {
                     tmp.setWithPIN(true);
                 }
-                //Log.d(TAG, type + label + secret + digits);
+                Log.d("piauth:", type + label + secret + digits+"  "+tmp.getAlgorithm());
 
                 if (data.getBooleanExtra("2step", false)) {
-                    //utils.start2StepInit(data get extra userpart)
+                    tmp = utils.start2StepInit(tmp, data.getIntExtra("pp", 10));
                 }
                 tokenlist.add(tmp);
                 tokenlistadapter.refreshOTPs();
