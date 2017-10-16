@@ -75,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
         utils = Util.getInstance();
         utils.setmActivity(this);
         setupViews();
+        paintStatusbar();
         setupAdapter();
         startTimerThread();
     }
@@ -103,6 +104,15 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public void paintStatusbar(){
+        //------------------ try to paint the statusbar -------------------------------
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Window window = getWindow();
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            window.setStatusBarColor(getResources().getColor(PIBLUE));
+        }
+    }
     private void setupViews() {
         setTitle(" PrivacyIDEA Authenticator");
         setContentView(R.layout.activity_main);
@@ -141,14 +151,6 @@ public class MainActivity extends AppCompatActivity {
                 builder.show();
             }
         });
-
-        //------------------ try to paint the statusbar -------------------------------
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            Window window = getWindow();
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            window.setStatusBarColor(getResources().getColor(PIBLUE));
-        }
     }
 
     @Override
@@ -284,6 +286,11 @@ public class MainActivity extends AppCompatActivity {
             view.loadUrl("file:///android_res/raw/about.html");
             new AlertDialog.Builder(this).setView(view).show();
             return true;
+        }
+
+        if(id == R.id.action_settings){
+            Intent settingsintent = new Intent(this,SettingsActivity.class);
+            startActivity(settingsintent);
         }
 
         return super.onOptionsItemSelected(item);

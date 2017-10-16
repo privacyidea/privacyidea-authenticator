@@ -1,12 +1,18 @@
 package it.netknights.piauthenticator;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -16,6 +22,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import org.apache.commons.codec.binary.Base32;
+
+import static it.netknights.piauthenticator.R.color.PIBLUE;
 
 public class EnterDetailsActivity extends AppCompatActivity {
 
@@ -46,6 +54,28 @@ public class EnterDetailsActivity extends AppCompatActivity {
         setContentView(R.layout.add_token);
         setupSpinners();
         setupButtons();
+        paintStatusbar();
+    }
+
+    public void paintStatusbar() {
+        //------------------ try to paint the statusbar -------------------------------
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Window window = getWindow();
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            window.setStatusBarColor(getResources().getColor(PIBLUE));
+        }
+        setTitleColor(getResources().getColor(PIBLUE));
+        ActionBar bar = getActionBar();
+        if (bar != null) {
+            bar.setBackgroundDrawable(new ColorDrawable(getResources().getColor(PIBLUE)));
+        }
+       /* Toolbar toolbar =
+        setSupportActionBar(toolbar);*/
+       // toolbar.setBackgroundColor(getResources().getColor(PIBLUE));
+        getSupportActionBar().setLogo(R.mipmap.ic_launcher);
+        getSupportActionBar().setDisplayUseLogoEnabled(true);
+
     }
 
     private void setupSpinners() {
@@ -96,19 +126,12 @@ public class EnterDetailsActivity extends AppCompatActivity {
     }
 
     private void setupButtons() {
-        Button addBtn = (Button) findViewById(R.id.button_addToken);
+        Button addBtn = (Button) findViewById(R.id.button_add);
         addBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 evaluate();
                 buildResult();
-                finish();
-            }
-        });
-        Button backBtn = (Button) findViewById(R.id.button_back);
-        backBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
                 finish();
             }
         });
