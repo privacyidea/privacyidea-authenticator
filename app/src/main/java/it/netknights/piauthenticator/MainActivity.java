@@ -104,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void paintStatusbar(){
+    public void paintStatusbar() {
         //------------------ try to paint the statusbar -------------------------------
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Window window = getWindow();
@@ -113,6 +113,7 @@ public class MainActivity extends AppCompatActivity {
             window.setStatusBarColor(getResources().getColor(PIBLUE));
         }
     }
+
     private void setupViews() {
         setTitle(" PrivacyIDEA Authenticator");
         setContentView(R.layout.activity_main);
@@ -288,8 +289,8 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        if(id == R.id.action_settings){
-            Intent settingsintent = new Intent(this,SettingsActivity.class);
+        if (id == R.id.action_settings) {
+            Intent settingsintent = new Intent(this, SettingsActivity.class);
             startActivity(settingsintent);
         }
 
@@ -333,7 +334,7 @@ public class MainActivity extends AppCompatActivity {
                 if (data.getBooleanExtra("haspin", false)) {
                     tmp.setWithPIN(true);
                 }
-                Log.d("piauth:", type + label + secret + digits+"  "+tmp.getAlgorithm());
+                Log.d("piauth:", type + label + secret + digits + "  " + tmp.getAlgorithm());
 
                 if (data.getBooleanExtra("2step", false)) {
                     tmp = utils.start2StepInit(tmp, data.getIntExtra("pp", 10));

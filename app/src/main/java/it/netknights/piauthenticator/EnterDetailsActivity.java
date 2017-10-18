@@ -1,10 +1,9 @@
 package it.netknights.piauthenticator;
 
-import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.drawable.ColorDrawable;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -51,13 +50,20 @@ public class EnterDetailsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.add_token);
+        setContentView(R.layout.activity_enter_detail);
         setupSpinners();
         setupButtons();
         paintStatusbar();
     }
 
     public void paintStatusbar() {
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar3);
+        setSupportActionBar(toolbar);
+        toolbar.setBackgroundColor(getResources().getColor(PIBLUE));
+        toolbar.setTitleTextColor(Color.WHITE);
+        getSupportActionBar().setLogo(R.mipmap.ic_launcher);
+        getSupportActionBar().setDisplayUseLogoEnabled(true);
+        setTitle(" Enter Details:");
         //------------------ try to paint the statusbar -------------------------------
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Window window = getWindow();
@@ -65,16 +71,6 @@ public class EnterDetailsActivity extends AppCompatActivity {
             window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
             window.setStatusBarColor(getResources().getColor(PIBLUE));
         }
-        setTitleColor(getResources().getColor(PIBLUE));
-        ActionBar bar = getActionBar();
-        if (bar != null) {
-            bar.setBackgroundDrawable(new ColorDrawable(getResources().getColor(PIBLUE)));
-        }
-       /* Toolbar toolbar =
-        setSupportActionBar(toolbar);*/
-       // toolbar.setBackgroundColor(getResources().getColor(PIBLUE));
-        getSupportActionBar().setLogo(R.mipmap.ic_launcher);
-        getSupportActionBar().setDisplayUseLogoEnabled(true);
 
     }
 
@@ -93,7 +89,6 @@ public class EnterDetailsActivity extends AppCompatActivity {
         String[] algorithms = {"SHA1", "SHA256", "SHA512"};
         String[] digits = {"6", "8"};
         String[] phonepart = {"10"};
-
 
         ArrayAdapter<String> adapter_type = new ArrayAdapter<>(this, supportspinnerid, types);
         spinner_type.setAdapter(adapter_type);

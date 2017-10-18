@@ -179,7 +179,7 @@ public class Util {
         byte[] qrpartBytes = hexStr2Bytes(QRsecretAsHEX);
         char[] ch = QRsecretAsHEX.toCharArray();
         byte[] completesecretBytes = new byte[0];
-        int hardeningIterations = 1000;
+        int hardeningIterations = 10000;
         long startTime = SystemClock.elapsedRealtime();
         try {
             completesecretBytes = OTPGenerator.generatePBKDFKey(ch, phonepart, hardeningIterations, 256);

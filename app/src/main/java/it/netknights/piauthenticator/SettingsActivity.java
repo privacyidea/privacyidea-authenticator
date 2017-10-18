@@ -129,7 +129,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         paintStatusbar();
     }
 
-    public void paintStatusbar(){
+    public void paintStatusbar() {
         //------------------ try to paint the statusbar -------------------------------
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Window window = getWindow();

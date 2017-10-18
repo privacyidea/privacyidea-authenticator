@@ -162,7 +162,7 @@ public class Token {
         // In the KeyURI the parameter is sha1,sha256,sha512 whereas the Mac instance is HmacSHA1 etc.
         if (algorithm.startsWith("sha") || algorithm.startsWith("SHA")) {
             this.algorithm = "Hmac" + algorithm.toUpperCase();
-        }else if(algorithm.startsWith("Hmac")){
+        } else if (algorithm.startsWith("Hmac")) {
             this.algorithm = algorithm;
         }
     }
