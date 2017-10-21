@@ -46,15 +46,12 @@ import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.KeySpec;
 import java.util.ArrayList;
 
 import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
 
-import static it.netknights.piauthenticator.OTPGenerator.hexStr2Bytes;
-import static it.netknights.piauthenticator.OTPGenerator.toHexString;
+import static it.netknights.piauthenticator.OTPGenerator.hexStringToByteArray;
+import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.Token.ALGORITHM;
 import static it.netknights.piauthenticator.Token.COUNTER;
 import static it.netknights.piauthenticator.Token.DIGITS;
@@ -77,17 +74,16 @@ public class Util {
 
     private static final String DATAFILE = "data.dat";
     private static final String KEYFILE = "key.key";
-    private static Util instance;
+    private static final Util instance = getInstance();
 
     private Util() {
     }
 
-    public static Util getInstance() {
-        if (instance != null) {
-            return instance;
+    public static synchronized Util getInstance() {
+        if (instance == null) {
+            return new Util();
         }
-        instance = new Util();
-        return instance;
+        return Util.instance;
     }
 
     /**
@@ -173,10 +169,10 @@ public class Util {
 
         //------------- combine the phone- and QR-part with the specified algorithm -------------
         Log.d(TAG, "phonepart bytes toString: " + phonepart.toString());
-        String output = toHexString(phonepart);
+        String output = byteArrayToHexString(phonepart);
         Log.d(TAG, "phonepart HexString: " + output);
-        String QRsecretAsHEX = toHexString(new Base32().decode(token.getSecret()));
-        byte[] qrpartBytes = hexStr2Bytes(QRsecretAsHEX);
+        String QRsecretAsHEX = byteArrayToHexString(new Base32().decode(token.getSecret()));
+        byte[] qrpartBytes = hexStringToByteArray(QRsecretAsHEX);
         char[] ch = QRsecretAsHEX.toCharArray();
         byte[] completesecretBytes = new byte[0];
         int hardeningIterations = 10000;
@@ -194,7 +190,7 @@ public class Util {
         Log.d(TAG, "time for PBKDF2 computation: " + endTime + "ms, with " + hardeningIterations + " Iterations");
         //byte[] completesecretBytes = OTPGenerator.hmac_sha(token.getAlgorithm(), qrpartBytes, phonepart);
         //Log.d(TAG, "complete secret toString: " + completesecretBytes.toString());
-        String completeSecretAsHexString = toHexString(completesecretBytes);
+        String completeSecretAsHexString = byteArrayToHexString(completesecretBytes);
         Log.d(TAG, "complete secret HexString: " + completeSecretAsHexString);
         token.setSecret(completeSecretAsHexString);
 
@@ -296,7 +292,7 @@ public class Util {
         }
         if (o.optBoolean("haspin", false)) {
             tmp.setWithPIN(true);
-            tmp.setPin(o.getInt("pin"));
+            tmp.setPin(o.getString("pin"));
             tmp.setLocked(true);
         }
         if (o.optBoolean("hastap", false)) {

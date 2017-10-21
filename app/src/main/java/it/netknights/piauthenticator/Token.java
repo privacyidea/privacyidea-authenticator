@@ -49,7 +49,7 @@ public class Token {
     private ProgressBar pb;
     private boolean withPIN = false;
     private boolean isLocked = false;
-    private int Pin = 0;
+    private String Pin = "";
     private boolean withTapToShow = false;
     private boolean tapped = false;
 
@@ -79,11 +79,12 @@ public class Token {
         this.withTapToShow = withTapToShow;
     }
 
-    public int getPin() {
+    public String getPin() {
         return Pin;
     }
 
-    public void setPin(int pin) {
+    public void setPin(String pin) {
+        //Log.d("PIAuth", "hashed pin is: "+pin);
         Pin = pin;
     }
 

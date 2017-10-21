@@ -44,6 +44,7 @@ import java.util.List;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static it.netknights.piauthenticator.OTPGenerator.hashPIN;
 import static it.netknights.piauthenticator.Token.HOTP;
 import static it.netknights.piauthenticator.Token.TOTP;
 
@@ -121,7 +122,7 @@ public class TokenListAdapter extends BaseAdapter {
         }
 
         //TODO maybe add some lock icon next to locked PINs
-        if (token.isWithPIN() && token.getPin() == 0) {
+        if (token.isWithPIN() && token.getPin().equals("")) {
             //----------------------- Pin not set yet ----------------------
 
             nextbtn.setVisibility(GONE);
@@ -131,14 +132,16 @@ public class TokenListAdapter extends BaseAdapter {
                 @Override
                 public void onClick(View v) {
                     AlertDialog.Builder alert = new AlertDialog.Builder(v.getContext());
-                    alert.setTitle("Set PIN");
+                    alert.setTitle("Set new PIN");
                     final EditText input = new EditText(v.getContext());
                     input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
                     alert.setView(input);
                     alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            token.setPin(Integer.parseInt(input.getEditableText().toString()));
+                            int temp_pin = Integer.parseInt(input.getEditableText().toString());
+                            String hashedPIN = hashPIN(temp_pin, token);
+                            token.setPin(hashedPIN);
                             notifyDataSetChanged();
                             ArrayList<Token> temp = new ArrayList<Token>(tokens);
                             Util.saveTokens(mView.getContext(), temp);
@@ -169,7 +172,9 @@ public class TokenListAdapter extends BaseAdapter {
                     alert.setPositiveButton("Enter", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            if (Integer.parseInt(input.getEditableText().toString()) == token.getPin()) {
+                            int temp_input = Integer.parseInt(input.getEditableText().toString());
+                            String hashedPIN = hashPIN(temp_input, token);
+                            if (hashedPIN.equals(token.getPin())) {
                                 token.setLocked(false);
                                 token.setTapped(true);
                             } else {

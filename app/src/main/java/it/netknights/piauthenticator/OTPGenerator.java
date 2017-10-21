@@ -55,7 +55,7 @@ public class OTPGenerator {
      * @return the current OTP value for the input token
      */
     public static String generate(Token token) {
-        String secretAsHEX = toHexString(new Base32().decode(token.getSecret()));
+        String secretAsHEX = byteArrayToHexString(new Base32().decode(token.getSecret()));
         String digits = String.valueOf(token.getDigits());
 
         if (token.getType().equals(TOTP)) {
@@ -92,6 +92,20 @@ public class OTPGenerator {
     }
 
     /**
+     * Calculate the hash of a PIN combined with the token the PIN is for
+     *
+     * @param pin   the PIN input
+     * @param token the token, whose secret is used to hash the pin
+     * @return the hash as hex encoded String
+     */
+    public static String hashPIN(int pin, Token token) {
+        byte[] secretBytes = new Base32().decode(token.getSecret());
+        byte[] pinToHash = hexStringToByteArray(Integer.toHexString(pin));
+        byte[] temp = hmac_sha("HmacSHA512", secretBytes, pinToHash);
+        return byteArrayToHexString(temp);
+    }
+
+    /**
      * This method generates a OTP value for the given
      * set of parameters.
      *
@@ -115,8 +129,8 @@ public class OTPGenerator {
             counter = "0" + counter;
 
         // Get the HEX in a Byte[]
-        byte[] msg = hexStr2Bytes(counter);
-        byte[] k = hexStr2Bytes(key);
+        byte[] msg = hexStringToByteArray(counter);
+        byte[] k = hexStringToByteArray(key);
         byte[] hash = hmac_sha(crypto, k, msg);
 
         // put selected bytes into result int
@@ -164,12 +178,12 @@ public class OTPGenerator {
     }
 
     /**
-     * This Method converts a byte array to a HEX String
+     * This method converts a byte array to a Hex String
      *
      * @param ba byte array to convert
-     * @return the HEX String
+     * @return the Hex as String
      */
-    public static String toHexString(byte[] ba) {
+    public static String byteArrayToHexString(byte[] ba) {
         StringBuilder str = new StringBuilder();
         for (int i = 0; i < ba.length; i++)
             str.append(String.format("%02x", ba[i]));
@@ -177,12 +191,12 @@ public class OTPGenerator {
     }
 
     /**
-     * This method converts a HEX string to Byte[]
+     * This method converts a Hex string to a byte array
      *
-     * @param hex: the HEX string
+     * @param hex: the Hex string to convert
      * @return: a byte array
      */
-    public static byte[] hexStr2Bytes(String hex) {
+    public static byte[] hexStringToByteArray(String hex) {
         // Adding one byte to get the right conversion
         // Values starting with "0" can be converted
         byte[] bArray = new BigInteger("10" + hex, 16).toByteArray();

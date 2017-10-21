@@ -29,6 +29,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import it.netknights.piauthenticator.BCrypt;
 import it.netknights.piauthenticator.EncryptionHelper;
 import it.netknights.piauthenticator.OTPGenerator;
 import it.netknights.piauthenticator.Token;
@@ -36,8 +37,8 @@ import it.netknights.piauthenticator.Util;
 
 import static it.netknights.piauthenticator.OTPGenerator.generateHOTP;
 import static it.netknights.piauthenticator.OTPGenerator.generatePBKDFKey;
-import static it.netknights.piauthenticator.OTPGenerator.toHexString;
-import static it.netknights.piauthenticator.Util.insertPeriodically;
+import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
+import static it.netknights.piauthenticator.OTPGenerator.hexStringToByteArray;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
@@ -58,9 +59,11 @@ public class InstrumentedTest {
         assertTrue(new File(context.getFilesDir() + "/data.dat").delete());
         assertTrue(new File(context.getFilesDir() + "/key.key").delete());
 
-        Token hotp = Util.makeTokenFromURI("otpauth://hotp" +
+        Util utils = Util.getInstance();
+
+        Token hotp = utils.makeTokenFromURI("otpauth://hotp" +
                 "/OATH00014BE1?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=privacyIDEA");
-        Token totp = Util.makeTokenFromURI("otpauth://totp" +
+        Token totp = utils.makeTokenFromURI("otpauth://totp" +
                 "/TOTP00114F8F?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=60&digits=6&issuer=privacyIDEA&algorithm=SHA256");
 
         assertEquals("privacyIDEA: OATH00014BE1", hotp.getLabel());
@@ -108,14 +111,14 @@ public class InstrumentedTest {
 
         //test the exceptions
         try {
-            Token fail1 = Util.makeTokenFromURI("ftp://hotp" +
+            Token fail1 = utils.makeTokenFromURI("ftp://hotp" +
                     "/OATH00014BE1?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=privacyIDEA");
             fail("this should throw: invalid protocol");
         } catch (Exception e) {
             assertEquals("Invalid Protocol", e.getMessage());
         }
         try {
-            Token fail2 = Util.makeTokenFromURI("otpauth://ptoh" +
+            Token fail2 = utils.makeTokenFromURI("otpauth://ptoh" +
                     "/OATH00014BE1?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=privacyIDEA");
             fail("this should throw: no totp/hotp");
         } catch (Exception e) {
@@ -223,18 +226,61 @@ public class InstrumentedTest {
         // char[] pw , byte[] salt, int iterations, int length in bit
 
         char[] p = "password".toCharArray();
-        byte[] s = "salt".getBytes(StandardCharsets.US_ASCII);
-        assertEquals("0c60c80f961f0e71f3a9b524af6012062fe037a6", toHexString(generatePBKDFKey(p, s, 1, 160)));
-        assertEquals("ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957", toHexString(generatePBKDFKey(p, s, 2, 160)));
-        assertEquals("4b007901b765489abead49d926f721d065a429c1", toHexString(generatePBKDFKey(p, s, 4096, 160)));
-        //assertEquals("eefe3d61cd4da4e4e9945b3d6ba2158c2634e984", toHexString(generatePBKDFKey(p, s, 16777216, 160)));
+        byte[] s = new byte[0];
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            s = "salt".getBytes(StandardCharsets.US_ASCII);
+        }
+        assertEquals("0c60c80f961f0e71f3a9b524af6012062fe037a6", byteArrayToHexString(generatePBKDFKey(p, s, 1, 160)));
+        assertEquals("ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957", byteArrayToHexString(generatePBKDFKey(p, s, 2, 160)));
+        assertEquals("4b007901b765489abead49d926f721d065a429c1", byteArrayToHexString(generatePBKDFKey(p, s, 4096, 160)));
+        //assertEquals("eefe3d61cd4da4e4e9945b3d6ba2158c2634e984", byteArrayToHexString(generatePBKDFKey(p, s, 16777216, 160)));
 
         p = "passwordPASSWORDpassword".toCharArray();
-        s = "saltSALTsaltSALTsaltSALTsaltSALTsalt".getBytes(StandardCharsets.US_ASCII);
-        assertEquals("3d2eec4fe41c849b80c8d83662c0e44a8b291a964cf2f07038", toHexString(generatePBKDFKey(p, s, 4096, 200)));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            s = "saltSALTsaltSALTsaltSALTsaltSALTsalt".getBytes(StandardCharsets.US_ASCII);
+        }
+        assertEquals("3d2eec4fe41c849b80c8d83662c0e44a8b291a964cf2f07038", byteArrayToHexString(generatePBKDFKey(p, s, 4096, 200)));
 
         p = "pass\0word".toCharArray();
-        s = "sa\0lt".getBytes(StandardCharsets.US_ASCII);
-        assertEquals("56fa6aa75548099dcc37d7f03425e0c3", toHexString(generatePBKDFKey(p, s, 4096, 128)));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            s = "sa\0lt".getBytes(StandardCharsets.US_ASCII);
+        }
+        assertEquals("56fa6aa75548099dcc37d7f03425e0c3", byteArrayToHexString(generatePBKDFKey(p, s, 4096, 128)));
     }
+
+    @Test
+    public void testBCrypt() {
+        Object[][] testVectors = {
+                {"", "144b3d691a7b4ecf39cf735c7fa7a79c", Integer.valueOf(6), "557e94f34bf286e8719a26be94ac1e16d95ef9f819dee092"},
+                {"00", "144b3d691a7b4ecf39cf735c7fa7a79c", Integer.valueOf(6), "557e94f34bf286e8719a26be94ac1e16d95ef9f819dee092"},
+                {"00", "26c63033c04f8bcba2fe24b574db6274", Integer.valueOf(8), "56701b26164d8f1bc15225f46234ac8ac79bf5bc16bf48ba"},
+                {"00", "9b7c9d2ada0fd07091c915d1517701d6", Integer.valueOf(10), "7b2e03106a43c9753821db688b5cc7590b18fdf9ba544632"},
+                {"6100", "a3612d8c9a37dac2f99d94da03bd4521", Integer.valueOf(6), "e6d53831f82060dc08a2e8489ce850ce48fbf976978738f3"},
+                {"6100", "7a17b15dfe1c4be10ec6a3ab47818386", Integer.valueOf(8), "a9f3469a61cbff0a0f1a1445dfe023587f38b2c9c40570e1"},
+                {"6100", "9bef4d04e1f8f92f3de57323f8179190", Integer.valueOf(10), "5169fd39606d630524285147734b4c981def0ee512c3ace1"},
+                {"61626300", "2a1f1dc70a3d147956a46febe3016017", Integer.valueOf(6), "d9a275b493bcbe1024b0ff80d330253cfdca34687d8f69e5"},
+                {"61626300", "4ead845a142c9bc79918c8797f470ef5", Integer.valueOf(8), "8d4131a723bfbbac8a67f2e035cae08cc33b69f37331ea91"},
+                {"61626300", "631c554493327c32f9c26d9be7d18e4c", Integer.valueOf(10), "8cd0b863c3ff0860e31a2b42427974e0283b3af7142969a6"},
+                {"6162636465666768696a6b6c6d6e6f707172737475767778797a00", "02d1176d74158ee29cffdac6150cf123", Integer.valueOf(6), "4d38b523ce9dc6f2f6ff9fb3c2cd71dfe7f96eb4a3baf19f"},
+                {"6162636465666768696a6b6c6d6e6f707172737475767778797a00", "715b96caed2ac92c354ed16c1e19e38a", Integer.valueOf(8), "98bf9ffc1f5be485f959e8b1d526392fbd4ed2d5719f506b"},
+                {"6162636465666768696a6b6c6d6e6f707172737475767778797a00", "85727e838f9049397fbec90566ede0df", Integer.valueOf(10), "cebba53f67bd28af5a44c6707383c231ac4ef244a6f5fb2b"},
+                {"7e21402324255e262a28292020202020207e21402324255e262a2829504e4246524400", "8512ae0d0fac4ec9a5978f79b6171028", Integer.valueOf(6), "26f517fe5345ad575ba7dfb8144f01bfdb15f3d47c1e146a"},
+                {"7e21402324255e262a28292020202020207e21402324255e262a2829504e4246524400", "1ace2de8807df18c79fced54678f388f", Integer.valueOf(8), "d51d7cdf839b91a25758b80141e42c9f896ae80fd6cd561f"},
+                {"7e21402324255e262a28292020202020207e21402324255e262a2829504e4246524400", "36285a6267751b14ba2dc989f6d43126", Integer.valueOf(10), "db4fab24c1ff41c1e2c966f8b3d6381c76e86f52da9e15a9"},
+                {"c2a300", "144b3d691a7b4ecf39cf735c7fa7a79c", Integer.valueOf(6), "5a6c4fedb23980a7da9217e0442565ac6145b687c7313339"},
+        };
+
+        for (int i = 0; i < testVectors.length; i++) {
+            byte[] password = hexStringToByteArray((String) testVectors[i][0]);
+            byte[] salt = hexStringToByteArray((String) testVectors[i][1]);
+            int rounds = ((Integer) testVectors[i][2]).intValue();
+            String expected = (String) testVectors[i][3];
+
+            String hash = BCrypt.hashpw(byteArrayToHexString(password), byteArrayToHexString(salt), rounds);
+            if (!hash.equals(expected)) {
+                fail("Hash for pw: " + byteArrayToHexString(password) + ",exp: " + expected + ",act: " + hash);
+            }
+        }
+    }
+
 }

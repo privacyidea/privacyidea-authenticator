@@ -44,6 +44,7 @@ import android.view.WindowManager;
 import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -51,6 +52,8 @@ import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+
+import org.apache.commons.codec.binary.Base32;
 
 import java.util.ArrayList;
 
@@ -75,9 +78,47 @@ public class MainActivity extends AppCompatActivity {
         utils = Util.getInstance();
         utils.setmActivity(this);
         setupViews();
+        setupFab();
         paintStatusbar();
         setupAdapter();
         startTimerThread();
+    }
+
+    private void setupFab() {
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setBackgroundColor(getResources().getColor(PIBLUE));
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                LayoutInflater factory = LayoutInflater.from(MainActivity.this);
+                final View view = factory.inflate(R.layout.chose_to_add, null);
+                builder.setView(view);
+                ImageView scan_qr_image = (ImageView) view.findViewById(R.id.icon_scan_qr);
+                scan_qr_image.setImageResource(R.mipmap.icon_scan_qr);
+                ImageView enter_detail_image = (ImageView) view.findViewById(R.id.icon_enter_details);
+
+                if (scan_qr_image != null) {
+                    scan_qr_image.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            scanQR();
+                        }
+                    });
+                }
+
+                if (enter_detail_image != null) {
+                    enter_detail_image.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Intent settingsIntent = EnterDetailsActivity.makeIntent(MainActivity.this);
+                            startActivityForResult(settingsIntent, INTENT_ADD_TOKEN_MANUALLY);
+                        }
+                    });
+                }
+                builder.show();
+            }
+        });
     }
 
     private void startTimerThread() {
@@ -128,30 +169,6 @@ public class MainActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayUseLogoEnabled(true);
 
         countdown = (TextView) findViewById(R.id.countdownfield);
-
-        fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setBackgroundColor(getResources().getColor(PIBLUE));
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                CharSequence options[] = new CharSequence[]{"Scan QR Code", "Enter Details"};
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                builder.setCancelable(false);
-                builder.setItems(options, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        if (which == 0) {
-                            scanQR();
-                        }
-                        if (which == 1) { //Enter Details Activity
-                            Intent settingsIntent = EnterDetailsActivity.makeIntent(MainActivity.this);
-                            startActivityForResult(settingsIntent, INTENT_ADD_TOKEN_MANUALLY);
-                        }
-                    }
-                });
-                builder.show();
-            }
-        });
     }
 
     @Override
@@ -233,7 +250,8 @@ public class MainActivity extends AppCompatActivity {
                             int firstpin = Integer.parseInt(firstinput.getEditableText().toString());
                             int secondpin = Integer.parseInt(secondinput.getEditableText().toString());
                             if (firstpin == secondpin) {
-                                token.setPin(firstpin);
+                                String hashedPIN = OTPGenerator.hashPIN(firstpin, token);
+                                token.setPin(hashedPIN);
                                 tokenlistadapter.notifyDataSetChanged();
                                 save(tokenlist);
                             } else {

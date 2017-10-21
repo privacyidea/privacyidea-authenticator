@@ -54,6 +54,7 @@ public class MainActivityTest2 {
 
     @Test
     public void mainActivityTest2() throws Exception {
+        Util utils = Util.getInstance();
         // sleep() = Thread.sleep(1000)
         //----------- remove all existing tokens and insert dummytokens ----------------------------
         openActionBarOverflowOrOptionsMenu(getInstrumentation().getTargetContext());
@@ -86,7 +87,7 @@ public class MainActivityTest2 {
                 inAdapterView(withId(R.id.listview)).
                 atPosition(0).
                 onChildView(withId(R.id.textViewToken))
-                .check(matches(ViewMatchers.withText(OTPGenerator.generate(Util.makeTokenFromURI("otpauth://hotp" +
+                .check(matches(ViewMatchers.withText(OTPGenerator.generate(utils.makeTokenFromURI("otpauth://hotp" +
                         "/OATH00014BE1?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=privacyIDEA")))));
 
         onData(anything()).
@@ -99,7 +100,7 @@ public class MainActivityTest2 {
                 inAdapterView(withId(R.id.listview)).
                 atPosition(1).
                 onChildView(withId(R.id.textViewToken))
-                .check(matches(withText(OTPGenerator.generate(Util.makeTokenFromURI("otpauth://totp" +
+                .check(matches(withText(OTPGenerator.generate(utils.makeTokenFromURI("otpauth://totp" +
                         "/TOTP00114F8F?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=60&digits=6&issuer=privacyIDEA60")))));
 
         onData(anything()).
@@ -112,7 +113,7 @@ public class MainActivityTest2 {
                 inAdapterView(withId(R.id.listview)).
                 atPosition(2).
                 onChildView(withId(R.id.textViewToken))
-                .check(matches(withText(OTPGenerator.generate(Util.makeTokenFromURI("otpauth://totp" +
+                .check(matches(withText(OTPGenerator.generate(utils.makeTokenFromURI("otpauth://totp" +
                         "/TOTP00114F8F?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=30&digits=6&issuer=privacyIDEA30")))));
 
         //------------------- check the next hotp value by clicking on the next-btn ----------------
@@ -121,7 +122,7 @@ public class MainActivityTest2 {
         sleep();
 
         onData(anything()).inAdapterView(withId(R.id.listview)).atPosition(0).onChildView(withId(R.id.textViewToken))
-                .check(matches(withText(OTPGenerator.generate(Util.makeTokenFromURI("otpauth://hotp" +
+                .check(matches(withText(OTPGenerator.generate(utils.makeTokenFromURI("otpauth://hotp" +
                         "/OATH00014BE1?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=2&digits=6&issuer=privacyIDEA")))));
 
         sleep();

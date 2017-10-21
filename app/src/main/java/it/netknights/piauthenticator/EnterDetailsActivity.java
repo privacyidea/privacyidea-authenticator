@@ -4,9 +4,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
@@ -22,6 +24,7 @@ import android.widget.TextView;
 
 import org.apache.commons.codec.binary.Base32;
 
+import static android.view.View.GONE;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 
 public class EnterDetailsActivity extends AppCompatActivity {
@@ -54,16 +57,22 @@ public class EnterDetailsActivity extends AppCompatActivity {
         setupSpinners();
         setupButtons();
         paintStatusbar();
+        setupActionBar();
+    }
+
+    private void setupActionBar() {
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            // Show the Up button in the action bar.
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setBackgroundDrawable(new ColorDrawable(getResources().getColor(PIBLUE)));
+        }
     }
 
     public void paintStatusbar() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar3);
-        setSupportActionBar(toolbar);
-        toolbar.setBackgroundColor(getResources().getColor(PIBLUE));
-        toolbar.setTitleTextColor(Color.WHITE);
-        getSupportActionBar().setLogo(R.mipmap.ic_launcher);
-        getSupportActionBar().setDisplayUseLogoEnabled(true);
-        setTitle(" Enter Details:");
+        toolbar.setVisibility(GONE);
+        setTitle(" Enter Details");
         //------------------ try to paint the statusbar -------------------------------
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Window window = getWindow();
@@ -105,8 +114,8 @@ public class EnterDetailsActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (position == 1) {
-                    periodLabel.setVisibility(View.GONE);
-                    spinner_period.setVisibility(View.GONE);
+                    periodLabel.setVisibility(GONE);
+                    spinner_period.setVisibility(GONE);
                 } else {
                     periodLabel.setVisibility(View.VISIBLE);
                     spinner_period.setVisibility(View.VISIBLE);
