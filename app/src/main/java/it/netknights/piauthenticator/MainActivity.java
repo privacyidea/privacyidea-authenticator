@@ -30,6 +30,7 @@ import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.view.ActionMode;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
 import android.util.Log;
@@ -53,19 +54,19 @@ import android.widget.Toast;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
-import org.apache.commons.codec.binary.Base32;
 
 import java.util.ArrayList;
 
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ActionMode.Callback {
     private TokenListAdapter tokenlistadapter;
     private ArrayList<Token> tokenlist;
     private Handler handler;
     private Runnable timer;
     private Util utils;
+    private Token nextSelection = null;
     private static final int INTENT_ADD_TOKEN_MANUALLY = 101;
     private TextView countdown;
     private ListView listview;
@@ -94,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
                 LayoutInflater factory = LayoutInflater.from(MainActivity.this);
                 final View view = factory.inflate(R.layout.chose_to_add, null);
                 builder.setView(view);
+                final AlertDialog ad = builder.create();
                 ImageView scan_qr_image = (ImageView) view.findViewById(R.id.icon_scan_qr);
                 scan_qr_image.setImageResource(R.mipmap.icon_scan_qr);
                 ImageView enter_detail_image = (ImageView) view.findViewById(R.id.icon_enter_details);
@@ -103,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void onClick(View v) {
                             scanQR();
+                            ad.dismiss();
                         }
                     });
                 }
@@ -113,10 +116,11 @@ public class MainActivity extends AppCompatActivity {
                         public void onClick(View v) {
                             Intent settingsIntent = EnterDetailsActivity.makeIntent(MainActivity.this);
                             startActivityForResult(settingsIntent, INTENT_ADD_TOKEN_MANUALLY);
+                            ad.dismiss();
                         }
                     });
                 }
-                builder.show();
+                ad.show();
             }
         });
     }
@@ -160,8 +164,16 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         listview = (ListView) findViewById(R.id.listview);
-        registerForContextMenu(listview);
+        //registerForContextMenu(listview);
+        listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
+                nextSelection = tokenlist.get(i);
+                startSupportActionMode(MainActivity.this);
 
+                return true;
+            }
+        });
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setBackgroundColor(getResources().getColor(PIBLUE));
@@ -170,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
 
         countdown = (TextView) findViewById(R.id.countdownfield);
     }
-
+    /*
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v,
                                     ContextMenu.ContextMenuInfo menuInfo) {
@@ -274,6 +286,7 @@ public class MainActivity extends AppCompatActivity {
                 return super.onContextItemSelected(item);
         }
     }
+    **/
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -295,12 +308,6 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         if (id == R.id.action_about) {
-            try {
-                tokenlist.add(utils.makeTokenFromURI("otpauth://totp/TOTP002125CE?secret=YXJMGHZADQ3NHW3EQBOTQ4DRUSDFYXEY&algorithm=sha256&period=30&digits=6&issuer=privacyIDEA&2step=true"));
-                tokenlistadapter.notifyDataSetChanged();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
             WebView view = (WebView) LayoutInflater.from(this).inflate(R.layout.dialog_about, null);
             view.loadUrl("file:///android_res/raw/about.html");
             new AlertDialog.Builder(this).setView(view).show();
@@ -336,32 +343,11 @@ public class MainActivity extends AppCompatActivity {
             }
         } else if (requestCode == INTENT_ADD_TOKEN_MANUALLY) {
             if (resultCode == Activity.RESULT_OK) {
-                String type = data.getStringExtra("type");
-                String secret = data.getStringExtra("secret");
-                String label = data.getStringExtra("label");
-                int digits = data.getIntExtra("digits", 6);
-                Token tmp = new Token(secret, label, type, digits);
-                if (type.equals("totp")) {
-                    int period = data.getIntExtra("period", 30);
-                    tmp.setPeriod(period);
-                }
-                String algorithm = data.getStringExtra("algorithm");
-                if (algorithm != null) {
-                    tmp.setAlgorithm(algorithm);
-                }
-                if (data.getBooleanExtra("haspin", false)) {
-                    tmp.setWithPIN(true);
-                }
-                Log.d("piauth:", type + label + secret + digits + "  " + tmp.getAlgorithm());
-
-                if (data.getBooleanExtra("2step", false)) {
-                    tmp = utils.start2StepInit(tmp, data.getIntExtra("pp", 10));
-                }
-                tokenlist.add(tmp);
+                Token token = utils.makeTokenFromIntent(data);
+                tokenlist.add(token);
                 tokenlistadapter.refreshOTPs();
-                Toast.makeText(this, "Token added for: " + label, Toast.LENGTH_LONG).show();
                 save(tokenlist);
-
+                Toast.makeText(this, "Token added for: " + token.getLabel(), Toast.LENGTH_LONG).show();
             } else {
                 Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
             }
@@ -395,4 +381,145 @@ public class MainActivity extends AppCompatActivity {
     public void save(ArrayList<Token> tokenlist) {
         Util.saveTokens(this, tokenlist);
     }
+
+    @Override
+    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+        MenuInflater inflater = mode.getMenuInflater();
+
+        if (nextSelection.isWithPIN()) {
+            inflater.inflate(R.menu.actionmode_menu, menu);
+        } else {
+            inflater.inflate(R.menu.actionmode_menu_nopin, menu);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+        tokenlistadapter.setCurrentSelection(nextSelection);
+        tokenlistadapter.notifyDataSetChanged();
+        mode.setTitle("Choose an action");
+
+        return true;
+    }
+
+    @Override
+    public boolean onActionItemClicked(final ActionMode mode, MenuItem item) {
+        final Token currToken = tokenlistadapter.getCurrentSelection();
+        final int id = item.getItemId();
+
+        if (id == R.id.delete_token2) {
+            AlertDialog.Builder alert = new AlertDialog.Builder(this);
+            alert.setTitle("CONFIRM DELETION");
+            alert.setMessage("Do you really want to remove\n" + currToken.getLabel() + " ?");
+            alert.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    tokenlist.remove(currToken);
+                    tokenlistadapter.notifyDataSetChanged();
+                    save(tokenlist);
+                    Toast.makeText(MainActivity.this, "Token removed", Toast.LENGTH_LONG).show();
+                    mode.finish();
+                }
+            });
+            alert.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    Toast.makeText(MainActivity.this, "Deletion cancelled", Toast.LENGTH_LONG).show();
+                    dialog.cancel();
+                    mode.finish();
+                }
+            });
+            alert.show();
+            return true;
+        }
+
+        if (id == R.id.edit_token2) {
+            AlertDialog.Builder alert = new AlertDialog.Builder(this);
+            alert.setTitle("Edit Name");
+            final EditText input = new EditText(this);
+            input.setText(currToken.getLabel());
+            input.setSelectAllOnFocus(true);
+            alert.setView(input);
+
+            alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    currToken.setLabel(input.getEditableText().toString());
+                    tokenlistadapter.notifyDataSetChanged();
+                    save(tokenlist);
+                    Toast.makeText(MainActivity.this, "Name was changed", Toast.LENGTH_LONG).show();
+                    mode.finish();
+                }
+            });
+
+            alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    dialog.cancel();
+                    Toast.makeText(MainActivity.this, "Editing cancelled", Toast.LENGTH_LONG).show();
+                    mode.finish();
+                }
+            });
+            alert.show();
+            return true;
+        }
+
+        if (id == R.id.change_pin2) {
+            if (currToken.isWithPIN() && !currToken.isLocked()) {
+                LinearLayout layout = new LinearLayout(this);
+                layout.setOrientation(LinearLayout.VERTICAL);
+
+                final EditText firstinput = new EditText(this);
+                firstinput.setHint("new PIN");
+                firstinput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+                layout.addView(firstinput);
+
+                final EditText secondinput = new EditText(this);
+                secondinput.setHint("Repeat new PIN");
+                secondinput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+                layout.addView(secondinput);
+
+                AlertDialog.Builder alert = new AlertDialog.Builder(this);
+                alert.setTitle("Change PIN");
+                alert.setView(layout);
+
+                alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        int firstpin = Integer.parseInt(firstinput.getEditableText().toString());
+                        int secondpin = Integer.parseInt(secondinput.getEditableText().toString());
+                        if (firstpin == secondpin) {
+                            String hashedPIN = OTPGenerator.hashPIN(firstpin, currToken);
+                            currToken.setPin(hashedPIN);
+                            tokenlistadapter.notifyDataSetChanged();
+                            save(tokenlist);
+                            Toast.makeText(MainActivity.this, "PIN was changed", Toast.LENGTH_LONG).show();
+                        } else {
+                            Toast.makeText(MainActivity.this, "PINs do not match - Cancelled", Toast.LENGTH_LONG).show();
+                        }
+                        mode.finish();
+                    }
+                });
+
+                alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        dialog.cancel();
+                        Toast.makeText(MainActivity.this, "Changing PIN cancelled", Toast.LENGTH_LONG).show();
+                        mode.finish();
+                    }
+                });
+                alert.show();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void onDestroyActionMode(ActionMode mode) {
+        tokenlistadapter.setCurrentSelection(null);
+        tokenlistadapter.notifyDataSetChanged();
+        save(tokenlist);
+    }
+
+
 }
+

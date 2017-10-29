@@ -4,18 +4,13 @@
 
 
     <item
-        android:id="@+id/change_pin2"
-        android:icon="@drawable/ic_change_pin"
-        android:title="@string/change_pin"
-        app:showAsAction="ifRoom" />
-    <item
         android:id="@+id/edit_token2"
         android:icon="@android:drawable/ic_menu_edit"
-        android:title="@string/rename"
+        android:title="Rename"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/delete_token2"
         android:icon="@android:drawable/ic_menu_delete"
-        android:title="@string/item"
+        android:title="Item"
         app:showAsAction="always" />
 </menu>

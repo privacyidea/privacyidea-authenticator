@@ -13,10 +13,6 @@
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
 
-            <item android:name="preferenceTheme">
-                @style/PreferenceThemeOverlay
-            </item>
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

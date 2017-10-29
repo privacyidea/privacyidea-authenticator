@@ -23,15 +23,15 @@ package it.netknights.piauthenticator;
 
 import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
+import android.content.ClipData;
 import android.content.DialogInterface;
-import android.graphics.Color;
 import android.text.InputType;
+import android.view.DragEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
-import android.view.inputmethod.EditorInfo;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -52,6 +52,7 @@ import static it.netknights.piauthenticator.Token.TOTP;
 public class TokenListAdapter extends BaseAdapter {
 
     private List<Token> tokens;
+    private Token currentSelection;
 
     //update is called from the timer-thread within the MainActivity
     public void updatePBs(int progress) {
@@ -99,7 +100,7 @@ public class TokenListAdapter extends BaseAdapter {
     public View getView(final int position, View v, ViewGroup parent) {
         if (v == null) {
             final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-            v = inflater.inflate(R.layout.entry2, parent, false);
+            v = inflater.inflate(R.layout.entry, parent, false);
         }
         v.setTag(position);
         final View mView = v;
@@ -251,9 +252,7 @@ public class TokenListAdapter extends BaseAdapter {
         }
 
 
-        //------------- switch list entries with drag -----------
-        // TODO: not working!!!
-        /*v.setOnDragListener(new View.OnDragListener() {
+        v.setOnDragListener(new View.OnDragListener() {
             @Override
             public boolean onDrag(View v, DragEvent event) {
                 int action = event.getAction();
@@ -283,9 +282,9 @@ public class TokenListAdapter extends BaseAdapter {
                 }
                 return true;
             }
-        });*/
+        });
 
-        /*v.setOnTouchListener(new View.OnTouchListener() {
+        v.setOnTouchListener(new View.OnTouchListener() {
 
             @Override
             public boolean onTouch(View v, MotionEvent arg1) {
@@ -300,7 +299,7 @@ public class TokenListAdapter extends BaseAdapter {
 
                 return false;
             }
-        });*/
+        });
         return v;
     }
 
@@ -334,4 +333,11 @@ public class TokenListAdapter extends BaseAdapter {
         return true;
     }
 
+    public Token getCurrentSelection() {
+        return currentSelection;
+    }
+
+    public void setCurrentSelection(Token currentSelection) {
+        this.currentSelection = currentSelection;
+    }
 }
