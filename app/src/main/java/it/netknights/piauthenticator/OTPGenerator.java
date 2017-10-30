@@ -80,7 +80,7 @@ public class OTPGenerator {
      * @param algorithm The hashing algorithm, "HmacSHA1", "HmacSHA256", "HmacSHA512"
      * @return The OTP value for the HOTP Token
      */
-    public static int generateTOTP(String key, long t, String digits, int period, String algorithm) {
+    private static int generateTOTP(String key, long t, String digits, int period, String algorithm) {
          /*
         The unix system time is devided by the time step. This number of time slices is used as
         counter input for the normal HOTP algorithm
@@ -98,7 +98,7 @@ public class OTPGenerator {
      * @param token the token, whose secret is used to hash the pin
      * @return the hash as hex encoded String
      */
-    public static String hashPIN(int pin, Token token) {
+    static String hashPIN(int pin, Token token) {
         byte[] secretBytes = new Base32().decode(token.getSecret());
         byte[] pinToHash = hexStringToByteArray(Integer.toHexString(pin));
         byte[] temp = hmac_sha("HmacSHA512", secretBytes, pinToHash);
@@ -109,18 +109,18 @@ public class OTPGenerator {
      * This method generates a OTP value for the given
      * set of parameters.
      *
-     * @param key:          the shared secret, HEX encoded
-     * @param counter:      a value that reflects the counter (also time/period)
-     * @param returnDigits: number of digits to return
-     * @param crypto:       the crypto function to use
-     * @return: a numeric String in base 10 that includes
+     * @param key          the shared secret, HEX encoded
+     * @param counter      a value that reflects the counter (also time/period)
+     * @param returnDigits number of digits to return
+     * @param crypto       the crypto function to use
+     * @return a numeric String in base 10 that includes
      */
     public static int generateHOTP(String key,
                                    String counter,
                                    String returnDigits,
                                    String crypto) {
-        int codeDigits = Integer.decode(returnDigits).intValue();
-        String result = null;
+        int codeDigits = Integer.decode(returnDigits);
+        String result;
 
         // Using the counter
         // First 8 bytes are for the movingFactor
@@ -156,13 +156,13 @@ public class OTPGenerator {
      * HMAC computes a Hashed Message Authentication Code with the
      * crypto hash algorithm as a parameter.
      *
-     * @param crypto:   the crypto algorithm (HmacSHA1, HmacSHA256,
+     * @param crypto   the crypto algorithm (HmacSHA1, HmacSHA256,
      *                  HmacSHA512)
-     * @param keyBytes: the bytes to use for the HMAC key
-     * @param text:     the message or text to be authenticated
+     * @param keyBytes the bytes to use for the HMAC key
+     * @param text     the message or text to be authenticated
      */
-    public static byte[] hmac_sha(String crypto, byte[] keyBytes,
-                                  byte[] text) {
+    private static byte[] hmac_sha(String crypto, byte[] keyBytes,
+                                   byte[] text) {
         try {
             Mac hmac;
             hmac = Mac.getInstance(crypto);
@@ -194,7 +194,7 @@ public class OTPGenerator {
      * This method converts a Hex string to a byte array
      *
      * @param hex: the Hex string to convert
-     * @return: a byte array
+     * @return a byte array
      */
     public static byte[] hexStringToByteArray(String hex) {
         // Adding one byte to get the right conversion

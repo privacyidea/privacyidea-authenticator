@@ -33,8 +33,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
-import android.util.Log;
-import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -54,7 +52,6 @@ import android.widget.Toast;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
-
 import java.util.ArrayList;
 
 import static it.netknights.piauthenticator.R.color.PIBLUE;
@@ -70,14 +67,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private static final int INTENT_ADD_TOKEN_MANUALLY = 101;
     private TextView countdown;
     private ListView listview;
-    private FloatingActionButton fab;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         PRNGFixes.apply();
-        utils = Util.getInstance();
-        utils.setmActivity(this);
+        utils = new Util(this);
         setupViews();
         setupFab();
         paintStatusbar();
@@ -86,7 +81,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     private void setupFab() {
-        fab = (FloatingActionButton) findViewById(R.id.fab);
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setBackgroundColor(getResources().getColor(PIBLUE));
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -99,27 +94,23 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 ImageView scan_qr_image = (ImageView) view.findViewById(R.id.icon_scan_qr);
                 scan_qr_image.setImageResource(R.mipmap.icon_scan_qr);
                 ImageView enter_detail_image = (ImageView) view.findViewById(R.id.icon_enter_details);
+                enter_detail_image.setImageResource(R.mipmap.icon_enter_detail);
+                scan_qr_image.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        scanQR();
+                        ad.dismiss();
+                    }
+                });
 
-                if (scan_qr_image != null) {
-                    scan_qr_image.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            scanQR();
-                            ad.dismiss();
-                        }
-                    });
-                }
-
-                if (enter_detail_image != null) {
-                    enter_detail_image.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            Intent settingsIntent = EnterDetailsActivity.makeIntent(MainActivity.this);
-                            startActivityForResult(settingsIntent, INTENT_ADD_TOKEN_MANUALLY);
-                            ad.dismiss();
-                        }
-                    });
-                }
+                enter_detail_image.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent settingsIntent = EnterDetailsActivity.makeIntent(MainActivity.this);
+                        startActivityForResult(settingsIntent, INTENT_ADD_TOKEN_MANUALLY);
+                        ad.dismiss();
+                    }
+                });
                 ad.show();
             }
         });
@@ -133,7 +124,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 int progress = (int) (System.currentTimeMillis() / 1000) % 60;
                 countdown.setText("" + String.valueOf(progress));
                 tokenlistadapter.updatePBs(progress);
-                tokenlistadapter.refreshAllTOTP();
+                if (progress < 3 || progress > 27 && progress < 33 || progress > 57) {
+                    tokenlistadapter.refreshAllTOTP();
+                }
                 handler.postDelayed(this, 1000);
             }
         };
@@ -182,111 +175,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
         countdown = (TextView) findViewById(R.id.countdownfield);
     }
-    /*
-    @Override
-    public void onCreateContextMenu(ContextMenu menu, View v,
-                                    ContextMenu.ContextMenuInfo menuInfo) {
-        super.onCreateContextMenu(menu, v, menuInfo);
-        MenuInflater inflater = getMenuInflater();
-
-        int pos = ((AdapterView.AdapterContextMenuInfo) menuInfo).position;
-        if (tokenlist.get(pos).isWithPIN()) {
-            inflater.inflate(R.menu.context_menu, menu);
-        } else {
-            inflater.inflate(R.menu.context_menu_nopin, menu);
-        }
-    }
-
-    @Override
-    public boolean onContextItemSelected(MenuItem item) {
-        //this is the item selected from the context menu of a ListView entry
-        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-        final int position = info.position;
-        final Token token = tokenlist.get(position);
-
-        switch (item.getItemId()) {
-            case R.id.delete_token: {
-                tokenlist.remove(position);
-                tokenlistadapter.notifyDataSetChanged();
-                save(tokenlist);
-                Toast.makeText(this, "Token removed", Toast.LENGTH_LONG).show();
-                return true;
-            }
-
-            case R.id.edit_token: {
-                AlertDialog.Builder alert = new AlertDialog.Builder(this);
-                alert.setTitle("Edit Name");
-                final EditText input = new EditText(this);
-                input.setText(token.getLabel());
-                input.setSelectAllOnFocus(true);
-                alert.setView(input);
-
-                alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        token.setLabel(input.getEditableText().toString());
-                        tokenlistadapter.notifyDataSetChanged();
-                        save(tokenlist);
-                    }
-                });
-
-                alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        dialog.cancel();
-                    }
-                });
-                alert.show();
-                return true;
-            }
-
-            case R.id.change_pin: {
-                if (token.isWithPIN() && !token.isLocked()) {
-                    LinearLayout layout = new LinearLayout(this);
-                    layout.setOrientation(LinearLayout.VERTICAL);
-
-                    final EditText firstinput = new EditText(this);
-                    firstinput.setHint("new PIN");
-                    firstinput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
-                    layout.addView(firstinput);
-
-                    final EditText secondinput = new EditText(this);
-                    secondinput.setHint("Repeat new PIN");
-                    secondinput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
-                    layout.addView(secondinput);
-
-                    AlertDialog.Builder alert = new AlertDialog.Builder(this);
-                    alert.setTitle("Change PIN");
-                    alert.setView(layout);
-
-                    alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int whichButton) {
-                            int firstpin = Integer.parseInt(firstinput.getEditableText().toString());
-                            int secondpin = Integer.parseInt(secondinput.getEditableText().toString());
-                            if (firstpin == secondpin) {
-                                String hashedPIN = OTPGenerator.hashPIN(firstpin, token);
-                                token.setPin(hashedPIN);
-                                tokenlistadapter.notifyDataSetChanged();
-                                save(tokenlist);
-                            } else {
-                                Toast.makeText(MainActivity.this, "PINs do not match - Cancelled", Toast.LENGTH_LONG).show();
-                            }
-                        }
-                    });
-
-                    alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int whichButton) {
-                            dialog.cancel();
-                        }
-                    });
-                    alert.show();
-                    return true;
-                }
-            }
-
-            default:
-                return super.onContextItemSelected(item);
-        }
-    }
-    **/
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -304,7 +192,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             tokenlist.clear();
             tokenlistadapter.notifyDataSetChanged();
             save(tokenlist);
-            Toast.makeText(this, "All token deleted", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "All token deleted", Toast.LENGTH_SHORT).show();
             return true;
         }
         if (id == R.id.action_about) {
@@ -328,16 +216,16 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
         if (result != null) {
             if (result.getContents() == null) {
-                Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Cancelled", Toast.LENGTH_SHORT).show();
             } else {
                 try {
                     Token t = utils.makeTokenFromURI(result.getContents());
                     tokenlist.add(t);
-                    Toast.makeText(this, "Token added for: " + t.getLabel(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "Token added for: " + t.getLabel(), Toast.LENGTH_SHORT).show();
                     tokenlistadapter.refreshOTPs();
                     save(tokenlist);
                 } catch (Exception e) {
-                    Toast.makeText(this, "Invalid QR Code", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "Invalid QR Code", Toast.LENGTH_SHORT).show();
                     e.printStackTrace();
                 }
             }
@@ -347,9 +235,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 tokenlist.add(token);
                 tokenlistadapter.refreshOTPs();
                 save(tokenlist);
-                Toast.makeText(this, "Token added for: " + token.getLabel(), Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Token added for: " + token.getLabel(), Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Cancelled", Toast.LENGTH_SHORT).show();
             }
 
         } else {
@@ -362,7 +250,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             IntentIntegrator ii = new IntentIntegrator(this);
             ii.initiateScan();
         } catch (Exception e) {
-            Snackbar.make(this.getCurrentFocus(), e.getMessage(), Snackbar.LENGTH_LONG).show();
+            if (this.getCurrentFocus() != null) {
+                Snackbar.make(this.getCurrentFocus(), e.getMessage(), Snackbar.LENGTH_LONG).show();
+            }
+
         }
     }
 
@@ -418,14 +309,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                     tokenlist.remove(currToken);
                     tokenlistadapter.notifyDataSetChanged();
                     save(tokenlist);
-                    Toast.makeText(MainActivity.this, "Token removed", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "Token removed", Toast.LENGTH_SHORT).show();
                     mode.finish();
                 }
             });
             alert.setNegativeButton("NO", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    Toast.makeText(MainActivity.this, "Deletion cancelled", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "Deletion cancelled", Toast.LENGTH_SHORT).show();
                     dialog.cancel();
                     mode.finish();
                 }
@@ -447,7 +338,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                     currToken.setLabel(input.getEditableText().toString());
                     tokenlistadapter.notifyDataSetChanged();
                     save(tokenlist);
-                    Toast.makeText(MainActivity.this, "Name was changed", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "Name was changed", Toast.LENGTH_SHORT).show();
                     mode.finish();
                 }
             });
@@ -455,7 +346,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int whichButton) {
                     dialog.cancel();
-                    Toast.makeText(MainActivity.this, "Editing cancelled", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "Editing cancelled", Toast.LENGTH_SHORT).show();
                     mode.finish();
                 }
             });
@@ -491,9 +382,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                             currToken.setPin(hashedPIN);
                             tokenlistadapter.notifyDataSetChanged();
                             save(tokenlist);
-                            Toast.makeText(MainActivity.this, "PIN was changed", Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, "PIN was changed", Toast.LENGTH_SHORT).show();
                         } else {
-                            Toast.makeText(MainActivity.this, "PINs do not match - Cancelled", Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, "PINs do not match - Cancelled", Toast.LENGTH_SHORT).show();
                         }
                         mode.finish();
                     }
@@ -502,7 +393,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         dialog.cancel();
-                        Toast.makeText(MainActivity.this, "Changing PIN cancelled", Toast.LENGTH_LONG).show();
+                        Toast.makeText(MainActivity.this, "Changing PIN cancelled", Toast.LENGTH_SHORT).show();
                         mode.finish();
                     }
                 });

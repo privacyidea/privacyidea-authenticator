@@ -26,6 +26,7 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.DialogInterface;
 import android.text.InputType;
+import android.util.Log;
 import android.view.DragEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -47,6 +48,7 @@ import static android.view.View.VISIBLE;
 import static it.netknights.piauthenticator.OTPGenerator.hashPIN;
 import static it.netknights.piauthenticator.Token.HOTP;
 import static it.netknights.piauthenticator.Token.TOTP;
+import static it.netknights.piauthenticator.Util.TAG;
 
 
 public class TokenListAdapter extends BaseAdapter {
@@ -55,7 +57,7 @@ public class TokenListAdapter extends BaseAdapter {
     private Token currentSelection;
 
     //update is called from the timer-thread within the MainActivity
-    public void updatePBs(int progress) {
+    void updatePBs(int progress) {
         ProgressBar pb;
         for (Token t : tokens) {
             if (t.getPb() != null) {
@@ -80,14 +82,14 @@ public class TokenListAdapter extends BaseAdapter {
         animation.start();
     }
 
-    public void refreshOTPs() {
+    void refreshOTPs() {
         for (int i = 0; i < tokens.size(); i++) {
             tokens.get(i).setCurrentOTP(OTPGenerator.generate(tokens.get(i)));
         }
         this.notifyDataSetChanged();
     }
 
-    public void refreshAllTOTP() {
+    void refreshAllTOTP() {
         for (int i = 0; i < tokens.size(); i++) {
             if (tokens.get(i).getType().equals(TOTP)) {
                 tokens.get(i).setCurrentOTP(OTPGenerator.generate(tokens.get(i)));
@@ -105,22 +107,22 @@ public class TokenListAdapter extends BaseAdapter {
         v.setTag(position);
         final View mView = v;
 
-        final ProgressBar progressBar = (ProgressBar) v.findViewById(R.id.progressBar);
+
         final Token token = getItem(position);
+        final ProgressBar progressBar;
+        if (token.getPb() == null) {
+            progressBar = (ProgressBar) v.findViewById(R.id.progressBar);
+            token.setPb(progressBar);
+        } else {
+            progressBar = token.getPb();
+        }
         final TextView otptext = (TextView) v.findViewById(R.id.textViewToken);
         final TextView labeltext = (TextView) v.findViewById(R.id.textViewLabel);
         final Button nextbtn = (Button) v.findViewById(R.id.next_button);
-        otptext.setText(token.getSecret());
+
+        otptext.setText(token.getCurrentOTP());
 
         labeltext.setText(token.getLabel());
-
-
-        token.setPb(progressBar);
-        if (token.isWithPIN()) {
-            v.setTag(R.id.HasPIN, true);
-        } else {
-            v.setTag(R.id.HasPIN, false);
-        }
 
         //TODO maybe add some lock icon next to locked PINs
         if (token.isWithPIN() && token.getPin().equals("")) {
@@ -128,7 +130,7 @@ public class TokenListAdapter extends BaseAdapter {
 
             nextbtn.setVisibility(GONE);
             progressBar.setVisibility(GONE);
-            otptext.setText("Tap to set PIN (required)");
+            otptext.setText(R.string.tap_to_set_pin);
             v.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -144,7 +146,7 @@ public class TokenListAdapter extends BaseAdapter {
                             String hashedPIN = hashPIN(temp_pin, token);
                             token.setPin(hashedPIN);
                             notifyDataSetChanged();
-                            ArrayList<Token> temp = new ArrayList<Token>(tokens);
+                            ArrayList<Token> temp = new ArrayList<>(tokens);
                             Util.saveTokens(mView.getContext(), temp);
                         }
                     });
@@ -161,7 +163,7 @@ public class TokenListAdapter extends BaseAdapter {
             //------------------- show dialog for PIN input -------------------------------------
             progressBar.setVisibility(GONE);
             nextbtn.setVisibility(GONE);
-            otptext.setText("Tap to unlock");
+            otptext.setText(R.string.tap_to_unlock);
             v.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -195,7 +197,7 @@ public class TokenListAdapter extends BaseAdapter {
             });
         } else if (!token.isLocked() && token.isWithTapToShow() && !token.isTapped()) {
             // token untapped
-            otptext.setText("Tap to show OTP");
+            otptext.setText(R.string.tap_to_show_otp);
             nextbtn.setVisibility(GONE);
             progressBar.setVisibility(GONE);
             v.setOnClickListener(new View.OnClickListener() {
@@ -237,7 +239,6 @@ public class TokenListAdapter extends BaseAdapter {
                 nextbtn.setClickable(false);
                 nextbtn.setLongClickable(false);*/
 
-
             } else {
                 nextbtn.setVisibility(GONE);
                 nextbtn.setClickable(false);
@@ -246,12 +247,15 @@ public class TokenListAdapter extends BaseAdapter {
                 progressBar.setVisibility(VISIBLE);
                 v.setClickable(false);
             }
-
-
             otptext.setText(token.getCurrentOTP());
         }
 
+        //setupOnDrags(v,position);
 
+        return v;
+    }
+
+    private void setupOnDrags(View v, final int position) {
         v.setOnDragListener(new View.OnDragListener() {
             @Override
             public boolean onDrag(View v, DragEvent event) {
@@ -275,6 +279,8 @@ public class TokenListAdapter extends BaseAdapter {
                         return true;
                     }
                     case DragEvent.ACTION_DRAG_ENDED: {
+                        Log.d(TAG, "action drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
+                        notifyDataSetChanged();
                         return true;
                     }
                     default:
@@ -296,18 +302,18 @@ public class TokenListAdapter extends BaseAdapter {
                 ClipData data = ClipData.newPlainText(v.getTag() + "", "");
                 View.DragShadowBuilder shadow = new View.DragShadowBuilder(v);
                 v.startDrag(data, shadow, null, 0);
-
+                Log.d(TAG, "Shadow drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
                 return false;
             }
         });
-        return v;
+
     }
 
-    public void setTokens(List<Token> tokens) {
+    void setTokens(List<Token> tokens) {
         this.tokens = tokens;
     }
 
-    public List<Token> getTokens() {
+    private List<Token> getTokens() {
         return tokens;
     }
 
@@ -333,11 +339,11 @@ public class TokenListAdapter extends BaseAdapter {
         return true;
     }
 
-    public Token getCurrentSelection() {
+    Token getCurrentSelection() {
         return currentSelection;
     }
 
-    public void setCurrentSelection(Token currentSelection) {
+    void setCurrentSelection(Token currentSelection) {
         this.currentSelection = currentSelection;
     }
 }

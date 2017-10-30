@@ -3,7 +3,6 @@ package it.netknights.piauthenticator;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,8 +20,11 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.apache.commons.codec.binary.Base32;
+
+import java.util.Arrays;
 
 import static android.view.View.GONE;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
@@ -35,10 +37,6 @@ public class EnterDetailsActivity extends AppCompatActivity {
     private Spinner spinner_type;
     private Spinner spinner_phonepart;
     private TextView periodLabel;
-    private EditText editText_secret;
-    private EditText editText_name;
-    private CheckBox check_base32;
-    private CheckBox check_pin;
 
     private String new_label;
     private String new_secret;
@@ -134,9 +132,10 @@ public class EnterDetailsActivity extends AppCompatActivity {
         addBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                evaluate();
-                buildResult();
-                finish();
+                if(evaluate()){
+                    buildResult();
+                    finish();
+                }
             }
         });
     }
@@ -166,22 +165,27 @@ public class EnterDetailsActivity extends AppCompatActivity {
         setResult(Activity.RESULT_OK, returnIntent);
     }
 
-    private void evaluate() {
-        editText_name = (EditText) findViewById(R.id.editText_name);
-        editText_secret = (EditText) findViewById(R.id.editText_secret);
-        check_base32 = (CheckBox) findViewById(R.id.checkBox_base32);
-        check_pin = (CheckBox) findViewById(R.id.checkBox_pin);
+    private boolean evaluate() {
+        EditText editText_name = (EditText) findViewById(R.id.editText_name);
+        EditText editText_secret = (EditText) findViewById(R.id.editText_secret);
+        CheckBox check_base32 = (CheckBox) findViewById(R.id.checkBox_base32);
+        CheckBox check_pin = (CheckBox) findViewById(R.id.checkBox_pin);
 
         if (check_pin.isChecked()) {
             new_haspin = true;
         }
 
         new_label = editText_name.getText().toString();
-        if (check_base32.isChecked()) { // the secret should be base32 encoded
-            new_secret = editText_secret.getText().toString();
-        } else {
+        //if (new_label.equals("")){        }
+        new_secret = editText_secret.getText().toString();
+        if (new_secret.equals("")){
+            Toast.makeText(this,"Secret can not be empty", Toast.LENGTH_LONG).show();
+            editText_secret.requestFocus();
+            return false;
+        }
+        if (!check_base32.isChecked()) { // the secret should be base32 encoded
             byte[] tmp = editText_secret.getText().toString().getBytes();
-            new_secret = new Base32().encode(tmp).toString();
+            new_secret = Arrays.toString(new Base32().encode(tmp));
         }
         new_type = (String) spinner_type.getSelectedItem();
         new_type = new_type.toLowerCase();
@@ -197,6 +201,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
         new_algorithm = (String) spinner_algorithm.getSelectedItem();
         String tmp_pp = (String) spinner_phonepart.getSelectedItem();
         new_pp = Integer.parseInt(tmp_pp);
+        return true;
     }
 
     public static Intent makeIntent(Context context) {

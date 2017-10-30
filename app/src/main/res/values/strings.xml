@@ -90,4 +90,7 @@
     <string name="rename">Rename</string>
     <string name="item">Item</string>
     <string name="change_pin">Change PIN</string>
+    <string name="tap_to_show_otp">Tap to show OTP</string>
+    <string name="tap_to_unlock">Tap to unlock</string>
+    <string name="tap_to_set_pin">Tap to set PIN (required)</string>
 </resources>
