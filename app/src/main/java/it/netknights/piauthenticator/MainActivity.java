@@ -86,7 +86,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+
+            }
+        });/*AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                 LayoutInflater factory = LayoutInflater.from(MainActivity.this);
                 final View view = factory.inflate(R.layout.chose_to_add, null);
                 builder.setView(view);
@@ -111,9 +113,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                         ad.dismiss();
                     }
                 });
-                ad.show();
-            }
-        });
+                ad.show();*/
+        scanQR();
     }
 
     private void startTimerThread() {
@@ -206,7 +207,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             Intent settingsintent = new Intent(this, SettingsActivity.class);
             startActivity(settingsintent);
         }
-
+        if(id==R.id.action_enter_detail){
+            Intent settingsIntent = EnterDetailsActivity.makeIntent(MainActivity.this);
+            startActivityForResult(settingsIntent, INTENT_ADD_TOKEN_MANUALLY);
+        }
         return super.onOptionsItemSelected(item);
     }
 

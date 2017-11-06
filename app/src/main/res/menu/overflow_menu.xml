@@ -7,8 +7,12 @@
         android:orderInCategory="100"
         android:title="Remove all tokens" />
     <item
-        android:id="@+id/action_settings"
+        android:id="@+id/action_enter_detail"
         android:orderInCategory="101"
+        android:title="Enter details" />
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="102"
         android:title="Settings" />
     <item
         android:id="@+id/action_about"
