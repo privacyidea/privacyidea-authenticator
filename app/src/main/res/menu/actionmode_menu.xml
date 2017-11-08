@@ -18,4 +18,9 @@
         android:icon="@android:drawable/ic_menu_delete"
         android:title="@string/item"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/copy_clipboard"
+        android:icon="@android:drawable/ic_input_get"
+        android:title="@string/copy_to_clipboard"
+        app:showAsAction="ifRoom|always" />
 </menu>

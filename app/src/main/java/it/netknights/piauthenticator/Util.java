@@ -24,13 +24,8 @@ package it.netknights.piauthenticator;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.SystemClock;
-import android.support.v7.app.AlertDialog;
 import android.util.Log;
 
 import org.apache.commons.codec.binary.Base32;
@@ -45,7 +40,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
@@ -58,26 +52,20 @@ import static it.netknights.piauthenticator.Token.ALGORITHM;
 import static it.netknights.piauthenticator.Token.COUNTER;
 import static it.netknights.piauthenticator.Token.DIGITS;
 import static it.netknights.piauthenticator.Token.HOTP;
-import static it.netknights.piauthenticator.Token.ISSUER;
 import static it.netknights.piauthenticator.Token.LABEL;
 import static it.netknights.piauthenticator.Token.PERIOD;
 import static it.netknights.piauthenticator.Token.SECRET;
 import static it.netknights.piauthenticator.Token.TOTP;
 import static it.netknights.piauthenticator.Token.TYPE;
-import static it.netknights.piauthenticator.Util.TAG;
-import static it.netknights.piauthenticator.Util.insertPeriodically;
 
 public class Util {
 
     private Activity mActivity;
     public static String TAG = "it.netknights.piauth";
+    String output;
 
     Util(MainActivity mainActivity) {
-        setmActivity(mainActivity);
-    }
-
-    private void setmActivity(Activity mActivity) {
-        this.mActivity = mActivity;
+        mActivity = mainActivity;
     }
 
     Activity getmActivity() {
@@ -88,91 +76,62 @@ public class Util {
     private static final String KEYFILE = "key.key";
 
 
-    /**
-     * Creates a token with the parameters passed in KeyURI format
-     *
-     * @param content The URI String
-     * @return Token Object
-     * @throws Exception Invalid Protocol / Not HOTP or TOTP type of token
-     */
-    public Token makeTokenFromURI(String content) throws Exception {
-        content = content.replaceFirst("otpauth", "http");
-        Uri uri = Uri.parse(content);
-        URL url = new URL(content);
+    private void tryThread(final Token token, final int phonepartlength) {
+        final ProgressDialog pd = new ProgressDialog(getmActivity());
+        pd.setMessage("Please wait while the secret is generated");
+        pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        pd.setCancelable(false);
+        pd.setIndeterminate(true);
+        pd.show();
 
-        if (!url.getProtocol().equals("http")) {
-            throw new Exception("Invalid Protocol");
-        }
-        if (!url.getHost().equals(TOTP)) {
-            if (!url.getHost().equals(HOTP)) {
-                throw new Exception("No TOTP or HOTP Token");
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final byte[] phonepart = new byte[phonepartlength];
+                SecureRandom sr = new SecureRandom();
+                sr.nextBytes(phonepart);
+                output = byteArrayToHexString(phonepart);
+                Log.d(TAG, "phonepart HexString: " + output);
+                //------------- combine the phone- and QR-part with the specified algorithm ----------------
+                String QRsecretAsHEX = byteArrayToHexString(new Base32().decode(token.getSecret()));
+                //byte[] qrpartBytes = hexStringToByteArray(QRsecretAsHEX);
+                char[] ch = QRsecretAsHEX.toCharArray();
+                byte[] completesecretBytes = new byte[0];
+                int hardeningIterations = 40000;
+                long startTime = SystemClock.elapsedRealtime();
+                try {
+                    completesecretBytes = OTPGenerator.generatePBKDFKey(ch, phonepart, hardeningIterations, 256);
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                } catch (InvalidKeySpecException e) {
+                    e.printStackTrace();
+                }
+                long endTime = SystemClock.elapsedRealtime() - startTime;
+
+                Log.d(TAG, "time for PBKDF2 computation: " + endTime + "ms, with " + hardeningIterations + " Iterations");
+                String completeSecretAsHexString = byteArrayToHexString(completesecretBytes);
+                Log.d(TAG, "complete secret HexString: " + completeSecretAsHexString);
+                token.setSecret(completeSecretAsHexString);
+
+
+              /*  getmActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                    }
+                });*/
             }
+        });
+        t.start();
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-
-        String type = url.getHost();
-        // the secret is base32 decoded before the OTP value is generated, so there no need to do something here
-        String secret = uri.getQueryParameter(SECRET);
-        String label = uri.getPath().substring(1);
-        String issuer = uri.getQueryParameter(ISSUER);
-        if (issuer != null) {
-            label = issuer + ": " + label;
-        }
-        int digits = Integer.parseInt(uri.getQueryParameter(DIGITS));
-        //byte[] secretAsbytes = new Base32().decode(secret.toUpperCase());
-        Token tmp = new Token(secret, label, type, digits);
-
-        if (type.equals(TOTP)) {
-            tmp.setPeriod(Integer.parseInt(uri.getQueryParameter(PERIOD)));
-        }
-        if (type.equals(HOTP)) {
-            tmp.setCounter(Integer.parseInt(uri.getQueryParameter(COUNTER)));
-        }
-        if (uri.getQueryParameter(ALGORITHM) != null) {
-            tmp.setAlgorithm("Hmac" + uri.getQueryParameter(ALGORITHM).toUpperCase());
-        }
-        boolean pinned = uri.getBooleanQueryParameter("pin", false);
-        if (pinned) {
-            tmp.setWithPIN(true);
-            tmp.setLocked(true);
-        }
-        if (uri.getBooleanQueryParameter("2step", false)) {
-            int keylength = 10; //TODO can be a parameter in QR
-            //TODO hardening iterations in QR?
-            if (uri.getQueryParameter("2kl") != null) {
-                keylength = Integer.parseInt(uri.getQueryParameter("2kl"));
-            }
-            return do2StepInit(tmp, keylength);
-        }
-        if (uri.getBooleanQueryParameter("tapshow", false)) {
-            tmp.setWithTapToShow(true);
-        }
-
-        return tmp;
+        pd.dismiss();
     }
 
-    /**
-     * This method enhances the "usual" rollout process by combining the secret in the scanned QRCode
-     * with a randomly generated salt on the phone. The Phonepart has to be entered into
-     * PrivacyIDEA, then the first OTP values can be compared to ensure the rollout was successful
-     *
-     * @param token           The token after the normal rollout process, secret is only the QR-part
-     * @param phonepartlength Number of bytes which shall be generated by the phone (default is 10)
-     * @return A token with the combined secret (phone- and QR-part)
-     */
-
-    private Token do2StepInit(final Token token, int phonepartlength) {
-        // when this method is entered the tokens secret is not the full secret
-        // and has to be combined with salt (generated on the phone). Also the salt has to
-        // be entered in PI so both sides can derive the full secret
-
-        AsyncTask<Void, Void, Boolean> asyncTask = new SecretGenerator(token,phonepartlength,this);
-        asyncTask.execute();
-
-        return token;
-    }
-
-
-    static String insertPeriodically(String text, String insert, int period) {
+    String insertPeriodically(String text, String insert, int period) {
         StringBuilder builder = new StringBuilder(text.length() + insert.length() * (text.length() / period) + 1);
         int index = 0;
         String prefix = "";
@@ -215,11 +174,11 @@ public class Util {
     }
 
     /**
-     * Encrpyt and save the ArrayList of tokens with a Secret Key, which wrapped by a Public Key
+     * Encrpyt and saveTokenlist the ArrayList of tokens with a Secret Key, which wrapped by a Public Key
      * that is stored in the Keystore
      *
      * @param context Needed to get the FilesDir
-     * @param tokens  ArrayList of tokens to save
+     * @param tokens  ArrayList of tokens to saveTokenlist
      */
     public static void saveTokens(Context context, ArrayList<Token> tokens) {
         JSONArray tmp = new JSONArray();
@@ -314,107 +273,4 @@ public class Util {
         }
     }
 
-    Token makeTokenFromIntent(Intent data) {
-
-        String type = data.getStringExtra("type");
-        String secret = data.getStringExtra("secret");
-        String label = data.getStringExtra("label");
-        int digits = data.getIntExtra("digits", 6);
-        Token tmp = new Token(secret, label, type, digits);
-        if (type.equals("totp")) {
-            int period = data.getIntExtra("period", 30);
-            tmp.setPeriod(period);
-        }
-        String algorithm = data.getStringExtra("algorithm");
-        if (algorithm != null) {
-            tmp.setAlgorithm(algorithm);
-        }
-        if (data.getBooleanExtra("haspin", false)) {
-            tmp.setWithPIN(true);
-        }
-
-        if (data.getBooleanExtra("2step", false)) {
-            tmp = do2StepInit(tmp, data.getIntExtra("pp", 10));
-        }
-        return tmp;
-    }
-}
-
-class SecretGenerator extends AsyncTask<Void, Void, Boolean> {
-
-    private final Token token;
-    private final int phonepartlength;
-    private final Util util;
-    private ProgressDialog pd;
-    private String output;
-
-    SecretGenerator(Token t, int phonepartlength, Util util) {
-        this.token = t;
-        this.phonepartlength = phonepartlength;
-        this.util = util;
-    }
-
-    @Override
-    protected void onPreExecute() {
-        super.onPreExecute();
-        pd = new ProgressDialog(util.getmActivity());
-        pd.setMessage("Please wait while the secret is generated");
-        pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        pd.setCancelable(false);
-        pd.setIndeterminate(true);
-        pd.show();
-    }
-
-    @Override
-    protected Boolean doInBackground(Void... params) {
-        //------------------- generate random bytes for the phonepart ------------------------------
-        final byte[] phonepart = new byte[phonepartlength];
-        SecureRandom sr = new SecureRandom();
-        sr.nextBytes(phonepart);
-        output = byteArrayToHexString(phonepart);
-        Log.d(TAG, "phonepart HexString: " + output);
-        //------------- combine the phone- and QR-part with the specified algorithm ----------------
-        String QRsecretAsHEX = byteArrayToHexString(new Base32().decode(token.getSecret()));
-        //byte[] qrpartBytes = hexStringToByteArray(QRsecretAsHEX);
-        char[] ch = QRsecretAsHEX.toCharArray();
-        byte[] completesecretBytes = new byte[0];
-        int hardeningIterations = 40000;
-        long startTime = SystemClock.elapsedRealtime();
-        try {
-            completesecretBytes = OTPGenerator.generatePBKDFKey(ch, phonepart, hardeningIterations, 256);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-        }
-        long endTime = SystemClock.elapsedRealtime() - startTime;
-
-        Log.d(TAG, "time for PBKDF2 computation: " + endTime + "ms, with " + hardeningIterations + " Iterations");
-        String completeSecretAsHexString = byteArrayToHexString(completesecretBytes);
-        Log.d(TAG, "complete secret HexString: " + completeSecretAsHexString);
-        token.setSecret(completeSecretAsHexString);
-
-        return true;
-    }
-
-    @Override
-    protected void onPostExecute(final Boolean success) {
-        //------------- display the phone-part of the secret and first OTP to verify ------------
-        pd.dismiss();
-        AlertDialog.Builder builder = new AlertDialog.Builder(util.getmActivity());
-        builder.setCancelable(false);
-        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
-            }
-        });
-        builder.setTitle("PHONEPART");
-        builder.setMessage(insertPeriodically(output, " ", 4) + "\n\n" + "First OTP to verify:      " + OTPGenerator.generate(token));
-        builder.show();
-    }
-
-    @Override
-    protected void onCancelled() {
-    }
 }
