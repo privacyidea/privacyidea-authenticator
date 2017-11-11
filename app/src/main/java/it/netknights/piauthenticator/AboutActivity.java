@@ -12,11 +12,15 @@ import android.view.WindowManager;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 
 public class AboutActivity extends AppCompatActivity {
     private ListView listView;
     private TextView textViewVersion;
+    private ArrayList<String> acknowledgements;
+    private AboutListAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,10 +30,18 @@ public class AboutActivity extends AppCompatActivity {
         paintStatusbar();
         setupActionBar();
         setupList();
-
     }
 
     private void setupList() {
+        acknowledgements = new ArrayList<>();
+        acknowledgements.add("Apache License 2.0");
+        acknowledgements.add("OTP Authenticator by Bruno Bierbaumer");
+        acknowledgements.add("ZXing Embedded");
+        acknowledgements.add("Android Code Samples");
+        adapter = new AboutListAdapter();
+        listView.setAdapter(adapter);
+        adapter.setAcknowledgements(acknowledgements);
+        adapter.notifyDataSetChanged();
     }
 
     private void setupViews() {
@@ -38,16 +50,17 @@ public class AboutActivity extends AppCompatActivity {
         PackageInfo info = null;
 
         try {
-          info = getPackageManager().getPackageInfo("it.netknights.piauthenticator",0);
+            info = getPackageManager().getPackageInfo("it.netknights.piauthenticator", 0);
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
         }
-        if(info!=null){
-            textViewVersion.setText("Version: "+info.versionName);
-        }else{
+        if (info != null) {
+            textViewVersion.setText("Version: " + info.versionName);
+        } else {
             textViewVersion.setText("Version: x.x.x");
         }
     }
+
     public void paintStatusbar() {
         //------------------ try to paint the statusbar -------------------------------
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {

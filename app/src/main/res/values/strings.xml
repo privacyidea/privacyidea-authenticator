@@ -90,10 +90,16 @@
     <string name="rename">Rename</string>
     <string name="item">Item</string>
     <string name="change_pin">Change PIN</string>
-    <string name="tap_to_show_otp">Tap to show OTP</string>
+    <string name="tap_to_show_otp">Tap to show </string>
     <string name="tap_to_unlock">Tap to unlock</string>
     <string name="tap_to_set_pin">Tap to set PIN (required)</string>
     <string name="copy_to_clipboard">Copy to clipboard</string>
     <string name="version">Version</string>
-    <string name="licenses_label">Licenses:</string>
+    <string name="licenses_label">Licenses</string>
+    <string name="piauth_name_label">PrivacyIDEA Authenticator</string>
+    <string name="comany_label">\u00A9NetKnights GmbH 2017</string>
+    <string name="version_placeholder">VERSION</string>
+    <string name="next_button_text">next</string>
+    <string name="textview_placeholder">TextView</string>
+    <string name="lock_icon_desc">lock icon</string>
 </resources>

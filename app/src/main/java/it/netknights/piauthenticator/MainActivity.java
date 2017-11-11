@@ -247,11 +247,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             } else {
                 Toast.makeText(this, "Cancelled", Toast.LENGTH_SHORT).show();
             }
-        }else if (requestCode == INTENT_ABOUT){
+        } else if (requestCode == INTENT_ABOUT) {
             //TODO about activity finished
 
-        }
-        else {
+        } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
     }

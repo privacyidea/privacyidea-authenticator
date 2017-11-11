@@ -36,6 +36,7 @@ import android.view.animation.LinearInterpolator;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -119,15 +120,15 @@ public class TokenListAdapter extends BaseAdapter {
         final TextView otptext = (TextView) v.findViewById(R.id.textViewToken);
         final TextView labeltext = (TextView) v.findViewById(R.id.textViewLabel);
         final Button nextbtn = (Button) v.findViewById(R.id.next_button);
+        ImageView lockimg = (ImageView) v.findViewById(R.id.imageView_row_lock);
+
 
         otptext.setText(token.getCurrentOTP());
 
         labeltext.setText(token.getLabel());
-
-        //TODO maybe add some lock icon next to locked PINs
         if (token.isWithPIN() && token.getPin().equals("")) {
             //----------------------- Pin not set yet ----------------------
-
+            lockimg.setVisibility(GONE);
             nextbtn.setVisibility(GONE);
             progressBar.setVisibility(GONE);
             otptext.setText(R.string.tap_to_set_pin);
@@ -161,6 +162,7 @@ public class TokenListAdapter extends BaseAdapter {
             });
         } else if (token.isWithPIN() && token.isLocked()) {
             //------------------- show dialog for PIN input -------------------------------------
+            lockimg.setVisibility(VISIBLE);
             progressBar.setVisibility(GONE);
             nextbtn.setVisibility(GONE);
             otptext.setText(R.string.tap_to_unlock);
@@ -198,6 +200,7 @@ public class TokenListAdapter extends BaseAdapter {
         } else if (!token.isLocked() && token.isWithTapToShow() && !token.isTapped()) {
             // token untapped
             otptext.setText(R.string.tap_to_show_otp);
+            lockimg.setVisibility(GONE);
             nextbtn.setVisibility(GONE);
             progressBar.setVisibility(GONE);
             v.setOnClickListener(new View.OnClickListener() {
@@ -220,6 +223,7 @@ public class TokenListAdapter extends BaseAdapter {
                     notifyDataSetChanged();
                 }
             });*/
+            lockimg.setVisibility(GONE);
             v.setOnClickListener(null);
             if (token.getType().equals(HOTP)) {
                 progressBar.setVisibility(GONE);
@@ -240,6 +244,7 @@ public class TokenListAdapter extends BaseAdapter {
                 nextbtn.setLongClickable(false);*/
 
             } else {
+                lockimg.setVisibility(GONE);
                 nextbtn.setVisibility(GONE);
                 nextbtn.setClickable(false);
                 nextbtn.setLongClickable(false);
