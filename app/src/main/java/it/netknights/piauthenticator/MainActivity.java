@@ -26,6 +26,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -39,19 +40,16 @@ import android.support.v7.view.ActionMode;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -181,25 +179,22 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         //this is the item selected from the toolbar menu
         int id = item.getItemId();
 
-        if (id == R.id.action_remove_all) {
+      /*  if (id == R.id.action_remove_all) {
             tokenlist.clear();
             tokenlistadapter.notifyDataSetChanged();
             saveTokenlist();
             Toast.makeText(this, "All token deleted", Toast.LENGTH_SHORT).show();
             return true;
-        }
+        }*/
         if (id == R.id.action_about) {
-            /*WebView view = (WebView) LayoutInflater.from(this).inflate(R.layout.dialog_about, null);
-            view.loadUrl("file:///android_res/raw/about.html");
-            new AlertDialog.Builder(this).setView(view).show();*/
             Intent aboutintent = new Intent(this, AboutActivity.class);
             startActivity(aboutintent);
             return true;
         }
-        if (id == R.id.action_settings) {
+        /*if (id == R.id.action_settings) {
             Intent settingsintent = new Intent(this, SettingsActivity.class);
             startActivity(settingsintent);
-        }
+        }*/
         if (id == R.id.action_enter_detail) {
             Intent settingsIntent = EnterDetailsActivity.makeIntent(MainActivity.this);
             startActivityForResult(settingsIntent, INTENT_ADD_TOKEN_MANUALLY);
@@ -310,10 +305,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         final int id = item.getItemId();
 
         if (id == R.id.delete_token2) {
-            AlertDialog.Builder alert = new AlertDialog.Builder(this);
-            alert.setTitle("CONFIRM DELETION");
-            alert.setMessage("Do you really want to remove\n" + currToken.getLabel() + " ?");
-            alert.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("CONFIRM DELETION");
+            builder.setMessage("Do you really want to remove\n" + currToken.getLabel() + " ?");
+            builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     tokenlist.remove(currToken);
@@ -323,7 +318,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                     mode.finish();
                 }
             });
-            alert.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+            builder.setNegativeButton("NO", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     Toast.makeText(MainActivity.this, "Deletion cancelled", Toast.LENGTH_SHORT).show();
@@ -331,19 +326,27 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                     mode.finish();
                 }
             });
+            final AlertDialog alert = builder.create();
+            alert.setOnShowListener(new DialogInterface.OnShowListener() {
+                @Override
+                public void onShow(DialogInterface dialog) {
+                    MainActivity.changeDialogFontColor(alert);
+                }
+            });
             alert.show();
             return true;
         }
 
         if (id == R.id.edit_token2) {
-            AlertDialog.Builder alert = new AlertDialog.Builder(this);
-            alert.setTitle("Edit Name");
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Edit Name");
             final EditText input = new EditText(this);
             input.setText(currToken.getLabel());
             input.setSelectAllOnFocus(true);
-            alert.setView(input);
+            input.getBackground().setColorFilter(input.getContext().getResources().getColor(PIBLUE), PorterDuff.Mode.SRC_IN);
+            builder.setView(input);
 
-            alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+            builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int whichButton) {
                     currToken.setLabel(input.getEditableText().toString());
                     tokenlistadapter.notifyDataSetChanged();
@@ -353,11 +356,18 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 }
             });
 
-            alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int whichButton) {
                     dialog.cancel();
                     Toast.makeText(MainActivity.this, "Editing cancelled", Toast.LENGTH_SHORT).show();
                     mode.finish();
+                }
+            });
+            final AlertDialog alert = builder.create();
+            alert.setOnShowListener(new DialogInterface.OnShowListener() {
+                @Override
+                public void onShow(DialogInterface dialog) {
+                    MainActivity.changeDialogFontColor(alert);
                 }
             });
             alert.show();
@@ -373,17 +383,17 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 firstinput.setHint("new PIN");
                 firstinput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
                 layout.addView(firstinput);
-
+                firstinput.getBackground().setColorFilter(firstinput.getContext().getResources().getColor(PIBLUE), PorterDuff.Mode.SRC_IN);
                 final EditText secondinput = new EditText(this);
                 secondinput.setHint("Repeat new PIN");
                 secondinput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
                 layout.addView(secondinput);
+                secondinput.getBackground().setColorFilter(secondinput.getContext().getResources().getColor(PIBLUE), PorterDuff.Mode.SRC_IN);
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("Change PIN");
+                builder.setView(layout);
 
-                AlertDialog.Builder alert = new AlertDialog.Builder(this);
-                alert.setTitle("Change PIN");
-                alert.setView(layout);
-
-                alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         int firstpin = Integer.parseInt(firstinput.getEditableText().toString());
                         int secondpin = Integer.parseInt(secondinput.getEditableText().toString());
@@ -400,11 +410,18 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                     }
                 });
 
-                alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         dialog.cancel();
                         Toast.makeText(MainActivity.this, "Changing PIN cancelled", Toast.LENGTH_SHORT).show();
                         mode.finish();
+                    }
+                });
+                final AlertDialog alert = builder.create();
+                alert.setOnShowListener(new DialogInterface.OnShowListener() {
+                    @Override
+                    public void onShow(DialogInterface dialog) {
+                        MainActivity.changeDialogFontColor(alert);
                     }
                 });
                 alert.show();
@@ -535,6 +552,21 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         return tmp;
     }
 
+    public static void changeDialogFontColor(AlertDialog dialog) {
+        int piblue = dialog.getContext().getResources().getColor(PIBLUE);
+        if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null) {
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(piblue);
+        }
+
+        if (dialog.getButton(AlertDialog.BUTTON_NEUTRAL) != null) {
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(piblue);
+        }
+
+        if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(piblue);
+        }
+    }
+
     static class SecretGenerator extends AsyncTask<Void, Void, Boolean> {
 
         private final Token token;
@@ -602,7 +634,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         protected void onPostExecute(final Boolean success) {
             //------------- display the phone-part of the secret and first OTP to verify ------------
             pd.dismiss();
-            android.support.v7.app.AlertDialog.Builder builder = new android.support.v7.app.AlertDialog.Builder(util.getmActivity());
+            AlertDialog.Builder builder = new AlertDialog.Builder(util.getmActivity());
             builder.setCancelable(false);
             builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                 @Override
@@ -612,7 +644,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             });
             builder.setTitle("PHONEPART");
             builder.setMessage(util.insertPeriodically(output, " ", 4) + "\n\n" + "First OTP to verify:      " + OTPGenerator.generate(token));
-            builder.show();
+            final AlertDialog alert = builder.create();
+            alert.setOnShowListener(new DialogInterface.OnShowListener() {
+                @Override
+                public void onShow(DialogInterface dialog) {
+                    MainActivity.changeDialogFontColor(alert);
+                }
+            });
+            alert.show();
             delegate.processFinished(token);
         }
 

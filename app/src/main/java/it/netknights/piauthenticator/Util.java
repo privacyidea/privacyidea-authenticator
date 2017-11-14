@@ -75,62 +75,6 @@ public class Util {
     private static final String DATAFILE = "data.dat";
     private static final String KEYFILE = "key.key";
 
-
-    private void tryThread(final Token token, final int phonepartlength) {
-        final ProgressDialog pd = new ProgressDialog(getmActivity());
-        pd.setMessage("Please wait while the secret is generated");
-        pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        pd.setCancelable(false);
-        pd.setIndeterminate(true);
-        pd.show();
-
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final byte[] phonepart = new byte[phonepartlength];
-                SecureRandom sr = new SecureRandom();
-                sr.nextBytes(phonepart);
-                output = byteArrayToHexString(phonepart);
-                Log.d(TAG, "phonepart HexString: " + output);
-                //------------- combine the phone- and QR-part with the specified algorithm ----------------
-                String QRsecretAsHEX = byteArrayToHexString(new Base32().decode(token.getSecret()));
-                //byte[] qrpartBytes = hexStringToByteArray(QRsecretAsHEX);
-                char[] ch = QRsecretAsHEX.toCharArray();
-                byte[] completesecretBytes = new byte[0];
-                int hardeningIterations = 40000;
-                long startTime = SystemClock.elapsedRealtime();
-                try {
-                    completesecretBytes = OTPGenerator.generatePBKDFKey(ch, phonepart, hardeningIterations, 256);
-                } catch (NoSuchAlgorithmException e) {
-                    e.printStackTrace();
-                } catch (InvalidKeySpecException e) {
-                    e.printStackTrace();
-                }
-                long endTime = SystemClock.elapsedRealtime() - startTime;
-
-                Log.d(TAG, "time for PBKDF2 computation: " + endTime + "ms, with " + hardeningIterations + " Iterations");
-                String completeSecretAsHexString = byteArrayToHexString(completesecretBytes);
-                Log.d(TAG, "complete secret HexString: " + completeSecretAsHexString);
-                token.setSecret(completeSecretAsHexString);
-
-
-              /*  getmActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-
-                    }
-                });*/
-            }
-        });
-        t.start();
-        try {
-            t.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        pd.dismiss();
-    }
-
     String insertPeriodically(String text, String insert, int period) {
         StringBuilder builder = new StringBuilder(text.length() + insert.length() * (text.length() / period) + 1);
         int index = 0;

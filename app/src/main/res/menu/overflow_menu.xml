@@ -2,20 +2,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="it.netknights.nilsbehlen.piauthenticator.it.netknights.piauthenticator.MainActivity">
-    <item
-        android:id="@+id/action_remove_all"
-        android:orderInCategory="100"
-        android:title="Remove all tokens" />
+
     <item
         android:id="@+id/action_enter_detail"
         android:orderInCategory="101"
-        android:title="Enter details" />
-    <item
-        android:id="@+id/action_settings"
-        android:orderInCategory="102"
-        android:title="Settings" />
+        android:title="@string/add_token_manually" />
+
     <item
         android:id="@+id/action_about"
         android:orderInCategory="106"
-        android:title="About" />
+        android:title="@string/about" />
 </menu>

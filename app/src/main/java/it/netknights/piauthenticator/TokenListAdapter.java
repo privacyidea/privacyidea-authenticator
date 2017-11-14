@@ -25,6 +25,7 @@ import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.DialogInterface;
+import android.graphics.PorterDuff;
 import android.text.InputType;
 import android.util.Log;
 import android.view.DragEvent;
@@ -47,6 +48,7 @@ import java.util.List;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 import static it.netknights.piauthenticator.OTPGenerator.hashPIN;
+import static it.netknights.piauthenticator.R.color.PIBLUE;
 import static it.netknights.piauthenticator.Token.HOTP;
 import static it.netknights.piauthenticator.Token.TOTP;
 import static it.netknights.piauthenticator.Util.TAG;
@@ -135,12 +137,10 @@ public class TokenListAdapter extends BaseAdapter {
             v.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    AlertDialog.Builder alert = new AlertDialog.Builder(v.getContext());
-                    alert.setTitle("Set new PIN");
                     final EditText input = new EditText(v.getContext());
-                    input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
-                    alert.setView(input);
-                    alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                    input.getBackground().setColorFilter(input.getContext().getResources().getColor(PIBLUE), PorterDuff.Mode.SRC_IN);
+                    AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
+                    builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             int temp_pin = Integer.parseInt(input.getEditableText().toString());
@@ -151,12 +151,23 @@ public class TokenListAdapter extends BaseAdapter {
                             Util.saveTokens(mView.getContext(), temp);
                         }
                     });
-                    alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             dialog.cancel();
                         }
                     });
+                    final AlertDialog alert = builder.create();
+                    alert.setTitle("Set new PIN");
+                    input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+                    alert.setView(input);
+                    alert.setOnShowListener(new DialogInterface.OnShowListener() {
+                        @Override
+                        public void onShow(DialogInterface dialog) {
+                            MainActivity.changeDialogFontColor(alert);
+                        }
+                    });
+
                     alert.show();
                 }
             });
@@ -169,12 +180,13 @@ public class TokenListAdapter extends BaseAdapter {
             v.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    AlertDialog.Builder alert = new AlertDialog.Builder(v.getContext());
-                    alert.setTitle("Enter PIN");
+                    AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
+                    builder.setTitle("Enter PIN");
                     final EditText input = new EditText(v.getContext());
                     input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
-                    alert.setView(input);
-                    alert.setPositiveButton("Enter", new DialogInterface.OnClickListener() {
+                    input.getBackground().setColorFilter(input.getContext().getResources().getColor(PIBLUE), PorterDuff.Mode.SRC_IN);
+                    builder.setView(input);
+                    builder.setPositiveButton("Enter", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             int temp_input = Integer.parseInt(input.getEditableText().toString());
@@ -188,10 +200,17 @@ public class TokenListAdapter extends BaseAdapter {
                             notifyDataSetChanged();
                         }
                     });
-                    alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             dialog.cancel();
+                        }
+                    });
+                    final AlertDialog alert = builder.create();
+                    alert.setOnShowListener(new DialogInterface.OnShowListener() {
+                        @Override
+                        public void onShow(DialogInterface dialog) {
+                            MainActivity.changeDialogFontColor(alert);
                         }
                     });
                     alert.show();

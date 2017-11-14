@@ -97,9 +97,13 @@
     <string name="version">Version</string>
     <string name="licenses_label">Licenses</string>
     <string name="piauth_name_label">PrivacyIDEA Authenticator</string>
-    <string name="comany_label">\u00A9NetKnights GmbH 2017</string>
+    <string name="comany_label">\u00A9NetKnights GmbH 2017, Apache License 2.0</string>
     <string name="version_placeholder">VERSION</string>
     <string name="next_button_text">next</string>
     <string name="textview_placeholder">TextView</string>
     <string name="lock_icon_desc">lock icon</string>
+    <string name="add_token_manually">Add token manually</string>
+    <string name="settings">Settings</string>
+    <string name="about">About</string>
+    <string name="add_button_label">Add</string>
 </resources>
