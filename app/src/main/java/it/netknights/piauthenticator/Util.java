@@ -62,7 +62,6 @@ public class Util {
 
     private Activity mActivity;
     public static String TAG = "it.netknights.piauth";
-    String output;
 
     Util(MainActivity mainActivity) {
         mActivity = mainActivity;
@@ -74,20 +73,6 @@ public class Util {
 
     private static final String DATAFILE = "data.dat";
     private static final String KEYFILE = "key.key";
-
-    String insertPeriodically(String text, String insert, int period) {
-        StringBuilder builder = new StringBuilder(text.length() + insert.length() * (text.length() / period) + 1);
-        int index = 0;
-        String prefix = "";
-        while (index < text.length()) {
-            builder.append(prefix);
-            prefix = insert;
-            builder.append(text.substring(index,
-                    Math.min(index + period, text.length())));
-            index += period;
-        }
-        return builder.toString();
-    }
 
     /**
      * This Method loads the encrypted saved tokens, in the progress the Secret Key is unwrapped
@@ -164,6 +149,8 @@ public class Util {
         if (o.optBoolean("hastap", false)) {
             tmp.setWithTapToShow(true);
         }
+
+
         return tmp;
     }
 

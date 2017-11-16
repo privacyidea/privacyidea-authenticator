@@ -160,7 +160,7 @@ public class Token {
     }
 
     public void setAlgorithm(String algorithm) {
-        // In the KeyURI the parameter is sha1,sha256,sha512 whereas the Mac instance is HmacSHA1 etc.
+        // In the KeyURI the parameter is sha1/sha256/sha512, whereas the Mac instance is HmacSHA1 etc.
         if (algorithm.startsWith("sha") || algorithm.startsWith("SHA")) {
             this.algorithm = "Hmac" + algorithm.toUpperCase();
         } else if (algorithm.startsWith("Hmac")) {
