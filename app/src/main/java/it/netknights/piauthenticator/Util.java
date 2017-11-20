@@ -133,7 +133,8 @@ public class Util {
 
     private static Token makeTokenFromJSON(JSONObject o) throws JSONException {
         //Token tmp = new Token(new Base32().decode(o.getString(SECRET)), o.getString(LABEL), o.getString(TYPE), o.getInt(DIGITS));
-        Token tmp = new Token(o.getString(SECRET), o.getString(LABEL), o.getString(TYPE), o.getInt(DIGITS));
+
+        Token tmp = new Token(new Base32().decode(o.getString(SECRET)), o.getString(LABEL), o.getString(TYPE), o.getInt(DIGITS));
         tmp.setAlgorithm(o.getString(ALGORITHM));
         if (o.getString(TYPE).equals(HOTP)) {
             tmp.setCounter(o.getInt(COUNTER));
@@ -156,7 +157,7 @@ public class Util {
 
     private static JSONObject makeJSONfromToken(Token t) throws JSONException {
         JSONObject o = new JSONObject();
-        //o.put(SECRET, new String(new Base32().encode(t.getSecret())));
+        o.put(SECRET, new String(new Base32().encode(t.getSecret())));
         o.put(SECRET, t.getSecret());
         o.put(LABEL, t.getLabel());
         o.put(DIGITS, t.getDigits());

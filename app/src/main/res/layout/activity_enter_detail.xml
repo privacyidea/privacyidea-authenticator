@@ -49,7 +49,7 @@
         android:ems="10"
         android:inputType="textCapCharacters"
         android:selectAllOnFocus="true"
-        android:text="@string/secret"
+        android:text="@string/secret2"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editText_name" />
@@ -97,16 +97,18 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginRight="16dp"
-        app:layout_constraintBottom_toBottomOf="@+id/textView_type"
-        app:layout_constraintRight_toRightOf="parent" />
+        android:layout_marginTop="16dp"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/checkBox_pin" />
 
     <Spinner
         android:id="@+id/spinner_period"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginRight="16dp"
-        app:layout_constraintBottom_toBottomOf="@+id/textView_period"
-        app:layout_constraintRight_toRightOf="parent" />
+        android:layout_marginTop="16dp"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/spinner_type" />
 
     <TextView
         android:id="@+id/textView_algorithm"
@@ -126,8 +128,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginRight="16dp"
-        app:layout_constraintBottom_toBottomOf="@+id/textView_algorithm"
-        app:layout_constraintRight_toRightOf="parent" />
+        android:layout_marginTop="16dp"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/spinner_digits" />
 
     <TextView
         android:id="@+id/textView_digits"
@@ -145,11 +148,11 @@
     <Spinner
         android:id="@+id/spinner_digits"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
+        android:layout_height="22dp"
         android:layout_marginRight="16dp"
-        app:layout_constraintBottom_toBottomOf="@+id/textView_digits"
-        app:layout_constraintRight_toRightOf="parent" />
+        android:layout_marginTop="16dp"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/spinner_period" />
 
     <CheckBox
         android:id="@+id/checkBox_pin"
@@ -159,25 +162,6 @@
         android:text="@string/with_pin"
         android:textAppearance="@style/TextAppearance.AppCompat.Menu"
         app:layout_constraintBaseline_toBaselineOf="@+id/checkBox_base32"
-        app:layout_constraintRight_toRightOf="parent" />
-
-    <CheckBox
-        android:id="@+id/checkBox_2step"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
-        android:layout_marginTop="16dp"
-        android:text="@string/_2_step_rollout"
-        android:textAppearance="@style/TextAppearance.AppCompat.Menu"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView_algorithm" />
-
-    <Spinner
-        android:id="@+id/spinner_phonepart"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginRight="16dp"
-        app:layout_constraintBottom_toBottomOf="@+id/checkBox_2step"
         app:layout_constraintRight_toRightOf="parent" />
 
     <Button

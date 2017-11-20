@@ -10,6 +10,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -24,8 +25,6 @@ import android.widget.Toast;
 
 import org.apache.commons.codec.binary.Base32;
 
-import java.util.Arrays;
-
 import static android.view.View.GONE;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 
@@ -35,11 +34,11 @@ public class EnterDetailsActivity extends AppCompatActivity {
     private Spinner spinner_algorithm;
     private Spinner spinner_period;
     private Spinner spinner_type;
-    private Spinner spinner_phonepart;
+    //private Spinner spinner_phonepart;
     private TextView periodLabel;
 
     private String new_label;
-    private String new_secret;
+    private byte[] new_secret;
     private String new_algorithm;
     private String new_type;
     private int new_period;
@@ -86,7 +85,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
         spinner_period = (Spinner) findViewById(R.id.spinner_period);
         spinner_algorithm = (Spinner) findViewById(R.id.spinner_algorithm);
         spinner_digits = (Spinner) findViewById(R.id.spinner_digits);
-        spinner_phonepart = (Spinner) findViewById(R.id.spinner_phonepart);
+        //spinner_phonepart = (Spinner) findViewById(R.id.spinner_phonepart);
         periodLabel = (TextView) findViewById(R.id.textView_period);
 
         final int supportspinnerid = R.layout.support_simple_spinner_dropdown_item;
@@ -95,7 +94,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
         String[] periods = {"30s", "60s"};
         String[] algorithms = {"SHA1", "SHA256", "SHA512"};
         String[] digits = {"6", "8"};
-        String[] phonepart = {"10"};
+        //String[] phonepart = {"10"};
 
         ArrayAdapter<String> adapter_type = new ArrayAdapter<>(this, supportspinnerid, types);
         spinner_type.setAdapter(adapter_type);
@@ -105,8 +104,8 @@ public class EnterDetailsActivity extends AppCompatActivity {
         spinner_algorithm.setAdapter(adapter_algorithm);
         ArrayAdapter<String> adapter_digits = new ArrayAdapter<>(this, supportspinnerid, digits);
         spinner_digits.setAdapter(adapter_digits);
-        ArrayAdapter<String> adapter_phonepart = new ArrayAdapter<>(this, supportspinnerid, phonepart);
-        spinner_phonepart.setAdapter(adapter_phonepart);
+        /*ArrayAdapter<String> adapter_phonepart = new ArrayAdapter<>(this, supportspinnerid, phonepart);
+        spinner_phonepart.setAdapter(adapter_phonepart);*/
 
         spinner_type.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -119,7 +118,6 @@ public class EnterDetailsActivity extends AppCompatActivity {
                     spinner_period.setVisibility(View.VISIBLE);
                 }
             }
-
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
 
@@ -132,7 +130,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
         addBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(evaluate()){
+                if (evaluate()) {
                     buildResult();
                     finish();
                 }
@@ -156,11 +154,11 @@ public class EnterDetailsActivity extends AppCompatActivity {
             returnIntent.putExtra("haspin", true);
         }
 
-        CheckBox twostep_box = (CheckBox) findViewById(R.id.checkBox_2step);
+       /* CheckBox twostep_box = (CheckBox) findViewById(R.id.checkBox_2step);
         if (twostep_box.isChecked()) {
             returnIntent.putExtra("2step", true);
             returnIntent.putExtra("pp", new_pp);
-        }
+        }*/
 
         setResult(Activity.RESULT_OK, returnIntent);
     }
@@ -176,17 +174,24 @@ public class EnterDetailsActivity extends AppCompatActivity {
         }
 
         new_label = editText_name.getText().toString();
-        //if (new_label.equals("")){        }
-        new_secret = editText_secret.getText().toString();
-        if (new_secret.equals("")){
-            Toast.makeText(this,"Secret can not be empty", Toast.LENGTH_LONG).show();
+        if (new_label.equals("")) {
+            Toast.makeText(this, "Name cannot be empty", Toast.LENGTH_LONG).show();
+            editText_name.requestFocus();
+            return false;
+        }
+        String new_secret_string = editText_secret.getText().toString();
+
+        if (new_secret_string.equals("")) {
+            Toast.makeText(this, "Secret cannot be empty", Toast.LENGTH_LONG).show();
             editText_secret.requestFocus();
             return false;
         }
-        if (!check_base32.isChecked()) { // the secret should be base32 encoded
-            byte[] tmp = editText_secret.getText().toString().getBytes();
-            new_secret = Arrays.toString(new Base32().encode(tmp));
+        if (check_base32.isChecked()) {
+            new_secret = new Base32().decode(new_secret_string);
+        } else {
+            new_secret = new_secret_string.getBytes();
         }
+
         new_type = (String) spinner_type.getSelectedItem();
         new_type = new_type.toLowerCase();
         if (new_type.equals("totp")) {
@@ -199,8 +204,8 @@ public class EnterDetailsActivity extends AppCompatActivity {
         String tmp_digits = (String) spinner_digits.getSelectedItem();
         new_digits = Integer.parseInt(tmp_digits);
         new_algorithm = (String) spinner_algorithm.getSelectedItem();
-        String tmp_pp = (String) spinner_phonepart.getSelectedItem();
-        new_pp = Integer.parseInt(tmp_pp);
+        /*String tmp_pp = (String) spinner_phonepart.getSelectedItem();
+        new_pp = Integer.parseInt(tmp_pp);*/
         return true;
     }
 

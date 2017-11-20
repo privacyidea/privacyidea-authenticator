@@ -106,4 +106,5 @@
     <string name="settings">Settings</string>
     <string name="about">About</string>
     <string name="add_button_label">Add</string>
+    <string name="secret2">SECRET</string>
 </resources>

@@ -4,15 +4,6 @@
     android:descendantFocusability="blocksDescendants"
     android:layout_width="match_parent" android:layout_height="match_parent">
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentStart="true"
-        android:layout_below="@+id/textViewLabel" />
-
     <TextView
         android:id="@+id/textViewToken"
         android:layout_width="wrap_content"
@@ -36,19 +27,8 @@
         android:id="@+id/next_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/next_button_text"
         android:layout_alignParentEnd="true"
-        android:layout_alignBottom="@+id/progressBar"
-        android:layout_alignParentTop="true" />
-
-    <ImageView
-        android:id="@+id/imageView_row_lock"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_marginStart="28dp"
-        android:layout_marginTop="11dp"
-        android:layout_toEndOf="@+id/textViewToken"
-        android:contentDescription="@string/lock_icon_desc"
-        app:srcCompat="@android:drawable/ic_secure" />
+        android:text="@string/next_button_text" />
+
 </RelativeLayout>

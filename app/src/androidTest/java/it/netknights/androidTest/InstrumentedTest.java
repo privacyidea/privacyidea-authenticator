@@ -7,6 +7,7 @@ import android.support.test.filters.LargeTest;
 import android.support.test.runner.AndroidJUnit4;
 
 import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -101,7 +102,7 @@ public class InstrumentedTest {
         hotp.setType("totp");
         hotp.setLabel("test setlabel");
         String s = "Hallo test123";
-        hotp.setSecret(s);
+        hotp.setSecret(new Base32().decode(s));
         assertEquals("523432", hotp.getCurrentOTP());
         assertEquals("totp", hotp.getType());
         assertEquals(s, hotp.getSecret());

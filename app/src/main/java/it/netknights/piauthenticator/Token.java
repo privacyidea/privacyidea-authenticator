@@ -22,24 +22,23 @@
 package it.netknights.piauthenticator;
 
 import android.graphics.Color;
-import android.util.Log;
 import android.widget.ProgressBar;
 
 public class Token {
 
-    public static final String DIGITS = "digits";
-    public static final String PERIOD = "period";
-    public static final String ALGORITHM = "algorithm";
-    public static final String ISSUER = "issuer";
-    public static final String SECRET = "secret";
-    public static final String TYPE = "type";
-    public static final String LABEL = "label";
-    public static final String COUNTER = "counter";
-    public static final String TOTP = "totp";
-    public static final String HOTP = "hotp";
+    static final String DIGITS = "digits";
+    static final String PERIOD = "period";
+    static final String ALGORITHM = "algorithm";
+    static final String ISSUER = "issuer";
+    static final String SECRET = "secret";
+    static final String TYPE = "type";
+    static final String LABEL = "label";
+    static final String COUNTER = "counter";
+    static final String TOTP = "totp";
+    static final String HOTP = "hotp";
 
     private String currentOTP;
-    private String secret;
+    private byte[] secret;
     private String label;
     private String type;
     private int digits;
@@ -54,7 +53,7 @@ public class Token {
     private boolean tapped = false;
 
 
-    public Token(String secret, String label, String type, int digits) {
+    Token(byte[] secret, String label, String type, int digits) {
         this.label = label;
         this.secret = secret;
         this.type = type;
@@ -63,7 +62,7 @@ public class Token {
         this.counter = 0;
     }
 
-    public void setTapped(boolean tapped) {
+    void setTapped(boolean tapped) {
         this.tapped = tapped;
     }
 
@@ -84,7 +83,6 @@ public class Token {
     }
 
     public void setPin(String pin) {
-        //Log.d("PIAuth", "hashed pin is: "+pin);
         Pin = pin;
     }
 
@@ -106,6 +104,9 @@ public class Token {
 
     public void setPb(ProgressBar pb) {
         if (this.pb == null) {
+            if(this.type.equals("hotp")){
+                return;
+            }
             this.pb = pb;
             this.pb.setMax(getPeriod() * 100);
             this.pb.getProgressDrawable().setColorFilter(
@@ -113,10 +114,6 @@ public class Token {
         } else if (this.pb.getId() == pb.getId()) {
             return;
         }
-        /*this.pb = pb;
-        this.pb.setMax(getPeriod() * 100);
-        this.pb.getProgressDrawable().setColorFilter(
-                Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);*/
     }
 
     public ProgressBar getPb() {
@@ -135,11 +132,11 @@ public class Token {
         this.counter = counter;
     }
 
-    public void setSecret(String secret) {
+    public void setSecret(byte[] secret) {
         this.secret = secret;
     }
 
-    public String getSecret() {
+    public byte[] getSecret() {
         return secret;
     }
 

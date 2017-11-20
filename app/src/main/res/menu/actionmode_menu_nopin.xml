@@ -16,5 +16,5 @@
     <item
         android:id="@+id/copy_clipboard"
         android:title="@string/copy_to_clipboard"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="never" />
 </menu>

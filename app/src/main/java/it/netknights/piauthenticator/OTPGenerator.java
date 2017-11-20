@@ -21,6 +21,8 @@
 package it.netknights.piauthenticator;
 
 
+import android.util.Log;
+
 import org.apache.commons.codec.binary.Base32;
 
 import java.lang.reflect.UndeclaredThrowableException;
@@ -37,6 +39,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import static it.netknights.piauthenticator.Token.HOTP;
 import static it.netknights.piauthenticator.Token.TOTP;
+import static it.netknights.piauthenticator.Util.TAG;
 
 
 public class OTPGenerator {
@@ -55,9 +58,9 @@ public class OTPGenerator {
      * @return the current OTP value for the input token
      */
     public static String generate(Token token) {
-        String secretAsHEX = byteArrayToHexString(new Base32().decode(token.getSecret()));
+        String secretAsHEX = byteArrayToHexString(token.getSecret());
         String digits = String.valueOf(token.getDigits());
-
+        Log.d(TAG, "generate: for: " + token.getLabel() + " with secret: " + secretAsHEX);
         if (token.getType().equals(TOTP)) {
             return String.format("%0" + token.getDigits() + "d", generateTOTP(secretAsHEX,
                     (System.currentTimeMillis() / 1000), digits, token.getPeriod(), token.getAlgorithm()));
@@ -66,7 +69,6 @@ public class OTPGenerator {
             return String.format("%0" + token.getDigits() + "d", generateHOTP(secretAsHEX,
                     String.valueOf(token.getCounter()), digits, token.getAlgorithm()));
         }
-        //  return String.format("%06d", generate(secret, System.currentTimeMillis() / 1000, 6));
         return "";
     }
 
@@ -87,7 +89,6 @@ public class OTPGenerator {
         */
         long time = t / period;
         String step = Long.toHexString(time).toUpperCase();
-        //t /= period;
         return generateHOTP(key, step, String.valueOf(digits), algorithm);
     }
 

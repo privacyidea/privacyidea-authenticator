@@ -137,7 +137,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         listview.setAdapter(tokenlistadapter);
         tokenlistadapter.setTokens(tokenlist);
         tokenlistadapter.refreshOTPs();
-
     }
 
     public void paintStatusbar() {
@@ -207,17 +206,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         return super.onOptionsItemSelected(item);
     }
 
-    private void copyToClipboard(Context context, String text) {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
-            android.text.ClipboardManager clipboard = (android.text.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-            clipboard.setText(text);
-        } else {
-            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-            android.content.ClipData clip = android.content.ClipData.newPlainText("Copied Text", text);
-            clipboard.setPrimaryClip(clip);
-        }
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
@@ -248,22 +236,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 Toast.makeText(this, "Cancelled", Toast.LENGTH_SHORT).show();
             }
         } else if (requestCode == INTENT_ABOUT) {
-            //TODO about activity finished
-
         } else {
             super.onActivityResult(requestCode, resultCode, data);
-        }
-    }
-
-    private void scanQR() {
-        try {
-            IntentIntegrator ii = new IntentIntegrator(this);
-            ii.initiateScan();
-        } catch (Exception e) {
-            if (this.getCurrentFocus() != null) {
-                Snackbar.make(this.getCurrentFocus(), e.getMessage(), Snackbar.LENGTH_LONG).show();
-            }
-
         }
     }
 
@@ -277,10 +251,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     public void onPause() {
         super.onPause();
         handler.removeCallbacks(timer);
-    }
-
-    public void saveTokenlist() {
-        Util.saveTokens(this, tokenlist);
     }
 
     @Override
@@ -300,7 +270,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         tokenlistadapter.setCurrentSelection(nextSelection);
         tokenlistadapter.notifyDataSetChanged();
         mode.setTitle("Choose an action");
-
         return true;
     }
 
@@ -316,10 +285,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    tokenlist.remove(currToken);
+                    int pos = tokenlist.indexOf(currToken);
+                    tokenlist.remove(pos);
+                    Toast.makeText(MainActivity.this, "Token removed", Toast.LENGTH_SHORT).show();
                     tokenlistadapter.notifyDataSetChanged();
                     saveTokenlist();
-                    Toast.makeText(MainActivity.this, "Token removed", Toast.LENGTH_SHORT).show();
                     mode.finish();
                 }
             });
@@ -470,15 +440,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
 
         String type = url.getHost();
-        // the secret is base32 decoded before the OTP value is generated, so there no need to do something here
-        String secret = uri.getQueryParameter(SECRET);
+        String secret_string = uri.getQueryParameter(SECRET);
         String label = uri.getPath().substring(1);
         String issuer = uri.getQueryParameter(ISSUER);
         if (issuer != null) {
             label = issuer + ": " + label;
         }
         int digits = Integer.parseInt(uri.getQueryParameter(DIGITS));
-        //byte[] secretAsbytes = new Base32().decode(secret.toUpperCase());
+        byte[] secret = new Base32().decode(secret_string.toUpperCase());
         Token tmp = new Token(secret, label, type, digits);
 
         if (type.equals(TOTP)) {
@@ -551,7 +520,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     private Token makeTokenFromIntent(Intent data) {
         String type = data.getStringExtra("type");
-        String secret = data.getStringExtra("secret");
+
+        byte[] secret = data.getByteArrayExtra("secret");
         String label = data.getStringExtra("label");
         int digits = data.getIntExtra("digits", 6);
         Token tmp = new Token(secret, label, type, digits);
@@ -612,7 +582,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             this.output_size = output_size;
             this.delegate = delegate;
             this.phonepartBytes = new byte[phonepartlength];
-            Log.d(Util.TAG, "ppl: "+phonepartlength+", it: "+iterations+" ,outs: "+output_size);
+            Log.d(Util.TAG, "ppl: " + phonepartlength + ", it: " + iterations + " ,outs: " + output_size);
         }
 
         @Override
@@ -649,13 +619,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 e.printStackTrace();
             }
             long endTime = SystemClock.elapsedRealtime() - startTime;
-
-
-            String completeSecretAsHexString = byteArrayToHexString(completesecretBytes);
-
-            token.setSecret(completeSecretAsHexString);
-            Log.d(Util.TAG, "time for PBKDF2 computation: " + endTime + "ms, with " + iterations + " Iterations");
-            Log.d(Util.TAG, "complete secret HexString: " + completeSecretAsHexString);
+            token.setSecret(completesecretBytes);
+            //Log.d(Util.TAG, "time for PBKDF2 computation: " + endTime + "ms, with " + iterations + " Iterations");
+            //Log.d(Util.TAG, "complete secret HexString: " + completeSecretAsHexString);
             return true;
         }
 
@@ -671,8 +637,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                     dialog.cancel();
                 }
             });
-            builder.setTitle("PHONEPART");
-            /*builder.setMessage(insertPeriodically(output, " ", 4) + "\n\n" + "First OTP to verify:      " + OTPGenerator.generate(token));*/
+            builder.setTitle("Phonepart");
             builder.setMessage(buildResultMessage());
             final AlertDialog alert = builder.create();
             alert.setOnShowListener(new DialogInterface.OnShowListener() {
@@ -704,14 +669,15 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             try {
                 outputStream.write(checksumBytes);
                 outputStream.write(phonepartBytes);
-                Log.d(Util.TAG,"checksumbytes toString: "+ new Base32().encodeAsString(checksumBytes)+" ,phonepart toString: "+ new Base32().encodeAsString(phonepartBytes));
+                Log.d(Util.TAG, "checksumbytes toString: " + new Base32().encodeAsString(checksumBytes) + " ,phonepart toString: " + new Base32().encodeAsString(phonepartBytes));
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
             byte completeOutputBytes[] = outputStream.toByteArray();
-            Log.d(Util.TAG, "complete phonepart: "+ new Base32().encodeAsString(completeOutputBytes));
+            Log.d(Util.TAG, "complete phonepart: " + new Base32().encodeAsString(completeOutputBytes));
             result = insertPeriodically(new Base32().encodeAsString(completeOutputBytes), " ", 4);
+            result = result.replaceAll("=", "");
             return result;
         }
 
@@ -733,4 +699,34 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             return builder.toString();
         }
     }
+
+    public void saveTokenlist() {
+        Util.saveTokens(this, tokenlist);
+    }
+
+    private void scanQR() {
+        try {
+            IntentIntegrator ii = new IntentIntegrator(this);
+            ii.initiateScan();
+        } catch (Exception e) {
+            if (this.getCurrentFocus() != null) {
+                Snackbar.make(this.getCurrentFocus(), e.getMessage(), Snackbar.LENGTH_LONG).show();
+            }
+
+        }
+    }
+
+    private void copyToClipboard(Context context, String text) {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
+            android.text.ClipboardManager clipboard = (android.text.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+            if (clipboard != null)
+                clipboard.setText(text);
+        } else {
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+            android.content.ClipData clip = android.content.ClipData.newPlainText("Copied Text", text);
+            if (clipboard != null)
+                clipboard.setPrimaryClip(clip);
+        }
+    }
+
 }
