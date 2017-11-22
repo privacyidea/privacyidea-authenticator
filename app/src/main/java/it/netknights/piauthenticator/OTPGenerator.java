@@ -60,7 +60,7 @@ public class OTPGenerator {
     public static String generate(Token token) {
         String secretAsHEX = byteArrayToHexString(token.getSecret());
         String digits = String.valueOf(token.getDigits());
-        Log.d(TAG, "generate: for: " + token.getLabel() + " with secret: " + secretAsHEX);
+        //Log.d(TAG, "generate: for: " + token.getLabel() + " with secret: " + secretAsHEX);
         if (token.getType().equals(TOTP)) {
             return String.format("%0" + token.getDigits() + "d", generateTOTP(secretAsHEX,
                     (System.currentTimeMillis() / 1000), digits, token.getPeriod(), token.getAlgorithm()));

@@ -277,20 +277,23 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     public boolean onActionItemClicked(final ActionMode mode, MenuItem item) {
         final Token currToken = tokenlistadapter.getCurrentSelection();
         final int id = item.getItemId();
-
         if (id == R.id.delete_token2) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("CONFIRM DELETION");
+            builder.setTitle("Confirm Deletion");
             builder.setMessage("Do you really want to remove\n" + currToken.getLabel() + " ?");
             builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     int pos = tokenlist.indexOf(currToken);
                     tokenlist.remove(pos);
-                    Toast.makeText(MainActivity.this, "Token removed", Toast.LENGTH_SHORT).show();
-                    tokenlistadapter.setTokens(tokenlist);
-                    listview.invalidateViews();
+                    /*   ArrayList<Token> templist = new ArrayList<>(tokenlist);
+                    tokenlistadapter.clear();
                     tokenlistadapter.notifyDataSetChanged();
+                    tokenlist = templist;
+                    tokenlistadapter.setTokens(templist);*/
+                    tokenlistadapter.notifyDataSetChanged();
+                    //printListAndAdapter();
+                    Toast.makeText(MainActivity.this, "Token removed", Toast.LENGTH_SHORT).show();
                     saveTokenlist();
                     mode.finish();
                 }
@@ -413,6 +416,15 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         return false;
     }
 
+    private void printListAndAdapter() {
+        for (int i = 0; i < tokenlistadapter.getCount(); i++) {
+            Log.d(Util.TAG, "adapter: i:" + i + " , name: " + tokenlistadapter.getItem(i).getType());
+        }
+        for (int j = 0; j < tokenlist.size(); j++) {
+            Log.d(Util.TAG, "list: i: " + j + " , name: " + tokenlist.get(j).getType());
+        }
+    }
+
     @Override
     public void onDestroyActionMode(ActionMode mode) {
         tokenlistadapter.setCurrentSelection(null);
@@ -471,7 +483,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 uri.getQueryParameter("2step_output") != null) {
 
             int phonepartlength = 10; // default value
-            if (uri.getQueryParameter("2step_salt") != null)    {
+            if (uri.getQueryParameter("2step_salt") != null) {
                 phonepartlength = Integer.parseInt(uri.getQueryParameter("2step_salt"));
             }
             int iterations = 10000;
@@ -480,7 +492,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             }
             int output_size = 160; //comes in bytes, need to be converted to bit as parameter for pbkdf2
             if (uri.getQueryParameter("2step_output") != null) {
-                output_size = Integer.parseInt(uri.getQueryParameter("2step_output"))*8;
+                output_size = Integer.parseInt(uri.getQueryParameter("2step_output")) * 8;
             } else {
                 //if the output size is not specified, it is derived from the OTP algorithm
                 if (tmp.getAlgorithm().equals("HmacSHA1")) {
@@ -496,7 +508,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         if (uri.getBooleanQueryParameter("tapshow", false)) {
             tmp.setWithTapToShow(true);
         }
-
         return tmp;
     }
 

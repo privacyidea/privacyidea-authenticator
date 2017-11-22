@@ -37,6 +37,7 @@ import android.view.animation.LinearInterpolator;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -101,50 +102,33 @@ public class TokenListAdapter extends BaseAdapter {
 
     @Override
     public View getView(final int position, View v, ViewGroup parent) {
-        final Token token = getItem(position);
-        boolean isHOTP = false;
-        final View mView = v;
-
         if (v == null) {
             final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-            if (token.getType().equals("hotp")) {
-                v = inflater.inflate(R.layout.entry_hotp, parent, false);
-                isHOTP = true;
-            } else {
-                v = inflater.inflate(R.layout.entry_totp, parent, false);
-            }
+            v = inflater.inflate(R.layout.entry, parent, false);
         }
         v.setTag(position);
+        final View mView = v;
 
-        Button nextbutton = null;
-        ProgressBar progressBar = null;
 
-        if (isHOTP) {
-            nextbutton = (Button) v.findViewById(R.id.next_button);
+        final Token token = getItem(position);
+        final ProgressBar progressBar;
+        if (token.getPb() == null) {
+            progressBar = (ProgressBar) v.findViewById(R.id.progressBar);
+            token.setPb(progressBar);
         } else {
-            if (token.getPb() == null) {
-                progressBar = (ProgressBar) v.findViewById(R.id.progressBar);
-                token.setPb(progressBar);
-            } else {
-                progressBar = token.getPb();
-            }
+            progressBar = token.getPb();
         }
-
         final TextView otptext = (TextView) v.findViewById(R.id.textViewToken);
         final TextView labeltext = (TextView) v.findViewById(R.id.textViewLabel);
-        otptext.setText(token.getCurrentOTP());
-        labeltext.setText(token.getLabel());
+        final Button nextbtn = (Button) v.findViewById(R.id.next_button);
 
+        otptext.setText(token.getCurrentOTP());
+
+        labeltext.setText(token.getLabel());
         if (token.isWithPIN() && token.getPin().equals("")) {
             //----------------------- Pin not set yet ----------------------
-            if (isHOTP) {
-                if (nextbutton != null) {
-                    nextbutton.setVisibility(GONE);
-                }
-            } else {
-                if (progressBar != null)
-                    progressBar.setVisibility(GONE);
-            }
+            nextbtn.setVisibility(GONE);
+            progressBar.setVisibility(GONE);
             otptext.setText(R.string.tap_to_set_pin);
             v.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -185,13 +169,8 @@ public class TokenListAdapter extends BaseAdapter {
             });
         } else if (token.isWithPIN() && token.isLocked()) {
             //------------------- show dialog for PIN input -------------------------------------
-            v.setLongClickable(true);
-            if (isHOTP) {
-                progressBar.setVisibility(GONE);
-            } else {
-                if (nextbutton != null)
-                    nextbutton.setVisibility(GONE);
-            }
+            progressBar.setVisibility(GONE);
+            nextbtn.setVisibility(GONE);
             otptext.setText(R.string.tap_to_unlock);
             v.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -233,12 +212,10 @@ public class TokenListAdapter extends BaseAdapter {
                 }
             });
         } else if (!token.isLocked() && token.isWithTapToShow() && !token.isTapped()) {
+            // token untapped
             otptext.setText(R.string.tap_to_show_otp);
-            if (isHOTP) {
-                nextbutton.setVisibility(GONE);
-            } else {
-                progressBar.setVisibility(GONE);
-            }
+            nextbtn.setVisibility(GONE);
+            progressBar.setVisibility(GONE);
             v.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -246,11 +223,26 @@ public class TokenListAdapter extends BaseAdapter {
                     notifyDataSetChanged();
                 }
             });
-        } else {
+        }/*else if (!token.isLocked() && token.isWithTapToShow() && token.isTapped()){
+
+        }*/ else {
+            //--------------- no PIN protection or token is unlocked ---------------------------
+            //------------------ differenciate hotp and totp ---------------------------
+           /* v.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    token.setCounter((token.getCounter() + 1));
+                    token.setCurrentOTP(OTPGenerator.generate(token));
+                    notifyDataSetChanged();
+                }
+            });*/
             v.setOnClickListener(null);
-            if (isHOTP) {
-                nextbutton.setVisibility(VISIBLE);
-                nextbutton.setOnClickListener(new View.OnClickListener() {
+            if (token.getType().equals(HOTP)) {
+                progressBar.setVisibility(GONE);
+                v.setLongClickable(true);
+
+                nextbtn.setVisibility(VISIBLE);
+                nextbtn.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         token.setCounter((token.getCounter() + 1));
@@ -258,15 +250,24 @@ public class TokenListAdapter extends BaseAdapter {
                         notifyDataSetChanged();
                     }
                 });
+
+                /*nextbtn.setVisibility(GONE);
+                nextbtn.setClickable(false);
+                nextbtn.setLongClickable(false);*/
+
             } else {
-                if (progressBar != null) {
-                    progressBar.setVisibility(VISIBLE);
-                }
+                nextbtn.setVisibility(GONE);
+                nextbtn.setClickable(false);
+                nextbtn.setLongClickable(false);
+                //nextbtn.setActivated(false);
+                progressBar.setVisibility(VISIBLE);
                 v.setClickable(false);
             }
             otptext.setText(token.getCurrentOTP());
         }
+
         //setupOnDrags(v,position);
+
         return v;
     }
 

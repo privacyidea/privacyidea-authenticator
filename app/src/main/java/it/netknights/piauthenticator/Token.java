@@ -104,9 +104,6 @@ public class Token {
 
     public void setPb(ProgressBar pb) {
         if (this.pb == null) {
-            if(this.type.equals("hotp")){
-                return;
-            }
             this.pb = pb;
             this.pb.setMax(getPeriod() * 100);
             this.pb.getProgressDrawable().setColorFilter(
