@@ -288,6 +288,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                     int pos = tokenlist.indexOf(currToken);
                     tokenlist.remove(pos);
                     Toast.makeText(MainActivity.this, "Token removed", Toast.LENGTH_SHORT).show();
+                    tokenlistadapter.setTokens(tokenlist);
+                    listview.invalidateViews();
                     tokenlistadapter.notifyDataSetChanged();
                     saveTokenlist();
                     mode.finish();
@@ -459,14 +461,17 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         if (uri.getQueryParameter(ALGORITHM) != null) {
             tmp.setAlgorithm(uri.getQueryParameter(ALGORITHM).toUpperCase());
         }
-        boolean pinned = uri.getBooleanQueryParameter("pin", false);
-        if (pinned) {
+        if (uri.getBooleanQueryParameter("pin", false)) {
             tmp.setWithPIN(true);
             tmp.setLocked(true);
         }
-        if (uri.getBooleanQueryParameter("2step", false)) {
+        //if at least one parameter for 2step is set - start 2step init
+        if (uri.getQueryParameter("2step_salt") != null ||
+                uri.getQueryParameter("2step_difficulty") != null ||
+                uri.getQueryParameter("2step_output") != null) {
+
             int phonepartlength = 10; // default value
-            if (uri.getQueryParameter("2step_salt") != null) {
+            if (uri.getQueryParameter("2step_salt") != null)    {
                 phonepartlength = Integer.parseInt(uri.getQueryParameter("2step_salt"));
             }
             int iterations = 10000;
@@ -475,7 +480,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             }
             int output_size = 160; //comes in bytes, need to be converted to bit as parameter for pbkdf2
             if (uri.getQueryParameter("2step_output") != null) {
-                output_size = Integer.parseInt(uri.getQueryParameter("2step_output"));
+                output_size = Integer.parseInt(uri.getQueryParameter("2step_output"))*8;
             } else {
                 //if the output size is not specified, it is derived from the OTP algorithm
                 if (tmp.getAlgorithm().equals("HmacSHA1")) {
