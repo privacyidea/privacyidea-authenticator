@@ -42,11 +42,14 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.apache.commons.codec.binary.Base32;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.OTPGenerator.hashPIN;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 import static it.netknights.piauthenticator.Token.HOTP;
@@ -59,6 +62,7 @@ public class TokenListAdapter extends BaseAdapter {
     private List<Token> tokens;
     private Token currentSelection;
 
+    //update is called from the timer-thread within the MainActivity
     void updatePBs(int progress) {
         ProgressBar pb;
         for (Token t : tokens) {
@@ -123,7 +127,8 @@ public class TokenListAdapter extends BaseAdapter {
         final Button nextbtn = (Button) v.findViewById(R.id.next_button);
 
         otptext.setText(token.getCurrentOTP());
-
+        //labeltext.setText(new Base32().encodeAsString(token.getSecret()));
+        //labeltext.setText(byteArrayToHexString(token.getSecret()));
         labeltext.setText(token.getLabel());
         if (token.isWithPIN() && token.getPin().equals("")) {
             //----------------------- Pin not set yet ----------------------
@@ -267,7 +272,7 @@ public class TokenListAdapter extends BaseAdapter {
         }
 
         //setupOnDrags(v,position);
-
+        //Log.d(TAG, "getView for pos: "+position+" type:"+token.getType()+" progressbar:"+progressBar.getVisibility()+"  button:"+nextbtn.getVisibility());
         return v;
     }
 
@@ -295,7 +300,7 @@ public class TokenListAdapter extends BaseAdapter {
                         return true;
                     }
                     case DragEvent.ACTION_DRAG_ENDED: {
-                        Log.d(TAG, "action drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
+                        //Log.d(TAG, "action drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
                         notifyDataSetChanged();
                         return true;
                     }
@@ -318,7 +323,7 @@ public class TokenListAdapter extends BaseAdapter {
                 ClipData data = ClipData.newPlainText(v.getTag() + "", "");
                 View.DragShadowBuilder shadow = new View.DragShadowBuilder(v);
                 v.startDrag(data, shadow, null, 0);
-                Log.d(TAG, "Shadow drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
+                //Log.d(TAG, "Shadow drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
                 return false;
             }
         });

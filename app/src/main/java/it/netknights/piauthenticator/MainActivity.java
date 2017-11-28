@@ -65,7 +65,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
@@ -582,7 +581,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         private ProgressDialog pd;
         private String output;
         private int iterations;
-        private int output_size;
+        private int output_size_bit;
         Response delegate = null;
         byte[] phonepartBytes;
 
@@ -595,10 +594,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             this.token = t;
             this.phonepartlength = phonepartlength;
             this.iterations = iterations;
-            this.output_size = output_size;
+            this.output_size_bit = output_size;
             this.delegate = delegate;
             this.phonepartBytes = new byte[phonepartlength];
-            Log.d(Util.TAG, "ppl: " + phonepartlength + ", it: " + iterations + " ,outs: " + output_size);
+            //Log.d(Util.TAG, "ppl: " + phonepartlength + ", it: " + iterations + " ,outs: " + output_size);
         }
 
         @Override
@@ -619,16 +618,19 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             sr.nextBytes(phonepartBytes);
 
             output = byteArrayToHexString(phonepartBytes);
-            Log.d(Util.TAG, "phonepartBytes HexString: " + output);
+            //Log.d(Util.TAG, "client_part_hex: " + output);
 
             //------------- combine the phone- and QR-part -------------------
-            String QRsecretAsHEX = byteArrayToHexString(new Base32().decode(token.getSecret()));
-            char[] ch = QRsecretAsHEX.toCharArray();
-            byte[] completesecretBytes = new byte[(output_size / 8)];
-
+            String server_secret_hex = byteArrayToHexString(token.getSecret());
+            //Log.d(Util.TAG, "server_secret_hex: "+server_secret_hex + " , server_secret_b32 "+ new Base32().encodeAsString(token.getSecret()));
+            char[] ch = server_secret_hex.toCharArray();
+            byte[] completesecretBytes = new byte[(output_size_bit / 8)];
+            //phonepartBytes = new Base32().decode("OF3XYLDSPTMWK===");
             long startTime = SystemClock.elapsedRealtime();
             try {
-                completesecretBytes = OTPGenerator.generatePBKDFKey(ch, phonepartBytes, iterations, output_size);
+                completesecretBytes = OTPGenerator.generatePBKDFKey(ch, phonepartBytes, iterations, output_size_bit);
+                //completesecretBytes = OTPGenerator.generatePBKDFKey(ch, new Base32().decode("OF3XYLDSPTMWK==="), iterations, output_size_bit);
+                //Log.d(Util.TAG, "complete_secret_hex : "+byteArrayToHexString(completesecretBytes));
             } catch (NoSuchAlgorithmException e) {
                 e.printStackTrace();
             } catch (InvalidKeySpecException e) {
@@ -685,13 +687,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             try {
                 outputStream.write(checksumBytes);
                 outputStream.write(phonepartBytes);
-                Log.d(Util.TAG, "checksumbytes toString: " + new Base32().encodeAsString(checksumBytes) + " ,phonepart toString: " + new Base32().encodeAsString(phonepartBytes));
+                //Log.d(Util.TAG, "checksumbytes_b32: " + new Base32().encodeAsString(checksumBytes) + " ,client_part_b32: " + new Base32().encodeAsString(phonepartBytes));
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
             byte completeOutputBytes[] = outputStream.toByteArray();
-            Log.d(Util.TAG, "complete phonepart: " + new Base32().encodeAsString(completeOutputBytes));
+            //Log.d(Util.TAG, "client_part_withCRC_b32: " + new Base32().encodeAsString(completeOutputBytes));
             result = insertPeriodically(new Base32().encodeAsString(completeOutputBytes), " ", 4);
             result = result.replaceAll("=", "");
             return result;
@@ -718,6 +720,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     public void saveTokenlist() {
         Util.saveTokens(this, tokenlist);
+        //Toast.makeText(this, "Tokens saved", Toast.LENGTH_SHORT).show();
     }
 
     private void scanQR() {
