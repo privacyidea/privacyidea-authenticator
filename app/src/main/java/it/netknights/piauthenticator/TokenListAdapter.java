@@ -25,6 +25,7 @@ import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.text.InputType;
 import android.util.Log;
@@ -49,6 +50,7 @@ import java.util.List;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static android.view.View.inflate;
 import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.OTPGenerator.hashPIN;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
@@ -61,24 +63,29 @@ public class TokenListAdapter extends BaseAdapter {
 
     private List<Token> tokens;
     private Token currentSelection;
+    private ArrayList<ProgressBar> pbs;
+
+    ArrayList<ProgressBar> getPbs() {
+        return pbs;
+    }
 
     //update is called from the timer-thread within the MainActivity
     void updatePBs(int progress) {
-        ProgressBar pb;
-        for (Token t : tokens) {
-            if (t.getPb() != null) {
-                if (t.getType().equals(TOTP)) {
-                    pb = t.getPb();
-                    if (t.getPeriod() == 30 && progress >= 30) {
-                        //pb.setProgress(progress - 30);
-                        setProgressAnimate(pb, progress - 30);
-                    } else {
-                        //pb.setProgress(progress);
-                        setProgressAnimate(pb, progress);
-                    }
-                }
+        //Log.d(TAG, "updatePBs: for progress: "+progress);
+        for (ProgressBar pb : pbs) {
+            // Log.d(TAG,"max: "+ pb.getMax());
+            if (pb.getMax() == 30 * 100 && progress >= 30) {
+                //pb.setProgress(progress - 30);
+                setProgressAnimate(pb, progress - 30);
+            } else {
+                //pb.setProgress(progress);
+                setProgressAnimate(pb, progress);
             }
         }
+    }
+
+    TokenListAdapter() {
+        this.pbs = new ArrayList<>();
     }
 
     private void setProgressAnimate(ProgressBar pb, int progressTo) {
@@ -115,21 +122,26 @@ public class TokenListAdapter extends BaseAdapter {
 
 
         final Token token = getItem(position);
-        final ProgressBar progressBar;
-        if (token.getPb() == null) {
-            progressBar = (ProgressBar) v.findViewById(R.id.progressBar);
-            token.setPb(progressBar);
-        } else {
-            progressBar = token.getPb();
+        ProgressBar progressBar = (ProgressBar) v.findViewById(R.id.progressBar);
+        progressBar.setMax(30 * 100);
+        if (token.getType().equals(TOTP)) {
+            if (token.getPeriod() == 60) {
+                progressBar.setMax(60 * 100);
+            }
         }
+        progressBar.getProgressDrawable().setColorFilter(
+                Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
+        pbs.add(position, progressBar);
         final TextView otptext = (TextView) v.findViewById(R.id.textViewToken);
         final TextView labeltext = (TextView) v.findViewById(R.id.textViewLabel);
-        final Button nextbtn = (Button) v.findViewById(R.id.next_button);
-
+        Button nextbtn = (Button) v.findViewById(R.id.next_button);
+        nextbtn.setVisibility(GONE);
+        progressBar.setVisibility(GONE);
         otptext.setText(token.getCurrentOTP());
         //labeltext.setText(new Base32().encodeAsString(token.getSecret()));
         //labeltext.setText(byteArrayToHexString(token.getSecret()));
         labeltext.setText(token.getLabel());
+
         if (token.isWithPIN() && token.getPin().equals("")) {
             //----------------------- Pin not set yet ----------------------
             nextbtn.setVisibility(GONE);
@@ -174,6 +186,7 @@ public class TokenListAdapter extends BaseAdapter {
             });
         } else if (token.isWithPIN() && token.isLocked()) {
             //------------------- show dialog for PIN input -------------------------------------
+            v.setLongClickable(true);
             progressBar.setVisibility(GONE);
             nextbtn.setVisibility(GONE);
             otptext.setText(R.string.tap_to_unlock);
@@ -189,7 +202,12 @@ public class TokenListAdapter extends BaseAdapter {
                     builder.setPositiveButton("Enter", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            int temp_input = Integer.parseInt(input.getEditableText().toString());
+                            String text = input.getEditableText().toString();
+                            if(text.equals("")){
+                                Toast.makeText(mView.getContext(), "Empty Input", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            int temp_input = Integer.parseInt(text);
                             String hashedPIN = hashPIN(temp_input, token);
                             if (hashedPIN.equals(token.getPin())) {
                                 token.setLocked(false);
@@ -229,23 +247,13 @@ public class TokenListAdapter extends BaseAdapter {
                 }
             });
         }/*else if (!token.isLocked() && token.isWithTapToShow() && token.isTapped()){
-
         }*/ else {
             //--------------- no PIN protection or token is unlocked ---------------------------
-            //------------------ differenciate hotp and totp ---------------------------
-           /* v.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    token.setCounter((token.getCounter() + 1));
-                    token.setCurrentOTP(OTPGenerator.generate(token));
-                    notifyDataSetChanged();
-                }
-            });*/
+            v.setLongClickable(true);
             v.setOnClickListener(null);
+            //------------------ differenciate hotp and totp ---------------------------
             if (token.getType().equals(HOTP)) {
                 progressBar.setVisibility(GONE);
-                v.setLongClickable(true);
-
                 nextbtn.setVisibility(VISIBLE);
                 nextbtn.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -255,11 +263,6 @@ public class TokenListAdapter extends BaseAdapter {
                         notifyDataSetChanged();
                     }
                 });
-
-                /*nextbtn.setVisibility(GONE);
-                nextbtn.setClickable(false);
-                nextbtn.setLongClickable(false);*/
-
             } else {
                 nextbtn.setVisibility(GONE);
                 nextbtn.setClickable(false);
@@ -270,9 +273,7 @@ public class TokenListAdapter extends BaseAdapter {
             }
             otptext.setText(token.getCurrentOTP());
         }
-
         //setupOnDrags(v,position);
-        //Log.d(TAG, "getView for pos: "+position+" type:"+token.getType()+" progressbar:"+progressBar.getVisibility()+"  button:"+nextbtn.getVisibility());
         return v;
     }
 

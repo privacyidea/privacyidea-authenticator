@@ -285,6 +285,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 public void onClick(DialogInterface dialog, int which) {
                     int pos = tokenlist.indexOf(currToken);
                     tokenlist.remove(pos);
+                    tokenlistadapter.getPbs().remove(pos);
                     /*   ArrayList<Token> templist = new ArrayList<>(tokenlist);
                     tokenlistadapter.clear();
                     tokenlistadapter.notifyDataSetChanged();
@@ -294,6 +295,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                     //printListAndAdapter();
                     Toast.makeText(MainActivity.this, "Token removed", Toast.LENGTH_SHORT).show();
                     saveTokenlist();
+                    //Log.d(Util.TAG,"deletion: pos: "+pos+" ");
                     mode.finish();
                 }
             });

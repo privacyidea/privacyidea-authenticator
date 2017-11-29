@@ -70,11 +70,11 @@ public class Token {
         return tapped;
     }
 
-    public boolean isWithTapToShow() {
+    boolean isWithTapToShow() {
         return withTapToShow;
     }
 
-    public void setWithTapToShow(boolean withTapToShow) {
+    void setWithTapToShow(boolean withTapToShow) {
         this.withTapToShow = withTapToShow;
     }
 
@@ -86,34 +86,34 @@ public class Token {
         Pin = pin;
     }
 
-    public boolean isLocked() {
+    boolean isLocked() {
         return isLocked;
     }
 
-    public void setLocked(boolean locked) {
+    void setLocked(boolean locked) {
         isLocked = locked;
     }
 
-    public void setWithPIN(boolean withPIN) {
+    void setWithPIN(boolean withPIN) {
         this.withPIN = withPIN;
     }
 
-    public boolean isWithPIN() {
+    boolean isWithPIN() {
         return withPIN;
     }
 
-    public void setPb(ProgressBar pb) {
-        if (this.pb == null) {
-            this.pb = pb;
+    void setPb(ProgressBar pb) {
+        if(this.pb!=null){
+        if (this.pb.getId() == pb.getId()) {return;}}
+        this.pb = pb;
+        if(this.pb!=null){
             this.pb.setMax(getPeriod() * 100);
             this.pb.getProgressDrawable().setColorFilter(
                     Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
-        } else if (this.pb.getId() == pb.getId()) {
-            return;
         }
     }
 
-    public ProgressBar getPb() {
+    ProgressBar getPb() {
         return pb;
     }
 
@@ -121,11 +121,11 @@ public class Token {
         this.period = period;
     }
 
-    public int getCounter() {
+    int getCounter() {
         return counter;
     }
 
-    public void setCounter(int counter) {
+    void setCounter(int counter) {
         this.counter = counter;
     }
 
@@ -137,11 +137,11 @@ public class Token {
         return secret;
     }
 
-    public void setLabel(String label) {
+    void setLabel(String label) {
         this.label = label;
     }
 
-    public String getLabel() {
+    String getLabel() {
         return label;
     }
 
@@ -174,11 +174,11 @@ public class Token {
         return algorithm;
     }
 
-    public String getCurrentOTP() {
+    String getCurrentOTP() {
         return currentOTP;
     }
 
-    public void setCurrentOTP(String currentOTP) {
+    void setCurrentOTP(String currentOTP) {
         this.currentOTP = currentOTP;
     }
 }
