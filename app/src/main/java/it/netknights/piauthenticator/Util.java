@@ -33,6 +33,7 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -124,7 +125,8 @@ public class Util {
         }
     }
 
-    private static Token makeTokenFromJSON(JSONObject o) throws JSONException {Token tmp = new Token(new Base32().decode(o.getString(SECRET)), o.getString(LABEL), o.getString(TYPE), o.getInt(DIGITS));
+    private static Token makeTokenFromJSON(JSONObject o) throws JSONException {
+        Token tmp = new Token(new Base32().decode(o.getString(SECRET)), o.getString(LABEL), o.getString(TYPE), o.getInt(DIGITS));
         tmp.setAlgorithm(o.getString(ALGORITHM));
         if (o.getString(TYPE).equals(HOTP)) {
             tmp.setCounter(o.getInt(COUNTER));
