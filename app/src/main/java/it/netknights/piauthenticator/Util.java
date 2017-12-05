@@ -22,11 +22,8 @@
 package it.netknights.piauthenticator;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Build;
-import android.os.SystemClock;
-import android.util.Log;
 
 import org.apache.commons.codec.binary.Base32;
 import org.json.JSONArray;
@@ -40,14 +37,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 
 import javax.crypto.SecretKey;
 
-import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.Token.ALGORITHM;
 import static it.netknights.piauthenticator.Token.COUNTER;
 import static it.netknights.piauthenticator.Token.DIGITS;

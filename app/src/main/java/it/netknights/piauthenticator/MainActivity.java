@@ -466,10 +466,18 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         Token tmp = new Token(secret, label, type, digits);
 
         if (type.equals(TOTP)) {
-            tmp.setPeriod(Integer.parseInt(uri.getQueryParameter(PERIOD)));
+            if (uri.getQueryParameter(PERIOD) != null) {
+                tmp.setPeriod(Integer.parseInt(uri.getQueryParameter(PERIOD)));
+            } else {
+                tmp.setPeriod(30);
+            }
         }
         if (type.equals(HOTP)) {
-            tmp.setCounter(Integer.parseInt(uri.getQueryParameter(COUNTER)));
+            if (uri.getQueryParameter(COUNTER) != null) {
+                tmp.setCounter(Integer.parseInt(uri.getQueryParameter(COUNTER)));
+            } else {
+                tmp.setCounter(1);
+            }
         }
         if (uri.getQueryParameter(ALGORITHM) != null) {
             tmp.setAlgorithm(uri.getQueryParameter(ALGORITHM).toUpperCase());

@@ -108,8 +108,8 @@ public class InstrumentedTest {
          hotp.setCurrentOTP("523432");
          hotp.setType("totp");
          hotp.setLabel("test setlabel");
-         String s = "Hallo test123";
-         hotp.setSecret(new Base32().decode(s));
+         byte[] s = "Hallo test123".getBytes();
+         hotp.setSecret(s);
          assertEquals("523432", hotp.getCurrentOTP());
          assertEquals("totp", hotp.getType());
          assertEquals(s, hotp.getSecret());
