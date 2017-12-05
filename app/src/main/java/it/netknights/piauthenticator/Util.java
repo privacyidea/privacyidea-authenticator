@@ -96,11 +96,11 @@ public class Util {
     }
 
     /**
-     * Encrpyt and saveTokenlist the ArrayList of tokens with a Secret Key, which wrapped by a Public Key
+     * Encrpyt and save the ArrayList of tokens with a Secret Key, which is wrapped by a Public Key
      * that is stored in the Keystore
      *
      * @param context Needed to get the FilesDir
-     * @param tokens  ArrayList of tokens to saveTokenlist
+     * @param tokens  ArrayList of tokens to save
      */
     public static void saveTokens(Context context, ArrayList<Token> tokens) {
         JSONArray tmp = new JSONArray();
