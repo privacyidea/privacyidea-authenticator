@@ -21,8 +21,6 @@
 package it.netknights.piauthenticator;
 
 
-import android.util.Log;
-
 import org.apache.commons.codec.binary.Base32;
 
 import java.lang.reflect.UndeclaredThrowableException;
@@ -37,9 +35,8 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import static it.netknights.piauthenticator.Token.HOTP;
-import static it.netknights.piauthenticator.Token.TOTP;
-import static it.netknights.piauthenticator.Util.TAG;
+import static it.netknights.piauthenticator.AppConstants.HOTP;
+import static it.netknights.piauthenticator.AppConstants.TOTP;
 
 
 public class OTPGenerator {

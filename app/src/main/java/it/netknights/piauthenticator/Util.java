@@ -33,7 +33,6 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,20 +41,21 @@ import java.util.ArrayList;
 
 import javax.crypto.SecretKey;
 
-import static it.netknights.piauthenticator.Token.ALGORITHM;
-import static it.netknights.piauthenticator.Token.COUNTER;
-import static it.netknights.piauthenticator.Token.DIGITS;
-import static it.netknights.piauthenticator.Token.HOTP;
-import static it.netknights.piauthenticator.Token.LABEL;
-import static it.netknights.piauthenticator.Token.PERIOD;
-import static it.netknights.piauthenticator.Token.SECRET;
-import static it.netknights.piauthenticator.Token.TOTP;
-import static it.netknights.piauthenticator.Token.TYPE;
+import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
+import static it.netknights.piauthenticator.AppConstants.COUNTER;
+import static it.netknights.piauthenticator.AppConstants.DATAFILE;
+import static it.netknights.piauthenticator.AppConstants.DIGITS;
+import static it.netknights.piauthenticator.AppConstants.HOTP;
+import static it.netknights.piauthenticator.AppConstants.KEYFILE;
+import static it.netknights.piauthenticator.AppConstants.LABEL;
+import static it.netknights.piauthenticator.AppConstants.PERIOD;
+import static it.netknights.piauthenticator.AppConstants.SECRET;
+import static it.netknights.piauthenticator.AppConstants.TOTP;
+import static it.netknights.piauthenticator.AppConstants.TYPE;
 
 public class Util {
 
     private Activity mActivity;
-    public static String TAG = "it.netknights.piauth";
 
     Util(MainActivity mainActivity) {
         mActivity = mainActivity;
@@ -65,9 +65,6 @@ public class Util {
         return mActivity;
     }
 
-    private static final String DATAFILE = "data.dat";
-    private static final String KEYFILE = "key.key";
-
     /**
      * This Method loads the encrypted saved tokens, in the progress the Secret Key is unwrapped
      * and used to decrypt the saved tokens
@@ -75,7 +72,7 @@ public class Util {
      * @param context is needed to get the FilesDir
      * @return An ArrayList of Tokens
      */
-    public static ArrayList<Token> loadTokens(Context context) {
+    static ArrayList<Token> loadTokens(Context context) {
         ArrayList<Token> tokens = new ArrayList<>();
 
         try {
@@ -103,7 +100,7 @@ public class Util {
      * @param context Needed to get the FilesDir
      * @param tokens  ArrayList of tokens to save
      */
-    public static void saveTokens(Context context, ArrayList<Token> tokens) {
+    static void saveTokens(Context context, ArrayList<Token> tokens) {
         JSONArray tmp = new JSONArray();
         for (Token t : tokens) {
             try {

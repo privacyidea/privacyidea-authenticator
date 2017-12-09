@@ -28,7 +28,6 @@ import android.content.DialogInterface;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.text.InputType;
-import android.util.Log;
 import android.view.DragEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -38,25 +37,19 @@ import android.view.animation.LinearInterpolator;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import org.apache.commons.codec.binary.Base32;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
-import static android.view.View.inflate;
-import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
+import static it.netknights.piauthenticator.AppConstants.HOTP;
+import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.OTPGenerator.hashPIN;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
-import static it.netknights.piauthenticator.Token.HOTP;
-import static it.netknights.piauthenticator.Token.TOTP;
-import static it.netknights.piauthenticator.Util.TAG;
 
 
 public class TokenListAdapter extends BaseAdapter {

@@ -71,16 +71,19 @@ import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 
+import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
+import static it.netknights.piauthenticator.AppConstants.COUNTER;
+import static it.netknights.piauthenticator.AppConstants.DIGITS;
+import static it.netknights.piauthenticator.AppConstants.HOTP;
+import static it.netknights.piauthenticator.AppConstants.INTENT_ABOUT;
+import static it.netknights.piauthenticator.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
+import static it.netknights.piauthenticator.AppConstants.ISSUER;
+import static it.netknights.piauthenticator.AppConstants.PERIOD;
+import static it.netknights.piauthenticator.AppConstants.PERMISSIONS_REQUEST_CAMERA;
+import static it.netknights.piauthenticator.AppConstants.SECRET;
+import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
-import static it.netknights.piauthenticator.Token.ALGORITHM;
-import static it.netknights.piauthenticator.Token.COUNTER;
-import static it.netknights.piauthenticator.Token.DIGITS;
-import static it.netknights.piauthenticator.Token.HOTP;
-import static it.netknights.piauthenticator.Token.ISSUER;
-import static it.netknights.piauthenticator.Token.PERIOD;
-import static it.netknights.piauthenticator.Token.SECRET;
-import static it.netknights.piauthenticator.Token.TOTP;
 
 
 public class MainActivity extends AppCompatActivity implements ActionMode.Callback {
@@ -90,9 +93,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private Runnable timer;
     private Util util;
     private Token nextSelection = null;
-    private static final int INTENT_ADD_TOKEN_MANUALLY = 101;
-    private static final int INTENT_ABOUT = 102;
-    private static final int PERMISSIONS_REQUEST_CAMERA = 103;
     private ListView listview;
 
     @Override
@@ -422,15 +422,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             Toast.makeText(MainActivity.this, "OTP copied to Clipboard", Toast.LENGTH_SHORT).show();
         }
         return false;
-    }
-
-    private void printListAndAdapter() {
-        for (int i = 0; i < tokenlistadapter.getCount(); i++) {
-            Log.d(Util.TAG, "adapter: i:" + i + " , name: " + tokenlistadapter.getItem(i).getType());
-        }
-        for (int j = 0; j < tokenlist.size(); j++) {
-            Log.d(Util.TAG, "list: i: " + j + " , name: " + tokenlist.get(j).getType());
-        }
     }
 
     @Override

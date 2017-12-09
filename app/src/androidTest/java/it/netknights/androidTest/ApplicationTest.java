@@ -1,7 +1,5 @@
 package it.netknights.androidTest;
 
-import android.content.Context;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.filters.LargeTest;
@@ -21,11 +19,9 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
@@ -35,23 +31,20 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import it.netknights.piauthenticator.EncryptionHelper;
-import it.netknights.piauthenticator.MainActivity;
 import it.netknights.piauthenticator.OTPGenerator;
-import it.netknights.piauthenticator.Token;
 import it.netknights.piauthenticator.Util;
 
+import static android.content.ContentValues.TAG;
+import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.OTPGenerator.generateHOTP;
 import static it.netknights.piauthenticator.OTPGenerator.generatePBKDFKey;
-import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.OTPGenerator.hexStringToByteArray;
-import static it.netknights.piauthenticator.Util.TAG;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.fail;
 
 @RunWith(AndroidJUnit4.class)
 @LargeTest
-public class InstrumentedTest {
+public class ApplicationTest {
     /* @Test
      public void testMakeTokenFromURI() throws Exception {
          Context context = InstrumentationRegistry.getTargetContext();
@@ -285,12 +278,12 @@ public class InstrumentedTest {
         try {
             outputStream.write(checksumBytes);
             outputStream.write(client_secret_bytes);
-            Log.d(Util.TAG, "checksum_b32: " + new Base32().encodeAsString(checksumBytes) + " ,checksum_hex: " + byteArrayToHexString(checksumBytes));
+            Log.d(TAG, "checksum_b32: " + new Base32().encodeAsString(checksumBytes) + " ,checksum_hex: " + byteArrayToHexString(checksumBytes));
         } catch (IOException e) {
             e.printStackTrace();
         }
         byte complete_client_bytes[] = outputStream.toByteArray();
-        Log.d(Util.TAG, "complete_client_secret_b32: " + new Base32().encodeAsString(complete_client_bytes) + " , complete_client_secret_hex: " + byteArrayToHexString(complete_client_bytes));
+        Log.d(TAG, "complete_client_secret_b32: " + new Base32().encodeAsString(complete_client_bytes) + " , complete_client_secret_hex: " + byteArrayToHexString(complete_client_bytes));
         //-------------------------------------------------------------------------------------------
         String full_secret = byteArrayToHexString(complete_secret_bytes);
         int otp1 = OTPGenerator.generateHOTP(full_secret, "1", "6", "HmacSHA256");

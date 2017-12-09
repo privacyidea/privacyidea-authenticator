@@ -26,17 +26,6 @@ import android.widget.ProgressBar;
 
 public class Token {
 
-    static final String DIGITS = "digits";
-    static final String PERIOD = "period";
-    static final String ALGORITHM = "algorithm";
-    static final String ISSUER = "issuer";
-    static final String SECRET = "secret";
-    static final String TYPE = "type";
-    static final String LABEL = "label";
-    static final String COUNTER = "counter";
-    static final String TOTP = "totp";
-    static final String HOTP = "hotp";
-
     private String currentOTP;
     private byte[] secret;
     private String label;

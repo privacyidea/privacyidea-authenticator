@@ -45,16 +45,16 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import static it.netknights.piauthenticator.AppConstants.*;
+
 public class EncryptionHelper {
-    private final static String ALGORITHM = "AES/GCM/NoPadding";
-    private final static int KEY_LENGTH = 16;
-    private final static int IV_LENGTH = 12;
+
 
     public static byte[] encrypt(SecretKey secretKey, IvParameterSpec iv, byte[] plainText)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
             InvalidKeyException, UnsupportedEncodingException, BadPaddingException, IllegalBlockSizeException {
 
-        Cipher cipher = Cipher.getInstance(ALGORITHM);
+        Cipher cipher = Cipher.getInstance(CRYPT_ALGORITHM);
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
 
         return cipher.doFinal(plainText);
@@ -64,7 +64,7 @@ public class EncryptionHelper {
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
             InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
 
-        Cipher cipher = Cipher.getInstance(ALGORITHM);
+        Cipher cipher = Cipher.getInstance(CRYPT_ALGORITHM);
         cipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
 
         return cipher.doFinal(cipherText);
@@ -75,7 +75,7 @@ public class EncryptionHelper {
             throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException,
             IllegalBlockSizeException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
 
-        final byte[] iv = new byte[IV_LENGTH];
+        final byte[] iv = new byte[AppConstants.IV_LENGTH];
         new SecureRandom().nextBytes(iv);
 
         byte[] cipherText = encrypt(secretKey, new IvParameterSpec(iv), plaintext);
@@ -110,7 +110,7 @@ public class EncryptionHelper {
 
         // Generate secret key if none exists
         if (!keyFile.exists()) {
-            final byte[] raw = new byte[KEY_LENGTH];
+            final byte[] raw = new byte[AppConstants.KEY_LENGTH];
             new SecureRandom().nextBytes(raw);
 
             final SecretKey key = new SecretKeySpec(raw, "AES");
