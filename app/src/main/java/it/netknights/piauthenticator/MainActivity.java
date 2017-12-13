@@ -115,7 +115,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                checkScanPermission();
+                scanQR();
             }
         });
     }
@@ -731,7 +731,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         //Toast.makeText(this, "Tokens saved", Toast.LENGTH_SHORT).show();
     }
 
-    private void checkScanPermission() {
+   /* private void checkScanPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             scanQR();
         } else {
@@ -753,7 +753,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
-
+*/
     private void scanQR() {
         try {
             IntentIntegrator ii = new IntentIntegrator(this);

@@ -196,7 +196,7 @@ public class TokenListAdapter extends BaseAdapter {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             String text = input.getEditableText().toString();
-                            if(text.equals("")){
+                            if (text.equals("")) {
                                 Toast.makeText(mView.getContext(), "Empty Input", Toast.LENGTH_SHORT).show();
                                 return;
                             }
@@ -270,60 +270,60 @@ public class TokenListAdapter extends BaseAdapter {
         return v;
     }
 
-    private void setupOnDrags(View v, final int position) {
-        v.setOnDragListener(new View.OnDragListener() {
-            @Override
-            public boolean onDrag(View v, DragEvent event) {
-                int action = event.getAction();
-                switch (action) {
-                    case DragEvent.ACTION_DRAG_STARTED:
-                        break;
+    /* private void setupOnDrags(View v, final int position) {
+         v.setOnDragListener(new View.OnDragListener() {
+             @Override
+             public boolean onDrag(View v, DragEvent event) {
+                 int action = event.getAction();
+                 switch (action) {
+                     case DragEvent.ACTION_DRAG_STARTED:
+                         break;
 
-                    case DragEvent.ACTION_DRAG_EXITED:
-                        break;
+                     case DragEvent.ACTION_DRAG_EXITED:
+                         break;
 
-                    case DragEvent.ACTION_DRAG_ENTERED:
-                        break;
+                     case DragEvent.ACTION_DRAG_ENTERED:
+                         break;
 
-                    case DragEvent.ACTION_DROP: {
-                        int from = Integer.parseInt("" + event.getClipDescription().getLabel());
-                        int to = (Integer) (v.getTag());
-                        Token toSwap = getTokens().remove(from);
-                        getTokens().add(to, toSwap);
-                        notifyDataSetChanged();
-                        return true;
-                    }
-                    case DragEvent.ACTION_DRAG_ENDED: {
-                        //Log.d(TAG, "action drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
-                        notifyDataSetChanged();
-                        return true;
-                    }
-                    default:
-                        break;
-                }
-                return true;
-            }
-        });
+                     case DragEvent.ACTION_DROP: {
+                         int from = Integer.parseInt("" + event.getClipDescription().getLabel());
+                         int to = (Integer) (v.getTag());
+                         Token toSwap = getTokens().remove(from);
+                         getTokens().add(to, toSwap);
+                         notifyDataSetChanged();
+                         return true;
+                     }
+                     case DragEvent.ACTION_DRAG_ENDED: {
+                         //Log.d(TAG, "action drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
+                         notifyDataSetChanged();
+                         return true;
+                     }
+                     default:
+                         break;
+                 }
+                 return true;
+             }
+         });
 
-        v.setOnTouchListener(new View.OnTouchListener() {
+         v.setOnTouchListener(new View.OnTouchListener() {
 
-            @Override
-            public boolean onTouch(View v, MotionEvent arg1) {
+             @Override
+             public boolean onTouch(View v, MotionEvent arg1) {
 
-                if (getCurrentSelection() != getTokens().get(position)) {
-                    return false;
-                }
+                 if (getCurrentSelection() != getTokens().get(position)) {
+                     return false;
+                 }
 
-                ClipData data = ClipData.newPlainText(v.getTag() + "", "");
-                View.DragShadowBuilder shadow = new View.DragShadowBuilder(v);
-                v.startDrag(data, shadow, null, 0);
-                //Log.d(TAG, "Shadow drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
-                return false;
-            }
-        });
+                 ClipData data = ClipData.newPlainText(v.getTag() + "", "");
+                 View.DragShadowBuilder shadow = new View.DragShadowBuilder(v);
+                 v.startDrag(data, shadow, null, 0);
+                 //Log.d(TAG, "Shadow drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
+                 return false;
+             }
+         });
 
-    }
-
+     }
+ */
     void setTokens(List<Token> tokens) {
         this.tokens = tokens;
     }

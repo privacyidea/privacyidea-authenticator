@@ -1,5 +1,6 @@
 package it.netknights.androidTest;
 
+import android.content.Context;
 import android.os.Build;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.filters.LargeTest;
@@ -19,9 +20,11 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
@@ -31,7 +34,9 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import it.netknights.piauthenticator.EncryptionHelper;
+import it.netknights.piauthenticator.MainActivity;
 import it.netknights.piauthenticator.OTPGenerator;
+import it.netknights.piauthenticator.Token;
 import it.netknights.piauthenticator.Util;
 
 import static android.content.ContentValues.TAG;
@@ -41,12 +46,15 @@ import static it.netknights.piauthenticator.OTPGenerator.generatePBKDFKey;
 import static it.netknights.piauthenticator.OTPGenerator.hexStringToByteArray;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
 
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class ApplicationTest {
-    /* @Test
-     public void testMakeTokenFromURI() throws Exception {
+
+     //TODO update this test - token creation in mainactivity is problematic
+    /*  @Test
+    public void testMakeTokenFromURI() throws Exception {
          Context context = InstrumentationRegistry.getTargetContext();
          //delete all files to simulate a fresh installation, especially the generation of a new keypair
          if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
@@ -55,7 +63,7 @@ public class ApplicationTest {
              keyStore.deleteEntry("settings");
 
          }
-         MainActivity utils = new MainActivity(); //TODO update this test
+         MainActivity utils = new MainActivity();
          assertTrue(new File(context.getFilesDir() + "/data.dat").delete());
          assertTrue(new File(context.getFilesDir() + "/key.key").delete());
 
@@ -123,8 +131,8 @@ public class ApplicationTest {
          } catch (Exception e) {
              assertEquals("No TOTP or HOTP Token", e.getMessage());
          }
-     }
- */
+     }*/
+
     @Test
     public void testRWFile() throws IOException {
         File f = new File(InstrumentationRegistry.getTargetContext().getFilesDir() + "/test");

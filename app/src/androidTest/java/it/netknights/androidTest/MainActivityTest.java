@@ -38,6 +38,7 @@ import static android.support.test.InstrumentationRegistry.getTargetContext;
 import static android.support.test.espresso.Espresso.onData;
 import static android.support.test.espresso.Espresso.onView;
 import static android.support.test.espresso.action.ViewActions.click;
+import static android.support.test.espresso.action.ViewActions.longClick;
 import static android.support.test.espresso.assertion.ViewAssertions.matches;
 import static android.support.test.espresso.intent.Intents.intended;
 import static android.support.test.espresso.intent.Intents.intending;
@@ -63,7 +64,7 @@ public class MainActivityTest {
         //TODO clear app data before running tests
         //Log.d("piauth.test", "triyng to overwrite datafile");
         //Context context = getInstrumentation().getTargetContext();
-        Context context = getTargetContext();
+      /*  Context context = getTargetContext();
         Util.writeFile(new File(context.getFilesDir() + "/" + AppConstants.DATAFILE), "".getBytes());
         if (new File(mActivityTestRule.getActivity().getFilesDir() + "/" + AppConstants.DATAFILE).delete()) {
             Log.d("piauth.test", "datafile deleted");
@@ -75,7 +76,7 @@ public class MainActivityTest {
         String[] ls = mActivityTestRule.getActivity().fileList();
         for (int i = 0; i < ls.length; i++) {
             Log.d("piauth.test", ls[i]);
-        }
+        }*/
 
         //shell("pm clear it.netknights.piauthenticator");
         //Process p = Runtime.getRuntime().exec("su");
@@ -130,6 +131,13 @@ public class MainActivityTest {
         //onData(withItem
 
         // delete the token
+
+        onData(anything())
+                .inAdapterView(allOf(withId(R.id.listview),
+                        childAtPosition(
+                                withClassName(is("android.support.constraint.ConstraintLayout")),
+                                1)))
+                .atPosition(0).perform(longClick());
         sleep();
         ViewInteraction actionMenuItemView = onView(
                 allOf(withId(R.id.delete_token2), withContentDescription("Item"),

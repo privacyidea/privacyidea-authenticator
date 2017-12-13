@@ -72,7 +72,7 @@ public class Util {
      * @param context is needed to get the FilesDir
      * @return An ArrayList of Tokens
      */
-    static ArrayList<Token> loadTokens(Context context) {
+    public static ArrayList<Token> loadTokens(Context context) {
         ArrayList<Token> tokens = new ArrayList<>();
 
         try {
@@ -100,7 +100,7 @@ public class Util {
      * @param context Needed to get the FilesDir
      * @param tokens  ArrayList of tokens to save
      */
-    static void saveTokens(Context context, ArrayList<Token> tokens) {
+    public static void saveTokens(Context context, ArrayList<Token> tokens) {
         JSONArray tmp = new JSONArray();
         for (Token t : tokens) {
             try {

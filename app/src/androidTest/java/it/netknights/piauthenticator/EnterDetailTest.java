@@ -44,7 +44,7 @@ import static org.hamcrest.Matchers.startsWith;
 
 @LargeTest
 @RunWith(AndroidJUnit4.class)
-public class MainActivityTest2 {
+public class EnterDetailTest {
 
     @Rule
     public ActivityTestRule<MainActivity> mActivityTestRule = new ActivityTestRule<>(MainActivity.class);
@@ -107,7 +107,7 @@ public class MainActivityTest2 {
                 .inAdapterView(withClassName(is("android.support.v7.widget.DropDownListView")))
                 .atPosition(2);
         appCompatTextView3.perform(click());
-
+        sleep();
         ViewInteraction appCompatSpinner3 = onView(
                 allOf(withId(R.id.spinner_digits),
                         childAtPosition(
@@ -117,12 +117,12 @@ public class MainActivityTest2 {
                                 13),
                         isDisplayed()));
         appCompatSpinner3.perform(click());
-
+        sleep();
         DataInteraction appCompatTextView4 = onData(anything())
                 .inAdapterView(withClassName(is("android.support.v7.widget.DropDownListView")))
                 .atPosition(1);
         appCompatTextView4.perform(click());
-
+        sleep();
         ViewInteraction appCompatCheckBox = onView(
                 allOf(withId(R.id.checkBox_pin), withText("With PIN"),
                         childAtPosition(
@@ -132,7 +132,7 @@ public class MainActivityTest2 {
                                 4),
                         isDisplayed()));
         appCompatCheckBox.perform(click());
-
+        sleep();
         ViewInteraction appCompatButton = onView(
                 allOf(withId(R.id.button_add), withText("Add"),
                         childAtPosition(
@@ -215,6 +215,52 @@ public class MainActivityTest2 {
                 onChildView(withId(R.id.textViewToken))
                 .check(matches(withText(startsWith("85216514"))));
 
+        // rename
+        onData(anything())
+                .inAdapterView(allOf(withId(R.id.listview),
+                        childAtPosition(
+                                withClassName(is("android.support.constraint.ConstraintLayout")),
+                                1))).atPosition(0).perform(longClick());
+        sleep();
+        onView(
+                allOf(withId(R.id.edit_token2), withContentDescription("Rename"),
+                        childAtPosition(
+                                childAtPosition(
+                                        withId(R.id.action_mode_bar),
+                                        2),
+                                1),
+                        isDisplayed())).perform(click());
+        sleep();
+        onView(
+                allOf(withText("Name"),
+                        childAtPosition(
+                                allOf(withId(android.R.id.custom),
+                                        childAtPosition(
+                                                withClassName(is("android.widget.FrameLayout")),
+                                                0)),
+                                0),
+                        isDisplayed())).perform(replaceText("peter"));
+        sleep();
+        onView(
+                allOf(withId(android.R.id.button1), withText("Save"),
+                        childAtPosition(
+                                allOf(withClassName(is("android.widget.LinearLayout")),
+                                        childAtPosition(
+                                                withClassName(is("android.widget.LinearLayout")),
+                                                3)),
+                                3),
+                        isDisplayed())).perform(click());
+        sleep();
+        // check renaming
+        onData(anything()).
+                inAdapterView(withId(R.id.listview)).
+                atPosition(0).
+                onChildView(withId(R.id.textViewLabel))
+                .check(matches(withText(startsWith("peter"))));
+        sleep();
+
+
+        // delete the token
         DataInteraction relativeLayout2 = onData(anything())
                 .inAdapterView(allOf(withId(R.id.listview),
                         childAtPosition(
@@ -222,15 +268,16 @@ public class MainActivityTest2 {
                                 1)))
                 .atPosition(0);
         relativeLayout2.perform(longClick());
-        // delete the token
+
         sleep();
+
         ViewInteraction actionMenuItemView = onView(
                 allOf(withId(R.id.delete_token2), withContentDescription("Item"),
                         childAtPosition(
                                 childAtPosition(
                                         withId(R.id.action_mode_bar),
                                         2),
-                                1),
+                                2),
                         isDisplayed()));
         actionMenuItemView.perform(click());
 
