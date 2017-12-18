@@ -22,11 +22,8 @@
 package it.netknights.piauthenticator;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Build;
-import android.os.SystemClock;
-import android.util.Log;
 
 import org.apache.commons.codec.binary.Base32;
 import org.json.JSONArray;
@@ -40,28 +37,25 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 
 import javax.crypto.SecretKey;
 
-import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
-import static it.netknights.piauthenticator.Token.ALGORITHM;
-import static it.netknights.piauthenticator.Token.COUNTER;
-import static it.netknights.piauthenticator.Token.DIGITS;
-import static it.netknights.piauthenticator.Token.HOTP;
-import static it.netknights.piauthenticator.Token.LABEL;
-import static it.netknights.piauthenticator.Token.PERIOD;
-import static it.netknights.piauthenticator.Token.SECRET;
-import static it.netknights.piauthenticator.Token.TOTP;
-import static it.netknights.piauthenticator.Token.TYPE;
+import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
+import static it.netknights.piauthenticator.AppConstants.COUNTER;
+import static it.netknights.piauthenticator.AppConstants.DATAFILE;
+import static it.netknights.piauthenticator.AppConstants.DIGITS;
+import static it.netknights.piauthenticator.AppConstants.HOTP;
+import static it.netknights.piauthenticator.AppConstants.KEYFILE;
+import static it.netknights.piauthenticator.AppConstants.LABEL;
+import static it.netknights.piauthenticator.AppConstants.PERIOD;
+import static it.netknights.piauthenticator.AppConstants.SECRET;
+import static it.netknights.piauthenticator.AppConstants.TOTP;
+import static it.netknights.piauthenticator.AppConstants.TYPE;
 
 public class Util {
 
     private Activity mActivity;
-    public static String TAG = "it.netknights.piauth";
 
     Util(MainActivity mainActivity) {
         mActivity = mainActivity;
@@ -70,9 +64,6 @@ public class Util {
     Activity getmActivity() {
         return mActivity;
     }
-
-    private static final String DATAFILE = "data.dat";
-    private static final String KEYFILE = "key.key";
 
     /**
      * This Method loads the encrypted saved tokens, in the progress the Secret Key is unwrapped
@@ -131,7 +122,8 @@ public class Util {
         }
     }
 
-    private static Token makeTokenFromJSON(JSONObject o) throws JSONException {Token tmp = new Token(new Base32().decode(o.getString(SECRET)), o.getString(LABEL), o.getString(TYPE), o.getInt(DIGITS));
+    private static Token makeTokenFromJSON(JSONObject o) throws JSONException {
+        Token tmp = new Token(new Base32().decode(o.getString(SECRET)), o.getString(LABEL), o.getString(TYPE), o.getInt(DIGITS));
         tmp.setAlgorithm(o.getString(ALGORITHM));
         if (o.getString(TYPE).equals(HOTP)) {
             tmp.setCounter(o.getInt(COUNTER));

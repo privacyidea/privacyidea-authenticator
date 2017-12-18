@@ -21,21 +21,7 @@
 
 package it.netknights.piauthenticator;
 
-import android.graphics.Color;
-import android.widget.ProgressBar;
-
 public class Token {
-
-    static final String DIGITS = "digits";
-    static final String PERIOD = "period";
-    static final String ALGORITHM = "algorithm";
-    static final String ISSUER = "issuer";
-    static final String SECRET = "secret";
-    static final String TYPE = "type";
-    static final String LABEL = "label";
-    static final String COUNTER = "counter";
-    static final String TOTP = "totp";
-    static final String HOTP = "hotp";
 
     private String currentOTP;
     private byte[] secret;
@@ -45,7 +31,6 @@ public class Token {
     private int period;
     private String algorithm = "HmacSHA1"; //default is SHA1
     private int counter;
-    private ProgressBar pb;
     private boolean withPIN = false;
     private boolean isLocked = false;
     private String Pin = "";
@@ -102,26 +87,11 @@ public class Token {
         return withPIN;
     }
 
-    void setPb(ProgressBar pb) {
-        if(this.pb!=null){
-        if (this.pb.getId() == pb.getId()) {return;}}
-        this.pb = pb;
-        if(this.pb!=null){
-            this.pb.setMax(getPeriod() * 100);
-            this.pb.getProgressDrawable().setColorFilter(
-                    Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
-        }
-    }
-
-    ProgressBar getPb() {
-        return pb;
-    }
-
     public void setPeriod(int period) {
         this.period = period;
     }
 
-    int getCounter() {
+    public int getCounter() {
         return counter;
     }
 
@@ -137,11 +107,11 @@ public class Token {
         return secret;
     }
 
-    void setLabel(String label) {
+    public void setLabel(String label) {
         this.label = label;
     }
 
-    String getLabel() {
+    public String getLabel() {
         return label;
     }
 
@@ -174,11 +144,11 @@ public class Token {
         return algorithm;
     }
 
-    String getCurrentOTP() {
+    public String getCurrentOTP() {
         return currentOTP;
     }
 
-    void setCurrentOTP(String currentOTP) {
+    public void setCurrentOTP(String currentOTP) {
         this.currentOTP = currentOTP;
     }
 }

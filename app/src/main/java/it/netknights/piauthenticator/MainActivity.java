@@ -20,12 +20,14 @@
 
 package it.netknights.piauthenticator;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -33,8 +35,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.Toolbar;
@@ -66,16 +71,19 @@ import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 
+import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
+import static it.netknights.piauthenticator.AppConstants.COUNTER;
+import static it.netknights.piauthenticator.AppConstants.DIGITS;
+import static it.netknights.piauthenticator.AppConstants.HOTP;
+import static it.netknights.piauthenticator.AppConstants.INTENT_ABOUT;
+import static it.netknights.piauthenticator.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
+import static it.netknights.piauthenticator.AppConstants.ISSUER;
+import static it.netknights.piauthenticator.AppConstants.PERIOD;
+import static it.netknights.piauthenticator.AppConstants.PERMISSIONS_REQUEST_CAMERA;
+import static it.netknights.piauthenticator.AppConstants.SECRET;
+import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
-import static it.netknights.piauthenticator.Token.ALGORITHM;
-import static it.netknights.piauthenticator.Token.COUNTER;
-import static it.netknights.piauthenticator.Token.DIGITS;
-import static it.netknights.piauthenticator.Token.HOTP;
-import static it.netknights.piauthenticator.Token.ISSUER;
-import static it.netknights.piauthenticator.Token.PERIOD;
-import static it.netknights.piauthenticator.Token.SECRET;
-import static it.netknights.piauthenticator.Token.TOTP;
 
 
 public class MainActivity extends AppCompatActivity implements ActionMode.Callback {
@@ -85,8 +93,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private Runnable timer;
     private Util util;
     private Token nextSelection = null;
-    private static final int INTENT_ADD_TOKEN_MANUALLY = 101;
-    private static final int INTENT_ABOUT = 102;
     private ListView listview;
 
     @Override
@@ -104,6 +110,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private void setupFab() {
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setBackgroundColor(getResources().getColor(PIBLUE));
+        fab.bringToFront();
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -415,15 +422,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         return false;
     }
 
-    private void printListAndAdapter() {
-        for (int i = 0; i < tokenlistadapter.getCount(); i++) {
-            Log.d(Util.TAG, "adapter: i:" + i + " , name: " + tokenlistadapter.getItem(i).getType());
-        }
-        for (int j = 0; j < tokenlist.size(); j++) {
-            Log.d(Util.TAG, "list: i: " + j + " , name: " + tokenlist.get(j).getType());
-        }
-    }
-
     @Override
     public void onDestroyActionMode(ActionMode mode) {
         tokenlistadapter.setCurrentSelection(null);
@@ -464,10 +462,18 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         Token tmp = new Token(secret, label, type, digits);
 
         if (type.equals(TOTP)) {
-            tmp.setPeriod(Integer.parseInt(uri.getQueryParameter(PERIOD)));
+            if (uri.getQueryParameter(PERIOD) != null) {
+                tmp.setPeriod(Integer.parseInt(uri.getQueryParameter(PERIOD)));
+            } else {
+                tmp.setPeriod(30);
+            }
         }
         if (type.equals(HOTP)) {
-            tmp.setCounter(Integer.parseInt(uri.getQueryParameter(COUNTER)));
+            if (uri.getQueryParameter(COUNTER) != null) {
+                tmp.setCounter(Integer.parseInt(uri.getQueryParameter(COUNTER)));
+            } else {
+                tmp.setCounter(1);
+            }
         }
         if (uri.getQueryParameter(ALGORITHM) != null) {
             tmp.setAlgorithm(uri.getQueryParameter(ALGORITHM).toUpperCase());
@@ -723,6 +729,29 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         //Toast.makeText(this, "Tokens saved", Toast.LENGTH_SHORT).show();
     }
 
+   /* private void checkScanPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            scanQR();
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+        if (requestCode == PERMISSIONS_REQUEST_CAMERA) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // permission was granted
+                scanQR();
+            } else {
+                Toast.makeText(this, "Camera permission request was denied.", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+*/
     private void scanQR() {
         try {
             IntentIntegrator ii = new IntentIntegrator(this);

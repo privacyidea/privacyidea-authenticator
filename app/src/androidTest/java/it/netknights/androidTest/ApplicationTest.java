@@ -1,7 +1,6 @@
 package it.netknights.androidTest;
 
 import android.content.Context;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.filters.LargeTest;
@@ -40,20 +39,22 @@ import it.netknights.piauthenticator.OTPGenerator;
 import it.netknights.piauthenticator.Token;
 import it.netknights.piauthenticator.Util;
 
+import static android.content.ContentValues.TAG;
+import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.OTPGenerator.generateHOTP;
 import static it.netknights.piauthenticator.OTPGenerator.generatePBKDFKey;
-import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.OTPGenerator.hexStringToByteArray;
-import static it.netknights.piauthenticator.Util.TAG;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
 @RunWith(AndroidJUnit4.class)
 @LargeTest
-public class InstrumentedTest {
-    /* @Test
-     public void testMakeTokenFromURI() throws Exception {
+public class ApplicationTest {
+
+     //TODO update this test - token creation in mainactivity is problematic
+    /*  @Test
+    public void testMakeTokenFromURI() throws Exception {
          Context context = InstrumentationRegistry.getTargetContext();
          //delete all files to simulate a fresh installation, especially the generation of a new keypair
          if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
@@ -62,7 +63,7 @@ public class InstrumentedTest {
              keyStore.deleteEntry("settings");
 
          }
-         MainActivity utils = new MainActivity(); //TODO update this test
+         MainActivity utils = new MainActivity();
          assertTrue(new File(context.getFilesDir() + "/data.dat").delete());
          assertTrue(new File(context.getFilesDir() + "/key.key").delete());
 
@@ -108,8 +109,8 @@ public class InstrumentedTest {
          hotp.setCurrentOTP("523432");
          hotp.setType("totp");
          hotp.setLabel("test setlabel");
-         String s = "Hallo test123";
-         hotp.setSecret(new Base32().decode(s));
+         byte[] s = "Hallo test123".getBytes();
+         hotp.setSecret(s);
          assertEquals("523432", hotp.getCurrentOTP());
          assertEquals("totp", hotp.getType());
          assertEquals(s, hotp.getSecret());
@@ -130,8 +131,8 @@ public class InstrumentedTest {
          } catch (Exception e) {
              assertEquals("No TOTP or HOTP Token", e.getMessage());
          }
-     }
- */
+     }*/
+
     @Test
     public void testRWFile() throws IOException {
         File f = new File(InstrumentationRegistry.getTargetContext().getFilesDir() + "/test");
@@ -285,12 +286,12 @@ public class InstrumentedTest {
         try {
             outputStream.write(checksumBytes);
             outputStream.write(client_secret_bytes);
-            Log.d(Util.TAG, "checksum_b32: " + new Base32().encodeAsString(checksumBytes) + " ,checksum_hex: " + byteArrayToHexString(checksumBytes));
+            Log.d(TAG, "checksum_b32: " + new Base32().encodeAsString(checksumBytes) + " ,checksum_hex: " + byteArrayToHexString(checksumBytes));
         } catch (IOException e) {
             e.printStackTrace();
         }
         byte complete_client_bytes[] = outputStream.toByteArray();
-        Log.d(Util.TAG, "complete_client_secret_b32: " + new Base32().encodeAsString(complete_client_bytes) + " , complete_client_secret_hex: " + byteArrayToHexString(complete_client_bytes));
+        Log.d(TAG, "complete_client_secret_b32: " + new Base32().encodeAsString(complete_client_bytes) + " , complete_client_secret_hex: " + byteArrayToHexString(complete_client_bytes));
         //-------------------------------------------------------------------------------------------
         String full_secret = byteArrayToHexString(complete_secret_bytes);
         int otp1 = OTPGenerator.generateHOTP(full_secret, "1", "6", "HmacSHA256");
