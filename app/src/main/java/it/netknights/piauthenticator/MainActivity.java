@@ -99,7 +99,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         paintStatusbar();
         setupAdapter();
         startTimerThread();
-
     }
 
     private void setupFab() {
@@ -151,7 +150,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private void setupViews() {
         setTitle(" PrivacyIDEA Authenticator");
         setContentView(R.layout.activity_main);
-
         listview = (ListView) findViewById(R.id.listview);
         //registerForContextMenu(listview);
         listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {

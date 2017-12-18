@@ -38,6 +38,8 @@
         android:layout_height="wrap_content"
         android:layout_above="@+id/progressBar"
         android:layout_alignParentEnd="true"
-        android:text="@string/next_button_text" />
+        android:backgroundTint="@color/PIBLUE"
+        android:text="@string/next_button_text"
+        android:textColor="@color/zxing_status_text" />
 
 </RelativeLayout>
