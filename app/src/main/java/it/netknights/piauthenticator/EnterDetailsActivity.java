@@ -187,7 +187,14 @@ public class EnterDetailsActivity extends AppCompatActivity {
             return false;
         }
         if (check_base32.isChecked()) {
-            new_secret = new Base32().decode(new_secret_string);
+            if(new Base32().isInAlphabet(new_secret_string)){
+                new_secret = new Base32().decode(new_secret_string);
+            }else{
+                Toast.makeText(this, "Secret is not in Base32 format", Toast.LENGTH_LONG).show();
+                editText_secret.requestFocus();
+                return false;
+            }
+
         } else {
             new_secret = new_secret_string.getBytes();
         }

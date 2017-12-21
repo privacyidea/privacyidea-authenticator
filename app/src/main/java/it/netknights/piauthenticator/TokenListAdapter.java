@@ -149,7 +149,12 @@ public class TokenListAdapter extends BaseAdapter {
                     builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            int temp_pin = Integer.parseInt(input.getEditableText().toString());
+                            String text = input.getEditableText().toString();
+                            if (text.equals("")) {
+                                Toast.makeText(mView.getContext(), "New PIN cannot be empty", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            int temp_pin = Integer.parseInt(text);
                             String hashedPIN = hashPIN(temp_pin, token);
                             token.setPin(hashedPIN);
                             notifyDataSetChanged();
