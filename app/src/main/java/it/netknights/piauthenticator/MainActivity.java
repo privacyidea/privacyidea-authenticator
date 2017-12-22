@@ -457,7 +457,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         if (issuer != null) {
             label = issuer + ": " + label;
         }
-        int digits = Integer.parseInt(uri.getQueryParameter(DIGITS));
+        int digits = 6;
+        if(uri.getQueryParameter(DIGITS)!=null){
+            digits = Integer.parseInt(uri.getQueryParameter(DIGITS));
+        }
+
         byte[] secret = new Base32().decode(secret_string.toUpperCase());
         Token tmp = new Token(secret, label, type, digits);
 
