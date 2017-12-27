@@ -134,6 +134,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             }
         };
         handler.post(timer);
+        handler.removeCallbacks(timer);
     }
 
     private void setupAdapter() {
@@ -454,9 +455,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         String secret_string = uri.getQueryParameter(SECRET);
         String label = uri.getPath().substring(1);
         String issuer = uri.getQueryParameter(ISSUER);
-        if (issuer != null) {
+        if (issuer != null && !label.startsWith(issuer)) {
             label = issuer + ": " + label;
         }
+
         int digits = 6;
         if(uri.getQueryParameter(DIGITS)!=null){
             digits = Integer.parseInt(uri.getQueryParameter(DIGITS));

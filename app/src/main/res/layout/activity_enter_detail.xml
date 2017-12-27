@@ -46,6 +46,7 @@
         android:layout_marginTop="8dp"
         android:backgroundTint="@color/PIBLUE"
         android:backgroundTintMode="src_in"
+        android:cursorVisible="false"
         android:ems="10"
         android:inputType="textCapCharacters"
         android:selectAllOnFocus="true"
