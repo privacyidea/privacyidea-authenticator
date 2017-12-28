@@ -2,7 +2,7 @@
 
 The privacyIDEA Authenticator currently implements the HOTP and TOTP (30 and 60 seconds) algorithms.
 It can scan QR codes according to the
-[Google Authenticator Key UI](https://github.com/google/google-authenticator/wiki/Key-Uri-Format).
+[Google Authenticator Key URI](https://github.com/google/google-authenticator/wiki/Key-Uri-Format).
 
 It is ment to be used with the
 [privacyIDEA Authentication Server](https://github/privacyidea/privacyidea).

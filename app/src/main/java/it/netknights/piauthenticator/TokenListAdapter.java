@@ -271,11 +271,11 @@ public class TokenListAdapter extends BaseAdapter {
             }
             otptext.setText(token.getCurrentOTP());
         }
-        //setupOnDrags(v,position);
+        setupOnDrags(v,position);
         return v;
     }
 
-    /* private void setupOnDrags(View v, final int position) {
+     private void setupOnDrags(View v, final int position) {
          v.setOnDragListener(new View.OnDragListener() {
              @Override
              public boolean onDrag(View v, DragEvent event) {
@@ -328,7 +328,7 @@ public class TokenListAdapter extends BaseAdapter {
          });
 
      }
- */
+
     void setTokens(List<Token> tokens) {
         this.tokens = tokens;
     }

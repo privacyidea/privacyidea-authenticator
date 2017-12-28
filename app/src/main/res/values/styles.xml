@@ -5,7 +5,11 @@
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+
+        <!-- colorAccent is used as the default value for colorControlActivated
+        which is used to tint widgets -->
+        <!-- This colors the cursor in EditTexts aswell-->
+        <item name="colorAccent">@color/PIBLUE</item>
 
         <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
         <item name="windowActionModeOverlay">true</item>
