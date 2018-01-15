@@ -73,8 +73,6 @@ public class SecretKeyWrapper {
         mPair = new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey());
     }
 
-    //TODO context can be used to unlock keystore(eg with PIN)
-    //TODO KeyPairGeneratorSpec deprecated in API 23, add replacement to use with API 23+
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     private static void generateKeyPair(Context context, String alias)
             throws GeneralSecurityException {
@@ -82,10 +80,6 @@ public class SecretKeyWrapper {
         final Calendar end = new GregorianCalendar();
         end.add(Calendar.YEAR, 100);
         final KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA", "AndroidKeyStore");
-         /*
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            final KeyGenParameterSpec spec1 = new KeyGenParameterSpec().Builder(context);
-        }*/
         final KeyPairGeneratorSpec spec = new KeyPairGeneratorSpec.Builder(context)
                 .setAlias(alias)
                 .setSubject(new X500Principal("CN=" + alias))

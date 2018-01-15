@@ -118,7 +118,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             @Override
             public void run() {
                 int progress = (int) (System.currentTimeMillis() / 1000) % 60;
-                //countdown.setText("" + String.valueOf(progress));
                 tokenlistadapter.updatePBs(progress);
                 if (progress < 3 || progress > 27 && progress < 33 || progress > 57) {
                     tokenlistadapter.refreshAllTOTP();
@@ -152,21 +151,21 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         setTitle(" PrivacyIDEA Authenticator");
         setContentView(R.layout.activity_main);
         listview = (ListView) findViewById(R.id.listview);
-        //registerForContextMenu(listview);
         listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
                 nextSelection = tokenlist.get(i);
                 startSupportActionMode(MainActivity.this);
-
                 return true;
             }
         });
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setBackgroundColor(getResources().getColor(PIBLUE));
-        getSupportActionBar().setLogo(R.mipmap.ic_launcher);
-        getSupportActionBar().setDisplayUseLogoEnabled(true);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setLogo(R.mipmap.ic_launcher);
+            getSupportActionBar().setDisplayUseLogoEnabled(true);
+        }
     }
 
     @Override
@@ -178,25 +177,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        //this is the item selected from the toolbar menu
+        // this is the item selected from the toolbar menu
         int id = item.getItemId();
-
-      /*  if (id == R.id.action_remove_all) {
-            tokenlist.clear();
-            tokenlistadapter.notifyDataSetChanged();
-            saveTokenlist();
-            Toast.makeText(this, "All token deleted", Toast.LENGTH_SHORT).show();
-            return true;
-        }*/
         if (id == R.id.action_about) {
             Intent aboutintent = new Intent(this, AboutActivity.class);
             startActivity(aboutintent);
             return true;
         }
-        /*if (id == R.id.action_settings) {
-            Intent settingsintent = new Intent(this, SettingsActivity.class);
-            startActivity(settingsintent);
-        }*/
         if (id == R.id.action_enter_detail) {
             Intent settingsIntent = EnterDetailsActivity.makeIntent(MainActivity.this);
             startActivityForResult(settingsIntent, INTENT_ADD_TOKEN_MANUALLY);
@@ -453,7 +440,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
 
         int digits = 6;
-        if(uri.getQueryParameter(DIGITS)!=null){
+        if (uri.getQueryParameter(DIGITS) != null) {
             digits = Integer.parseInt(uri.getQueryParameter(DIGITS));
         }
 
@@ -728,29 +715,29 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         //Toast.makeText(this, "Tokens saved", Toast.LENGTH_SHORT).show();
     }
 
-   /* private void checkScanPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            scanQR();
-        } else {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
-        }
-    }
+    /* private void checkScanPermission() {
+         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+             scanQR();
+         } else {
+             ActivityCompat.requestPermissions(this,
+                     new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
+         }
+     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-        if (requestCode == PERMISSIONS_REQUEST_CAMERA) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // permission was granted
-                scanQR();
-            } else {
-                Toast.makeText(this, "Camera permission request was denied.", Toast.LENGTH_SHORT).show();
-            }
-        } else {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }
-    }
-*/
+     @Override
+     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+         if (requestCode == PERMISSIONS_REQUEST_CAMERA) {
+             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                 // permission was granted
+                 scanQR();
+             } else {
+                 Toast.makeText(this, "Camera permission request was denied.", Toast.LENGTH_SHORT).show();
+             }
+         } else {
+             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+         }
+     }
+ */
     private void scanQR() {
         try {
             IntentIntegrator ii = new IntentIntegrator(this);

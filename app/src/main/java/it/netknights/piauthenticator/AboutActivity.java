@@ -18,9 +18,6 @@ import static it.netknights.piauthenticator.R.color.PIBLUE;
 
 public class AboutActivity extends AppCompatActivity {
     private ListView listView;
-    private TextView textViewVersion;
-    private ArrayList<String> acknowledgements;
-    private AboutListAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,12 +30,12 @@ public class AboutActivity extends AppCompatActivity {
     }
 
     private void setupList() {
-        acknowledgements = new ArrayList<>();
+        ArrayList<String> acknowledgements = new ArrayList<>();
         acknowledgements.add("Apache License 2.0");
         acknowledgements.add("OTP Authenticator by Bruno Bierbaumer");
         acknowledgements.add("ZXing Embedded");
         acknowledgements.add("Android Code Samples");
-        adapter = new AboutListAdapter();
+        AboutListAdapter adapter = new AboutListAdapter();
         listView.setAdapter(adapter);
         adapter.setAcknowledgements(acknowledgements);
         adapter.notifyDataSetChanged();
@@ -46,7 +43,7 @@ public class AboutActivity extends AppCompatActivity {
 
     private void setupViews() {
         listView = (ListView) findViewById(R.id.listView_about);
-        textViewVersion = (TextView) findViewById(R.id.textView_version);
+        TextView textViewVersion = (TextView) findViewById(R.id.textView_version);
         PackageInfo info = null;
 
         try {
@@ -55,9 +52,9 @@ public class AboutActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         if (info != null) {
-            textViewVersion.setText("Version: " + info.versionName);
+            textViewVersion.setText("Version: " + info.versionName + " (Open Beta)");
         } else {
-            textViewVersion.setText("Version: x.x.x");
+            textViewVersion.setText("Version: x.x.x (Open Beta)");
         }
     }
 

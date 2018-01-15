@@ -22,7 +22,6 @@ public class AboutListAdapter extends BaseAdapter {
             final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
             v = inflater.inflate(R.layout.about_row, parent, false);
         }
-        final View mView = v;
         final TextView about_title = (TextView) v.findViewById(R.id.about_row_title);
         about_title.setText(acknowledgements.get(position));
 
@@ -67,11 +66,11 @@ public class AboutListAdapter extends BaseAdapter {
         return byteArrayOutputStream.toString();
     }
 
-    public void setAcknowledgements(List<String> acknowledgements) {
+    void setAcknowledgements(List<String> acknowledgements) {
         this.acknowledgements = acknowledgements;
     }
 
-    public List<String> getAcknowledgements() {
+    private List<String> getAcknowledgements() {
         return acknowledgements;
     }
 

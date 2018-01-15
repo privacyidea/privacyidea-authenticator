@@ -219,12 +219,9 @@ public class OTPGenerator {
      * @throws InvalidKeySpecException
      */
     public static byte[] generatePBKDFKey(char[] passphraseOrPin, byte[] salt, int iterations, int outputKeyLength) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        // Generate a 256-bit key
-        //final int outputKeyLength = 256;
-
+        // Generate a outputKeyLength-bit key
         SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
         KeySpec keySpec = new PBEKeySpec(passphraseOrPin, salt, iterations, outputKeyLength);
-        //SecretKey secretKey = secretKeyFactory.generateSecret(keySpec);
         byte[] bb = secretKeyFactory.generateSecret(keySpec).getEncoded();
         return bb;
     }

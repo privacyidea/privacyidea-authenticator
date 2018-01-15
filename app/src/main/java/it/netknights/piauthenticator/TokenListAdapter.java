@@ -62,16 +62,13 @@ public class TokenListAdapter extends BaseAdapter {
         return pbs;
     }
 
-    //update is called from the timer-thread within the MainActivity
     void updatePBs(int progress) {
         //Log.d(TAG, "updatePBs: for progress: "+progress);
         for (ProgressBar pb : pbs) {
             // Log.d(TAG,"max: "+ pb.getMax());
             if (pb.getMax() == 30 * 100 && progress >= 30) {
-                //pb.setProgress(progress - 30);
                 setProgressAnimate(pb, progress - 30);
             } else {
-                //pb.setProgress(progress);
                 setProgressAnimate(pb, progress);
             }
         }
@@ -131,8 +128,6 @@ public class TokenListAdapter extends BaseAdapter {
         nextbtn.setVisibility(GONE);
         progressBar.setVisibility(GONE);
         otptext.setText(token.getCurrentOTP());
-        //labeltext.setText(new Base32().encodeAsString(token.getSecret()));
-        //labeltext.setText(byteArrayToHexString(token.getSecret()));
         labeltext.setText(token.getLabel());
 
         if (token.isWithPIN() && token.getPin().equals("")) {
@@ -265,7 +260,6 @@ public class TokenListAdapter extends BaseAdapter {
                 nextbtn.setVisibility(GONE);
                 nextbtn.setClickable(false);
                 nextbtn.setLongClickable(false);
-                //nextbtn.setActivated(false);
                 progressBar.setVisibility(VISIBLE);
                 v.setClickable(false);
             }
