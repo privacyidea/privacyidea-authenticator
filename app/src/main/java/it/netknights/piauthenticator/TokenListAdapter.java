@@ -308,11 +308,9 @@ public class TokenListAdapter extends BaseAdapter {
 
              @Override
              public boolean onTouch(View v, MotionEvent arg1) {
-
                  if (getCurrentSelection() != getTokens().get(position)) {
                      return false;
                  }
-
                  ClipData data = ClipData.newPlainText(v.getTag() + "", "");
                  View.DragShadowBuilder shadow = new View.DragShadowBuilder(v);
                  v.startDrag(data, shadow, null, 0);

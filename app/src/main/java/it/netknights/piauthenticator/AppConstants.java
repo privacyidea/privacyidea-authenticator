@@ -21,6 +21,10 @@ public class AppConstants {
     static final String COUNTER = "counter";
     static final String TOTP = "totp";
     static final String HOTP = "hotp";
+    static final String TAPTOSHOW = "taptoshow";
+    static final String PIN = "pin";
+    static final String WITHPIN = "withpin";
+
 
     static String TAG = "it.netknights.piauth";
 

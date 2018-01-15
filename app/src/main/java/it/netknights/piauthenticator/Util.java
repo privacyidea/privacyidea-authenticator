@@ -49,9 +49,12 @@ import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.KEYFILE;
 import static it.netknights.piauthenticator.AppConstants.LABEL;
 import static it.netknights.piauthenticator.AppConstants.PERIOD;
+import static it.netknights.piauthenticator.AppConstants.PIN;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
+import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.AppConstants.TYPE;
+import static it.netknights.piauthenticator.AppConstants.WITHPIN;
 
 public class Util {
 
@@ -131,12 +134,12 @@ public class Util {
         if (o.getString(TYPE).equals(TOTP)) {
             tmp.setPeriod(o.getInt(PERIOD));
         }
-        if (o.optBoolean("haspin", false)) {
+        if (o.optBoolean(WITHPIN, false)) {
             tmp.setWithPIN(true);
-            tmp.setPin(o.getString("pin"));
+            tmp.setPin(o.getString(PIN));
             tmp.setLocked(true);
         }
-        if (o.optBoolean("hastap", false)) {
+        if (o.optBoolean(TAPTOSHOW, false)) {
             tmp.setWithTapToShow(true);
         }
         return tmp;
@@ -156,13 +159,13 @@ public class Util {
             o.put(PERIOD, t.getPeriod());
         }
         if (t.isWithPIN()) {
-            o.put("haspin", true);
-            o.put("pin", t.getPin());
+            o.put(WITHPIN, true);
+            o.put(PIN, t.getPin());
         } else {
-            o.put("haspin", false);
+            o.put(WITHPIN, false);
         }
         if (t.isWithTapToShow()) {
-            o.put("hastap", true);
+            o.put(TAPTOSHOW, true);
         }
         return o;
     }
