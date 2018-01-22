@@ -25,6 +25,7 @@ import android.widget.Toast;
 import org.apache.commons.codec.binary.Base32;
 
 import static android.view.View.GONE;
+import static it.netknights.piauthenticator.AppConstants.*;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 
 public class EnterDetailsActivity extends AppCompatActivity {
@@ -41,7 +42,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
     private String new_type;
     private int new_period;
     private int new_digits;
-    private boolean new_haspin = false;
+    private boolean new_withpin = false;
 
 
     @Override
@@ -66,7 +67,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
     public void paintStatusbar() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar3);
         toolbar.setVisibility(GONE);
-        setTitle(" Enter Details");
+        setTitle(getString(R.string.title_enter_details));
         //------------------ try to paint the statusbar -------------------------------
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Window window = getWindow();
@@ -86,10 +87,10 @@ public class EnterDetailsActivity extends AppCompatActivity {
 
         final int supportspinnerid = R.layout.support_simple_spinner_dropdown_item;
 
-        String[] types = {"TOTP", "HOTP"};
-        String[] periods = {"30s", "60s"};
-        String[] algorithms = {"SHA1", "SHA256", "SHA512"};
-        String[] digits = {"6", "8"};
+        String[] types = {TOTP, HOTP};
+        String[] periods = {PERIOD_30_STR, PERIOD_60_STR};
+        String[] algorithms = {SHA1, SHA256, SHA512};
+        String[] digits = {DIGITS_6_STR, DIGITS_8_STR};
 
         ArrayAdapter<String> adapter_type = new ArrayAdapter<>(this, supportspinnerid, types);
         spinner_type.setAdapter(adapter_type);
@@ -100,6 +101,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
         ArrayAdapter<String> adapter_digits = new ArrayAdapter<>(this, supportspinnerid, digits);
         spinner_digits.setAdapter(adapter_digits);
 
+        // disable the period spinner when HOTP type is selected
         spinner_type.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -134,18 +136,19 @@ public class EnterDetailsActivity extends AppCompatActivity {
 
     private void buildResult() {
         Intent returnIntent = new Intent();
-        returnIntent.putExtra("label", new_label);
-        returnIntent.putExtra("secret", new_secret);
-        returnIntent.putExtra("type", new_type);
-        returnIntent.putExtra("digits", new_digits);
-        if (new_type.equals("totp")) {
-            returnIntent.putExtra("period", new_period);
+        returnIntent.putExtra(LABEL, new_label);
+        returnIntent.putExtra(SECRET, new_secret);
+        returnIntent.putExtra(TYPE, new_type);
+        returnIntent.putExtra(DIGITS, new_digits);
+        if (new_type.equals(TOTP)) {
+            returnIntent.putExtra(PERIOD, new_period);
         }
-        if (!new_algorithm.equals("SHA1")) { // the default is SHA1, so it does not need to be set explicitly
-            returnIntent.putExtra("algorithm", new_algorithm);
+        if (!new_algorithm.equals(SHA1)) {
+            // the default is SHA1, so it does not need to be set explicitly
+            returnIntent.putExtra(ALGORITHM, new_algorithm);
         }
-        if (new_haspin) {
-            returnIntent.putExtra("haspin", true);
+        if (new_withpin) {
+            returnIntent.putExtra(WITHPIN, true);
         }
         setResult(Activity.RESULT_OK, returnIntent);
     }
@@ -157,19 +160,19 @@ public class EnterDetailsActivity extends AppCompatActivity {
         CheckBox check_pin = (CheckBox) findViewById(R.id.checkBox_pin);
 
         if (check_pin.isChecked()) {
-            new_haspin = true;
+            new_withpin = true;
         }
 
         new_label = editText_name.getText().toString();
         if (new_label.equals("")) {
-            Toast.makeText(this, "Name cannot be empty", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.toast_name_cantbe_empty, Toast.LENGTH_LONG).show();
             editText_name.requestFocus();
             return false;
         }
         String new_secret_string = editText_secret.getText().toString();
 
         if (new_secret_string.equals("")) {
-            Toast.makeText(this, "Secret cannot be empty", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.toast_secret_cantbe_empty, Toast.LENGTH_LONG).show();
             editText_secret.requestFocus();
             return false;
         }
@@ -177,7 +180,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
             if (new Base32().isInAlphabet(new_secret_string)) {
                 new_secret = new Base32().decode(new_secret_string);
             } else {
-                Toast.makeText(this, "Secret is not in Base32 format", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, R.string.toast_secret_nob32format, Toast.LENGTH_LONG).show();
                 editText_secret.requestFocus();
                 return false;
             }
@@ -188,11 +191,11 @@ public class EnterDetailsActivity extends AppCompatActivity {
 
         new_type = (String) spinner_type.getSelectedItem();
         new_type = new_type.toLowerCase();
-        if (new_type.equals("totp")) {
+        if (new_type.equals(TOTP)) {
             String tmp_string = (String) spinner_period.getSelectedItem();
-            if (tmp_string.equals("30s")) {
-                new_period = 30;
-            } else new_period = 60;
+            if (tmp_string.equals(PERIOD_30_STR)) {
+                new_period = PERIOD_30;
+            } else new_period = PERIOD_60;
         }
 
         String tmp_digits = (String) spinner_digits.getSelectedItem();

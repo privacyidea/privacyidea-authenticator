@@ -36,6 +36,7 @@ public class Token {
     private String Pin = "";
     private boolean withTapToShow = false;
     private boolean tapped = false;
+    private boolean persistent = false;
 
 
     Token(byte[] secret, String label, String type, int digits) {
@@ -51,7 +52,7 @@ public class Token {
         this.tapped = tapped;
     }
 
-    public boolean isTapped() {
+    boolean isTapped() {
         return tapped;
     }
 
@@ -91,7 +92,7 @@ public class Token {
         this.period = period;
     }
 
-    public int getCounter() {
+    int getCounter() {
         return counter;
     }
 
@@ -107,11 +108,11 @@ public class Token {
         return secret;
     }
 
-    public void setLabel(String label) {
+    void setLabel(String label) {
         this.label = label;
     }
 
-    public String getLabel() {
+    String getLabel() {
         return label;
     }
 
@@ -144,12 +145,20 @@ public class Token {
         return algorithm;
     }
 
-    public String getCurrentOTP() {
+    String getCurrentOTP() {
         return currentOTP;
     }
 
-    public void setCurrentOTP(String currentOTP) {
+    void setCurrentOTP(String currentOTP) {
         this.currentOTP = currentOTP;
+    }
+
+    public boolean isPersistent() {
+        return persistent;
+    }
+
+    public void setPersistent(boolean val){
+        persistent = val;
     }
 }
 

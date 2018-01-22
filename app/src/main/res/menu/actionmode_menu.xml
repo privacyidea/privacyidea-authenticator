@@ -21,6 +21,6 @@
     <item
         android:id="@+id/copy_clipboard"
         android:icon="@android:drawable/ic_input_get"
-        android:title="@string/copy_to_clipboard"
+        android:title="@string/menu_copy_to_clipboard"
         app:showAsAction="never" />
 </menu>

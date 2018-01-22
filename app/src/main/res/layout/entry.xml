@@ -19,7 +19,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:text="@string/textview_placeholder"
+        android:text="@string/textview"
         android:textSize="28sp"
         android:textStyle="bold" />
 
@@ -27,7 +27,7 @@
         android:id="@+id/textViewLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/textview_placeholder"
+        android:text="@string/textview"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:layout_below="@+id/textViewToken"
         android:layout_alignParentStart="true" />
@@ -39,7 +39,7 @@
         android:layout_above="@+id/progressBar"
         android:layout_alignParentEnd="true"
         android:backgroundTint="@color/PIBLUE"
-        android:text="@string/next_button_text"
+        android:text="@string/button_text_next"
         android:textColor="@color/zxing_status_text" />
 
 </RelativeLayout>

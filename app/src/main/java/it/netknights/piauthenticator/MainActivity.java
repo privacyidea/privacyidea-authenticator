@@ -26,6 +26,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -64,17 +65,29 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
+import java.util.Locale;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
 import static it.netknights.piauthenticator.AppConstants.COUNTER;
 import static it.netknights.piauthenticator.AppConstants.DIGITS;
+import static it.netknights.piauthenticator.AppConstants.HMACSHA1;
+import static it.netknights.piauthenticator.AppConstants.HMACSHA256;
+import static it.netknights.piauthenticator.AppConstants.HMACSHA512;
 import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.INTENT_ABOUT;
 import static it.netknights.piauthenticator.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
 import static it.netknights.piauthenticator.AppConstants.ISSUER;
+import static it.netknights.piauthenticator.AppConstants.LABEL;
 import static it.netknights.piauthenticator.AppConstants.PERIOD;
+import static it.netknights.piauthenticator.AppConstants.PIN;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
+import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
+import static it.netknights.piauthenticator.AppConstants.TWOSTEP_DIFFICULTY;
+import static it.netknights.piauthenticator.AppConstants.TWOSTEP_OUTPUT;
+import static it.netknights.piauthenticator.AppConstants.TWOSTEP_SALT;
+import static it.netknights.piauthenticator.AppConstants.TYPE;
+import static it.netknights.piauthenticator.AppConstants.WITHPIN;
 import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 
@@ -98,6 +111,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         paintStatusbar();
         setupAdapter();
         startTimerThread();
+
+       /* Locale locale = new Locale("de");
+        Locale.setDefault(locale);
+        Configuration config = new Configuration();
+        config.locale = locale;
+        getBaseContext().getResources().updateConfiguration(config, getBaseContext().getResources().getDisplayMetrics());
+        Toast.makeText(MainActivity.this,Locale. ,Toast.LENGTH_SHORT).show();*/
     }
 
     private void setupFab() {
@@ -119,6 +139,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             public void run() {
                 int progress = (int) (System.currentTimeMillis() / 1000) % 60;
                 tokenlistadapter.updatePBs(progress);
+                // refresh OTP values only around the periods
                 if (progress < 3 || progress > 27 && progress < 33 || progress > 57) {
                     tokenlistadapter.refreshAllTOTP();
                 }
@@ -148,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     private void setupViews() {
-        setTitle(" PrivacyIDEA Authenticator");
+        setTitle(AppConstants.APP_TITLE);
         setContentView(R.layout.activity_main);
         listview = (ListView) findViewById(R.id.listview);
         listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
@@ -197,16 +218,16 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
         if (result != null) {
             if (result.getContents() == null) {
-                Toast.makeText(this, "Cancelled", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.toast_cancelled, Toast.LENGTH_SHORT).show();
             } else {
                 try {
                     Token t = makeTokenFromURI(result.getContents());
                     tokenlist.add(t);
-                    Toast.makeText(this, "Token added for: " + t.getLabel(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.toast_token_added_for) + " " + t.getLabel(), Toast.LENGTH_SHORT).show();
                     tokenlistadapter.refreshOTPs();
                     saveTokenlist();
                 } catch (Exception e) {
-                    Toast.makeText(this, "Invalid QR Code", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.toast_invalid_qr, Toast.LENGTH_SHORT).show();
                     e.printStackTrace();
                 }
             }
@@ -216,12 +237,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 tokenlist.add(token);
                 tokenlistadapter.refreshOTPs();
                 saveTokenlist();
-                Toast.makeText(this, "Token added for: " + token.getLabel(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.toast_token_added_for) + " " + token.getLabel(), Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(this, "Cancelled", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.toast_cancelled, Toast.LENGTH_SHORT).show();
             }
-        } else if (requestCode == INTENT_ABOUT) {
-        } else {
+        } /*else if (requestCode == INTENT_ABOUT) {
+        }*/ else {
             super.onActivityResult(requestCode, resultCode, data);
         }
     }
@@ -254,7 +275,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
         tokenlistadapter.setCurrentSelection(nextSelection);
         tokenlistadapter.notifyDataSetChanged();
-        mode.setTitle("Choose an action");
+        mode.setTitle(getString(R.string.actionmode_title));
         return true;
     }
 
@@ -263,80 +284,80 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         final Token currToken = tokenlistadapter.getCurrentSelection();
         final int id = item.getItemId();
         if (id == R.id.delete_token2) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Confirm Deletion");
-            builder.setMessage("Do you really want to remove\n" + currToken.getLabel() + " ?");
-            builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    int pos = tokenlist.indexOf(currToken);
-                    tokenlist.remove(pos);
-                    tokenlistadapter.getPbs().remove(pos);
-                    /*   ArrayList<Token> templist = new ArrayList<>(tokenlist);
-                    tokenlistadapter.clear();
-                    tokenlistadapter.notifyDataSetChanged();
-                    tokenlist = templist;
-                    tokenlistadapter.setTokens(templist);*/
-                    tokenlistadapter.notifyDataSetChanged();
-                    //printListAndAdapter();
-                    Toast.makeText(MainActivity.this, "Token removed", Toast.LENGTH_SHORT).show();
-                    saveTokenlist();
-                    //Log.d(Util.TAG,"deletion: pos: "+pos+" ");
-                    mode.finish();
-                }
-            });
-            builder.setNegativeButton("NO", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    Toast.makeText(MainActivity.this, "Deletion cancelled", Toast.LENGTH_SHORT).show();
-                    dialog.cancel();
-                    mode.finish();
-                }
-            });
-            final AlertDialog alert = builder.create();
-            alert.setOnShowListener(new DialogInterface.OnShowListener() {
-                @Override
-                public void onShow(DialogInterface dialog) {
-                    MainActivity.changeDialogFontColor(alert);
-                }
-            });
-            alert.show();
+          /*  if (currToken.isPersistent()) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("Deletion not possible");
+                builder.setMessage("Persistent token cannot be deleted");
+                builder.setPositiveButton(R.string.button_text_yes, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+                final AlertDialog alert = builder.create();
+                MainActivity.changeDialogFontColor(alert);
+                alert.show();
+            } else {*/
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle(R.string.confirm_deletion_title);
+                builder.setMessage(getString(R.string.confirm_deletion_text) + " " + currToken.getLabel() + " ?");
+                builder.setPositiveButton(R.string.button_text_yes, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        int pos = tokenlist.indexOf(currToken);
+                        tokenlist.remove(pos);
+                        tokenlistadapter.getPbs().remove(pos);
+                        tokenlistadapter.notifyDataSetChanged();
+                        Toast.makeText(MainActivity.this, R.string.toast_token_removed, Toast.LENGTH_SHORT).show();
+                        saveTokenlist();
+                        //Log.d(Util.TAG,"deletion: pos: "+pos+" ");
+                        mode.finish();
+                    }
+                });
+                builder.setNegativeButton(R.string.button_text_no, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Toast.makeText(MainActivity.this, R.string.toast_deletion_cancelled, Toast.LENGTH_SHORT).show();
+                        dialog.cancel();
+                        mode.finish();
+                    }
+                });
+                final AlertDialog alert = builder.create();
+                MainActivity.changeDialogFontColor(alert);
+                alert.show();
+
+
             return true;
         }
 
         if (id == R.id.edit_token2) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Edit Name");
+            builder.setTitle(R.string.edit_name_title);
             final EditText input = new EditText(this);
             input.setText(currToken.getLabel());
             input.setSelectAllOnFocus(true);
             input.getBackground().setColorFilter(input.getContext().getResources().getColor(PIBLUE), PorterDuff.Mode.SRC_IN);
             builder.setView(input);
 
-            builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+            builder.setPositiveButton(getString(R.string.button_text_save), new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int whichButton) {
                     currToken.setLabel(input.getEditableText().toString());
                     tokenlistadapter.notifyDataSetChanged();
                     saveTokenlist();
-                    Toast.makeText(MainActivity.this, "Name was changed", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, currToken.getLabel() + ": " + getString(R.string.toast_name_changed), Toast.LENGTH_SHORT).show();
                     mode.finish();
                 }
             });
 
-            builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            builder.setNegativeButton(getString(R.string.button_text_cancel), new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int whichButton) {
                     dialog.cancel();
-                    Toast.makeText(MainActivity.this, "Editing cancelled", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, R.string.toast_edit_cancelled, Toast.LENGTH_SHORT).show();
                     mode.finish();
                 }
             });
             final AlertDialog alert = builder.create();
-            alert.setOnShowListener(new DialogInterface.OnShowListener() {
-                @Override
-                public void onShow(DialogInterface dialog) {
-                    MainActivity.changeDialogFontColor(alert);
-                }
-            });
+            MainActivity.changeDialogFontColor(alert);
             alert.show();
             return true;
         }
@@ -347,20 +368,20 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 layout.setOrientation(LinearLayout.VERTICAL);
 
                 final EditText firstinput = new EditText(this);
-                firstinput.setHint("new PIN");
+                firstinput.setHint(R.string.input_hint_new_pin);
                 firstinput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
                 layout.addView(firstinput);
                 firstinput.getBackground().setColorFilter(firstinput.getContext().getResources().getColor(PIBLUE), PorterDuff.Mode.SRC_IN);
                 final EditText secondinput = new EditText(this);
-                secondinput.setHint("Repeat new PIN");
+                secondinput.setHint(R.string.input_hint_repeat_new_pin);
                 secondinput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
                 layout.addView(secondinput);
                 secondinput.getBackground().setColorFilter(secondinput.getContext().getResources().getColor(PIBLUE), PorterDuff.Mode.SRC_IN);
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle("Change PIN");
+                builder.setTitle(R.string.title_change_pin);
                 builder.setView(layout);
 
-                builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                builder.setPositiveButton(getString(R.string.button_text_save), new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         int firstpin = Integer.parseInt(firstinput.getEditableText().toString());
                         int secondpin = Integer.parseInt(secondinput.getEditableText().toString());
@@ -369,28 +390,23 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                             currToken.setPin(hashedPIN);
                             tokenlistadapter.notifyDataSetChanged();
                             saveTokenlist();
-                            Toast.makeText(MainActivity.this, "PIN was changed", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, currToken.getLabel() + ": " + getString(R.string.toast_pin_changed), Toast.LENGTH_SHORT).show();
                         } else {
-                            Toast.makeText(MainActivity.this, "PINs do not match - Cancelled", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, R.string.toast_pins_dont_match, Toast.LENGTH_SHORT).show();
                         }
                         mode.finish();
                     }
                 });
 
-                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                builder.setNegativeButton(getString(R.string.button_text_cancel), new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         dialog.cancel();
-                        Toast.makeText(MainActivity.this, "Changing PIN cancelled", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, R.string.toast_change_pin_cancelled, Toast.LENGTH_SHORT).show();
                         mode.finish();
                     }
                 });
                 final AlertDialog alert = builder.create();
-                alert.setOnShowListener(new DialogInterface.OnShowListener() {
-                    @Override
-                    public void onShow(DialogInterface dialog) {
-                        MainActivity.changeDialogFontColor(alert);
-                    }
-                });
+                MainActivity.changeDialogFontColor(alert);
                 alert.show();
                 return true;
             }
@@ -398,7 +414,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
         if (id == R.id.copy_clipboard) {
             copyToClipboard(this, currToken.getCurrentOTP());
-            Toast.makeText(MainActivity.this, "OTP copied to Clipboard", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, R.string.toast_otp_to_clipboard, Toast.LENGTH_SHORT).show();
         }
         return false;
     }
@@ -464,39 +480,42 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         if (uri.getQueryParameter(ALGORITHM) != null) {
             tmp.setAlgorithm(uri.getQueryParameter(ALGORITHM).toUpperCase());
         }
-        if (uri.getBooleanQueryParameter("pin", false)) {
+        if (uri.getBooleanQueryParameter(PIN, false)) {
             tmp.setWithPIN(true);
             tmp.setLocked(true);
         }
-        //if at least one parameter for 2step is set - start 2step init
-        if (uri.getQueryParameter("2step_salt") != null ||
-                uri.getQueryParameter("2step_difficulty") != null ||
-                uri.getQueryParameter("2step_output") != null) {
+        // if at least one parameter for 2step is set do 2step init
+        if (uri.getQueryParameter(TWOSTEP_SALT) != null ||
+                uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null ||
+                uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
 
             int phonepartlength = 10; // default value
-            if (uri.getQueryParameter("2step_salt") != null) {
-                phonepartlength = Integer.parseInt(uri.getQueryParameter("2step_salt"));
+            if (uri.getQueryParameter(TWOSTEP_SALT) != null) {
+                phonepartlength = Integer.parseInt(uri.getQueryParameter(TWOSTEP_SALT));
             }
             int iterations = 10000;
-            if (uri.getQueryParameter("2step_difficulty") != null) {
-                iterations = Integer.parseInt(uri.getQueryParameter("2step_difficulty"));
+            if (uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null) {
+                iterations = Integer.parseInt(uri.getQueryParameter(TWOSTEP_DIFFICULTY));
             }
-            int output_size = 160; //comes in bytes, need to be converted to bit as parameter for pbkdf2
-            if (uri.getQueryParameter("2step_output") != null) {
-                output_size = Integer.parseInt(uri.getQueryParameter("2step_output")) * 8;
+            // comes in bytes, need to be converted to bit as parameter for pbkdf2
+            int output_size = 160;
+
+            if (uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
+                output_size = Integer.parseInt(uri.getQueryParameter(TWOSTEP_OUTPUT)) * 8;
             } else {
-                //if the output size is not specified, it is derived from the OTP algorithm
-                if (tmp.getAlgorithm().equals("HmacSHA1")) {
-                    //do nothing default is already 20bytes = 160bit
-                } else if (tmp.getAlgorithm().equals("HmacSHA256")) {
+                // if the output size is not specified, it is derived from the OTP algorithm
+                if (tmp.getAlgorithm().equals(HMACSHA1)) {
+                    // do nothing default is already 20bytes = 160bit
+                } else if (tmp.getAlgorithm().equals(HMACSHA256)) {
                     output_size = 256;
-                } else if (tmp.getAlgorithm().equals("HmacSHA256")) {
+                } else if (tmp.getAlgorithm().equals(HMACSHA512)) {
                     output_size = 512;
                 }
             }
             return do2StepInit(tmp, phonepartlength, iterations, output_size);
         }
-        if (uri.getBooleanQueryParameter("tapshow", false)) {
+        // tap to show is currently not used
+        if (uri.getBooleanQueryParameter(TAPTOSHOW, false)) {
             tmp.setWithTapToShow(true);
         }
         return tmp;
@@ -526,31 +545,39 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     private Token makeTokenFromIntent(Intent data) {
-        String type = data.getStringExtra("type");
-
-        byte[] secret = data.getByteArrayExtra("secret");
-        String label = data.getStringExtra("label");
-        int digits = data.getIntExtra("digits", 6);
+        String type = data.getStringExtra(TYPE);
+        byte[] secret = data.getByteArrayExtra(SECRET);
+        String label = data.getStringExtra(LABEL);
+        int digits = data.getIntExtra(DIGITS, 6);
+        String algorithm = data.getStringExtra(ALGORITHM);
         Token tmp = new Token(secret, label, type, digits);
-        if (type.equals("totp")) {
-            int period = data.getIntExtra("period", 30);
+
+        if (type.equals(TOTP)) {
+            int period = data.getIntExtra(PERIOD, 30);
             tmp.setPeriod(period);
         }
-        String algorithm = data.getStringExtra("algorithm");
+
         if (algorithm != null) {
             tmp.setAlgorithm(algorithm);
         }
-        if (data.getBooleanExtra("haspin", false)) {
+        if (data.getBooleanExtra(WITHPIN, false)) {
             tmp.setWithPIN(true);
         }
 
-        if (data.getBooleanExtra("2step", false)) {
-            //tmp = do2StepInit(tmp, data.getIntExtra("pp", 10));
-        }
         return tmp;
     }
 
-    public static void changeDialogFontColor(AlertDialog dialog) {
+    public static void changeDialogFontColor(final AlertDialog dialog) {
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface dialogInterface) {
+                doChangeDialogFontColor(dialog);
+            }
+        });
+
+    }
+
+    private static void doChangeDialogFontColor(AlertDialog dialog) {
         int piblue = dialog.getContext().getResources().getColor(PIBLUE);
         if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null) {
             dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(piblue);
@@ -605,14 +632,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            //------------------- generate random bytes for the phonepartBytes ------------------------------
+            // generate random bytes for the phonepartBytes
             SecureRandom sr = new SecureRandom(); //Seeded by PRNGFixes
             sr.nextBytes(phonepartBytes);
 
             output = byteArrayToHexString(phonepartBytes);
             //Log.d(Util.TAG, "client_part_hex: " + output);
 
-            //------------- combine the phone- and QR-part -------------------
+            // combine the phone- and QR-part
             String server_secret_hex = byteArrayToHexString(token.getSecret());
             //Log.d(Util.TAG, "server_secret_hex: "+server_secret_hex + " , server_secret_b32 "+ new Base32().encodeAsString(token.getSecret()));
             char[] ch = server_secret_hex.toCharArray();
@@ -621,7 +648,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             long startTime = SystemClock.elapsedRealtime();
             try {
                 completesecretBytes = OTPGenerator.generatePBKDFKey(ch, phonepartBytes, iterations, output_size_bit);
-                //completesecretBytes = OTPGenerator.generatePBKDFKey(ch, new Base32().decode("OF3XYLDSPTMWK==="), iterations, output_size_bit);
                 //Log.d(Util.TAG, "complete_secret_hex : "+byteArrayToHexString(completesecretBytes));
             } catch (NoSuchAlgorithmException e) {
                 e.printStackTrace();
@@ -637,11 +663,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
         @Override
         protected void onPostExecute(final Boolean success) {
-            //------------- display the phone-part of the secret and first OTP to verify ------------
+            // display the phone-part of the secret and first OTP to verify
             pd.dismiss();
             AlertDialog.Builder builder = new AlertDialog.Builder(util.getmActivity());
             builder.setCancelable(false);
-            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     dialog.cancel();
@@ -650,12 +676,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             builder.setTitle("Phonepart");
             builder.setMessage(buildResultMessage());
             final AlertDialog alert = builder.create();
-            alert.setOnShowListener(new DialogInterface.OnShowListener() {
-                @Override
-                public void onShow(DialogInterface dialog) {
-                    MainActivity.changeDialogFontColor(alert);
-                }
-            });
+            MainActivity.changeDialogFontColor(alert);
             alert.show();
             delegate.processFinished(token);
         }

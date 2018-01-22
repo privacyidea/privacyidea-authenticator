@@ -63,9 +63,7 @@ public class TokenListAdapter extends BaseAdapter {
     }
 
     void updatePBs(int progress) {
-        //Log.d(TAG, "updatePBs: for progress: "+progress);
         for (ProgressBar pb : pbs) {
-            // Log.d(TAG,"max: "+ pb.getMax());
             if (pb.getMax() == 30 * 100 && progress >= 30) {
                 setProgressAnimate(pb, progress - 30);
             } else {
@@ -79,7 +77,7 @@ public class TokenListAdapter extends BaseAdapter {
     }
 
     private void setProgressAnimate(ProgressBar pb, int progressTo) {
-        ObjectAnimator animation = ObjectAnimator.ofInt(pb, "progress", pb.getProgress(), progressTo * 100);
+        ObjectAnimator animation = ObjectAnimator.ofInt(pb, AppConstants.PROPERTY_PROGRESS, pb.getProgress(), progressTo * 100);
         animation.setDuration(1000);
         animation.setInterpolator(new LinearInterpolator());
         animation.start();
@@ -141,12 +139,12 @@ public class TokenListAdapter extends BaseAdapter {
                     final EditText input = new EditText(v.getContext());
                     input.getBackground().setColorFilter(input.getContext().getResources().getColor(PIBLUE), PorterDuff.Mode.SRC_IN);
                     AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
-                    builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                    builder.setPositiveButton(R.string.button_text_save, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             String text = input.getEditableText().toString();
                             if (text.equals("")) {
-                                Toast.makeText(mView.getContext(), "New PIN cannot be empty", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(mView.getContext(), R.string.toast_pin_set_isEmpty, Toast.LENGTH_SHORT).show();
                                 return;
                             }
                             int temp_pin = Integer.parseInt(text);
@@ -157,23 +155,17 @@ public class TokenListAdapter extends BaseAdapter {
                             Util.saveTokens(mView.getContext(), temp);
                         }
                     });
-                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    builder.setNegativeButton(R.string.button_text_cancel, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             dialog.cancel();
                         }
                     });
                     final AlertDialog alert = builder.create();
-                    alert.setTitle("Set new PIN");
+                    alert.setTitle(R.string.set_new_pin);
                     input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
                     alert.setView(input);
-                    alert.setOnShowListener(new DialogInterface.OnShowListener() {
-                        @Override
-                        public void onShow(DialogInterface dialog) {
-                            MainActivity.changeDialogFontColor(alert);
-                        }
-                    });
-
+                    MainActivity.changeDialogFontColor(alert);
                     alert.show();
                 }
             });
@@ -187,17 +179,17 @@ public class TokenListAdapter extends BaseAdapter {
                 @Override
                 public void onClick(View v) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
-                    builder.setTitle("Enter PIN");
+                    builder.setTitle(R.string.enter_pin_title);
                     final EditText input = new EditText(v.getContext());
                     input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
                     input.getBackground().setColorFilter(input.getContext().getResources().getColor(PIBLUE), PorterDuff.Mode.SRC_IN);
                     builder.setView(input);
-                    builder.setPositiveButton("Enter", new DialogInterface.OnClickListener() {
+                    builder.setPositiveButton(R.string.button_text_enter, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             String text = input.getEditableText().toString();
                             if (text.equals("")) {
-                                Toast.makeText(mView.getContext(), "Empty Input", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(mView.getContext(), R.string.toast_empty_pin_input, Toast.LENGTH_SHORT).show();
                                 return;
                             }
                             int temp_input = Integer.parseInt(text);
@@ -206,24 +198,19 @@ public class TokenListAdapter extends BaseAdapter {
                                 token.setLocked(false);
                                 token.setTapped(true);
                             } else {
-                                Toast.makeText(mView.getContext(), "The PIN you have entered is not correct", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(mView.getContext(), R.string.toast_pin_not_correct, Toast.LENGTH_SHORT).show();
                             }
                             notifyDataSetChanged();
                         }
                     });
-                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    builder.setNegativeButton(R.string.button_text_cancel, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             dialog.cancel();
                         }
                     });
                     final AlertDialog alert = builder.create();
-                    alert.setOnShowListener(new DialogInterface.OnShowListener() {
-                        @Override
-                        public void onShow(DialogInterface dialog) {
-                            MainActivity.changeDialogFontColor(alert);
-                        }
-                    });
+                    MainActivity.changeDialogFontColor(alert);
                     alert.show();
                 }
             });
@@ -265,61 +252,61 @@ public class TokenListAdapter extends BaseAdapter {
             }
             otptext.setText(token.getCurrentOTP());
         }
-        setupOnDrags(v,position);
+        setupOnDrags(v, position);
         return v;
     }
 
-     private void setupOnDrags(View v, final int position) {
-         v.setOnDragListener(new View.OnDragListener() {
-             @Override
-             public boolean onDrag(View v, DragEvent event) {
-                 int action = event.getAction();
-                 switch (action) {
-                     case DragEvent.ACTION_DRAG_STARTED:
-                         break;
+    private void setupOnDrags(View v, final int position) {
+        v.setOnDragListener(new View.OnDragListener() {
+            @Override
+            public boolean onDrag(View v, DragEvent event) {
+                int action = event.getAction();
+                switch (action) {
+                    case DragEvent.ACTION_DRAG_STARTED:
+                        break;
 
-                     case DragEvent.ACTION_DRAG_EXITED:
-                         break;
+                    case DragEvent.ACTION_DRAG_EXITED:
+                        break;
 
-                     case DragEvent.ACTION_DRAG_ENTERED:
-                         break;
+                    case DragEvent.ACTION_DRAG_ENTERED:
+                        break;
 
-                     case DragEvent.ACTION_DROP: {
-                         int from = Integer.parseInt("" + event.getClipDescription().getLabel());
-                         int to = (Integer) (v.getTag());
-                         Token toSwap = getTokens().remove(from);
-                         getTokens().add(to, toSwap);
-                         notifyDataSetChanged();
-                         return true;
-                     }
-                     case DragEvent.ACTION_DRAG_ENDED: {
-                         //Log.d(TAG, "action drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
-                         notifyDataSetChanged();
-                         return true;
-                     }
-                     default:
-                         break;
-                 }
-                 return true;
-             }
-         });
+                    case DragEvent.ACTION_DROP: {
+                        int from = Integer.parseInt("" + event.getClipDescription().getLabel());
+                        int to = (Integer) (v.getTag());
+                        Token toSwap = getTokens().remove(from);
+                        getTokens().add(to, toSwap);
+                        notifyDataSetChanged();
+                        return true;
+                    }
+                    case DragEvent.ACTION_DRAG_ENDED: {
+                        //Log.d(TAG, "action drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
+                        notifyDataSetChanged();
+                        return true;
+                    }
+                    default:
+                        break;
+                }
+                return true;
+            }
+        });
 
-         v.setOnTouchListener(new View.OnTouchListener() {
+        v.setOnTouchListener(new View.OnTouchListener() {
 
-             @Override
-             public boolean onTouch(View v, MotionEvent arg1) {
-                 if (getCurrentSelection() != getTokens().get(position)) {
-                     return false;
-                 }
-                 ClipData data = ClipData.newPlainText(v.getTag() + "", "");
-                 View.DragShadowBuilder shadow = new View.DragShadowBuilder(v);
-                 v.startDrag(data, shadow, null, 0);
-                 //Log.d(TAG, "Shadow drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
-                 return false;
-             }
-         });
+            @Override
+            public boolean onTouch(View v, MotionEvent arg1) {
+                if (getCurrentSelection() != getTokens().get(position)) {
+                    return false;
+                }
+                ClipData data = ClipData.newPlainText(v.getTag() + "", "");
+                View.DragShadowBuilder shadow = new View.DragShadowBuilder(v);
+                v.startDrag(data, shadow, null, 0);
+                //Log.d(TAG, "Shadow drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
+                return false;
+            }
+        });
 
-     }
+    }
 
     void setTokens(List<Token> tokens) {
         this.tokens = tokens;

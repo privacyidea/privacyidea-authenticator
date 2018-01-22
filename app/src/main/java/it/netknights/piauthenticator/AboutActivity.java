@@ -31,10 +31,10 @@ public class AboutActivity extends AppCompatActivity {
 
     private void setupList() {
         ArrayList<String> acknowledgements = new ArrayList<>();
-        acknowledgements.add("Apache License 2.0");
-        acknowledgements.add("OTP Authenticator by Bruno Bierbaumer");
-        acknowledgements.add("ZXing Embedded");
-        acknowledgements.add("Android Code Samples");
+        acknowledgements.add(getString(R.string.license_apache_20));
+        acknowledgements.add(getString(R.string.license_otpauth));
+        acknowledgements.add(getString(R.string.license_zxing_embed));
+        acknowledgements.add(getString(R.string.license_android_code_sample));
         AboutListAdapter adapter = new AboutListAdapter();
         listView.setAdapter(adapter);
         adapter.setAcknowledgements(acknowledgements);
@@ -47,14 +47,15 @@ public class AboutActivity extends AppCompatActivity {
         PackageInfo info = null;
 
         try {
-            info = getPackageManager().getPackageInfo("it.netknights.piauthenticator", 0);
+            info = getPackageManager().getPackageInfo(AppConstants.PACKAGE_NAME, 0);
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
         }
         if (info != null) {
-            textViewVersion.setText("Version: " + info.versionName + " (Open Beta)");
+            String str = getString(R.string.version) + " "+ info.versionName;
+            textViewVersion.setText(str);
         } else {
-            textViewVersion.setText("Version: x.x.x (Open Beta)");
+            textViewVersion.setText(R.string.version);
         }
     }
 
