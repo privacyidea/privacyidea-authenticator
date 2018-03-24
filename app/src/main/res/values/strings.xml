@@ -1,6 +1,6 @@
 <resources>
     <!--General-->
-    <string name="app_name" translatable="false">PrivacyIDEA Authenticator</string>
+    <string name="app_name" translatable="false">privacyIDEA Authenticator</string>
     <string name="title_enter_details">Enter Details</string>
 
     <!--Strings for enter detail-->
@@ -67,7 +67,7 @@
 
     <!--Strings for about-->
     <string name="version" translatable="false">Version </string>
-    <string name="piauth_name_label" translatable="false">PrivacyIDEA Authenticator</string>
+    <string name="piauth_name_label" translatable="false">privacyIDEA Authenticator</string>
     <string name="comany_label" translatable="false">\u00A9NetKnights GmbH 2017, Apache License 2.0</string>
 
     <!-- Strings for licenses-->
