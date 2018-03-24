@@ -9,7 +9,7 @@ android {
         applicationId 'it.netknights.piauthenticator'
         minSdkVersion 18
         targetSdkVersion 25
-        versionCode 11
+        versionCode 12
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
