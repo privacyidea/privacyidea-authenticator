@@ -9,8 +9,8 @@
     <string name="enter_details">Enter Details</string>
     <string name="algorithm">Algorithm:</string>
     <string name="base32_encoded_secret">Base32 encoded secret</string>
-    <string name="name" translatable="false"> Name</string>
-    <string name="secret"> Secret</string>
+    <string name="name" translatable="false">Name</string>
+    <string name="secret">Secret</string>
     <string name="type">Type:</string>
     <string name="with_pin">With PIN</string>
     <string name="enterdetail_secret">Secret</string>
@@ -23,7 +23,7 @@
 
     <!--Strings for dialogs-->
     <string name="confirm_deletion_title">Confirm Deletion</string>
-    <string name="confirm_deletion_text">Do you really want to remove</string>
+    <string name="confirm_deletion_text">Do you really want to delete the token?</string>
     <string name="edit_name_title">Edit Name</string>
     <string name="rename">Rename</string>
     <string name="item" translatable="false">Item</string>
@@ -33,8 +33,8 @@
     <string name="tap_to_set_pin">Tap to set PIN</string>
     <string name="enter_pin_title">Enter PIN</string>
     <string name="set_new_pin">Set new PIN</string>
-    <string name="input_hint_new_pin">new PIN</string>
-    <string name="input_hint_repeat_new_pin">repeat new PIN</string>
+    <string name="input_hint_new_pin">New PIN</string>
+    <string name="input_hint_repeat_new_pin">Repeat new PIN</string>
     <string name="title_change_pin">Change PIN</string>
 
     <!--Strings for toasts-->
@@ -61,7 +61,7 @@
     <string name="button_text_yes">Yes</string>
     <string name="button_text_cancel">Cancel</string>
     <string name="button_text_save">Save</string>
-    <string name="button_text_next">next</string>
+    <string name="button_text_next">Next</string>
     <string name="button_text_enter">Enter</string>
     <string name="button_text_plus" translatable="false">+</string>
 

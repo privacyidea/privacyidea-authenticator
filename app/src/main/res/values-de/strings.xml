@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="edit_name_title">Namen ändern</string>
-    <string name="rename">Umbennen</string>
+    <string name="rename">Umbenennen</string>
     <string name="change_pin">PIN ändern</string>
     <string name="tap_to_show_otp">zum Anzeigen berühren</string>
     <string name="toast_secret_nob32format">Geheimnis nicht im Base32 Format!</string>
@@ -15,7 +15,7 @@
     <string name="button_text_yes">Ja</string>
     <string name="button_text_cancel">Abbruch</string>
     <string name="button_text_save">Speichern</string>
-    <string name="button_text_next">nächste</string>
+    <string name="button_text_next">Nächste</string>
     <string name="button_text_enter">Eingabe</string>
     <string name="licenses_label">Lizenzen</string>
     <string name="toast_secret_cantbe_empty">Geheimnis darf nicht leer sein!</string>
@@ -29,13 +29,13 @@
     <string name="toast_deletion_cancelled">Löschen abgebrochen</string>
     <string name="toast_token_removed">Token entfernt</string>
     <string name="title_change_pin">PIN ändern</string>
-    <string name="input_hint_repeat_new_pin">neue PIN wiederholen</string>
+    <string name="input_hint_repeat_new_pin">Neue PIN wiederholen</string>
     <string name="input_hint_new_pin">neue PIN</string>
     <string name="set_new_pin">Neue PIN setzen</string>
     <string name="enter_pin_title">PIN eingeben</string>
-    <string name="tap_to_set_pin">Berühren um PIN zu setzen</string>
-    <string name="tap_to_unlock">Berühren um PIN einzugeben</string>
-    <string name="confirm_deletion_text">Willst du diesen Token wirklich entfernen</string>
+    <string name="tap_to_set_pin">Berühren, um PIN zu setzen</string>
+    <string name="tap_to_unlock">Berühren, um PIN einzugeben</string>
+    <string name="confirm_deletion_text">Wollen Sie diesen Token wirklich entfernen?</string>
     <string name="confirm_deletion_title">Löschen bestätigen</string>
     <string name="actionmode_title">Aktion auswählen</string>
     <string name="menu_about">Über</string>
