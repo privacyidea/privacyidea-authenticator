@@ -2,7 +2,7 @@ package it.netknights.piauthenticator;
 
 public class AppConstants {
 
-    static final String APP_TITLE = " PrivacyIDEA Authenticator";
+    static final String APP_TITLE = " privacyIDEA Authenticator";
     static final String PACKAGE_NAME = "it.netknights.piauthenticator";
     static String TAG = "it.netknights.piauth";
 
