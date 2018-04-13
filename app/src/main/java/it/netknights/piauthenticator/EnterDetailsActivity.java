@@ -7,9 +7,11 @@ import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -19,6 +21,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -43,16 +46,70 @@ public class EnterDetailsActivity extends AppCompatActivity {
     private int new_period;
     private int new_digits;
     private boolean new_withpin = false;
+    TableLayout tl;
 
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_enter_detail);
-        setupSpinners();
         setupButtons();
         paintStatusbar();
         setupActionBar();
+        setupTable();
+    }
+
+    private void setupTable() {
+        tl = (TableLayout) findViewById(R.id.tableLayout);
+
+        final int supportspinnerid = R.layout.support_simple_spinner_dropdown_item;
+
+        String[] types = {TOTP, HOTP};
+        String[] periods = {PERIOD_30_STR, PERIOD_60_STR};
+        String[] algorithms = {SHA1, SHA256, SHA512};
+        String[] digits = {DIGITS_6_STR, DIGITS_8_STR};
+
+        for (int i = 0; i < 4; i++) {
+            ConstraintLayout tablerow = (ConstraintLayout) getLayoutInflater().inflate(R.layout.tablelayout, null);
+            TextView tv = (TextView) tablerow.findViewById(R.id.label);
+
+            switch (i) {
+                case 0: {
+                    spinner_type = (Spinner) tablerow.findViewById(R.id.spinner_row);
+                    tv.setText(R.string.type);
+                    ArrayAdapter<String> adapter_type = new ArrayAdapter<>(this, supportspinnerid, types);
+                    spinner_type.setAdapter(adapter_type);
+                    tl.addView(tablerow);
+                    break;
+                }
+                case 1: {
+                    tv.setText(R.string.period);
+                    spinner_period = (Spinner) tablerow.findViewById(R.id.spinner_row);
+                    ArrayAdapter<String> adapter_period = new ArrayAdapter<>(this, supportspinnerid, periods);
+                    spinner_period.setAdapter(adapter_period);
+                    tl.addView(tablerow);
+                    break;
+                }
+                case 2: {
+                    tv.setText(R.string.algorithm);
+                    spinner_algorithm = (Spinner) tablerow.findViewById(R.id.spinner_row);
+                    ArrayAdapter<String> adapter_algorithm = new ArrayAdapter<>(this, supportspinnerid, algorithms);
+                    spinner_algorithm.setAdapter(adapter_algorithm);
+                    tl.addView(tablerow);
+                    break;
+                }
+                case 3: {
+                    tv.setText(R.string.digits);
+                    spinner_digits = (Spinner) tablerow.findViewById(R.id.spinner_row);
+                    ArrayAdapter<String> adapter_digits = new ArrayAdapter<>(this, supportspinnerid, digits);
+                    spinner_digits.setAdapter(adapter_digits);
+                    tl.addView(tablerow);
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
     }
 
     private void setupActionBar() {
@@ -76,49 +133,6 @@ public class EnterDetailsActivity extends AppCompatActivity {
             window.setStatusBarColor(getResources().getColor(PIBLUE));
         }
 
-    }
-
-    private void setupSpinners() {
-        spinner_type = (Spinner) findViewById(R.id.spinner_type);
-        spinner_period = (Spinner) findViewById(R.id.spinner_period);
-        spinner_algorithm = (Spinner) findViewById(R.id.spinner_algorithm);
-        spinner_digits = (Spinner) findViewById(R.id.spinner_digits);
-        periodLabel = (TextView) findViewById(R.id.textView_period);
-
-        final int supportspinnerid = R.layout.support_simple_spinner_dropdown_item;
-
-        String[] types = {TOTP, HOTP};
-        String[] periods = {PERIOD_30_STR, PERIOD_60_STR};
-        String[] algorithms = {SHA1, SHA256, SHA512};
-        String[] digits = {DIGITS_6_STR, DIGITS_8_STR};
-
-        ArrayAdapter<String> adapter_type = new ArrayAdapter<>(this, supportspinnerid, types);
-        spinner_type.setAdapter(adapter_type);
-        ArrayAdapter<String> adapter_period = new ArrayAdapter<>(this, supportspinnerid, periods);
-        spinner_period.setAdapter(adapter_period);
-        ArrayAdapter<String> adapter_algorithm = new ArrayAdapter<>(this, supportspinnerid, algorithms);
-        spinner_algorithm.setAdapter(adapter_algorithm);
-        ArrayAdapter<String> adapter_digits = new ArrayAdapter<>(this, supportspinnerid, digits);
-        spinner_digits.setAdapter(adapter_digits);
-
-        // disable the period spinner when HOTP type is selected
-        spinner_type.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position == 1) {
-                    periodLabel.setVisibility(GONE);
-                    spinner_period.setVisibility(GONE);
-                } else {
-                    periodLabel.setVisibility(View.VISIBLE);
-                    spinner_period.setVisibility(View.VISIBLE);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
     }
 
     private void setupButtons() {

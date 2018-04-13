@@ -41,7 +41,7 @@
     <string name="menu_about">Über</string>
     <string name="menu_add_manually">Token hinzufügen</string>
     <string name="menu_copy_to_clipboard">In Zwischenablage</string>
-    <string name="enterdetail_secret">Gehmeinnis</string>
+    <string name="enterdetail_secret">Geheimnis</string>
     <string name="with_pin">Mit PIN</string>
     <string name="type">Typ:</string>
     <string name="secret">Geheimnis</string>
