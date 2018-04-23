@@ -26,7 +26,6 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -65,7 +64,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
-import java.util.Locale;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
 import static it.netknights.piauthenticator.AppConstants.COUNTER;
@@ -74,11 +72,11 @@ import static it.netknights.piauthenticator.AppConstants.HMACSHA1;
 import static it.netknights.piauthenticator.AppConstants.HMACSHA256;
 import static it.netknights.piauthenticator.AppConstants.HMACSHA512;
 import static it.netknights.piauthenticator.AppConstants.HOTP;
-import static it.netknights.piauthenticator.AppConstants.INTENT_ABOUT;
 import static it.netknights.piauthenticator.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
 import static it.netknights.piauthenticator.AppConstants.ISSUER;
 import static it.netknights.piauthenticator.AppConstants.LABEL;
 import static it.netknights.piauthenticator.AppConstants.PERIOD;
+import static it.netknights.piauthenticator.AppConstants.PERSISTENT;
 import static it.netknights.piauthenticator.AppConstants.PIN;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
@@ -284,11 +282,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         final Token currToken = tokenlistadapter.getCurrentSelection();
         final int id = item.getItemId();
         if (id == R.id.delete_token2) {
-          /*  if (currToken.isPersistent()) {
+            if (currToken.isUndeletable()) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
                 builder.setTitle("Deletion not possible");
-                builder.setMessage("Persistent token cannot be deleted");
-                builder.setPositiveButton(R.string.button_text_yes, new DialogInterface.OnClickListener() {
+                builder.setMessage("This Token is persistent and can not be deleted!");
+                builder.setPositiveButton(R.string.zxing_button_ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
@@ -297,7 +295,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 final AlertDialog alert = builder.create();
                 MainActivity.changeDialogFontColor(alert);
                 alert.show();
-            } else {*/
+            } else {
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
                 builder.setTitle(R.string.confirm_deletion_title);
                 builder.setMessage(getString(R.string.confirm_deletion_text) + " " + currToken.getLabel() + " ?");
@@ -325,8 +323,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 final AlertDialog alert = builder.create();
                 MainActivity.changeDialogFontColor(alert);
                 alert.show();
-
-
+            }
             return true;
         }
 
@@ -484,6 +481,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             tmp.setWithPIN(true);
             tmp.setLocked(true);
         }
+        if(uri.getBooleanQueryParameter(PERSISTENT,false)){
+            tmp.setUndeletable(true);
+        }
+
         // if at least one parameter for 2step is set do 2step init
         if (uri.getQueryParameter(TWOSTEP_SALT) != null ||
                 uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null ||
