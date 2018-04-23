@@ -153,11 +153,11 @@ public class Token {
         this.currentOTP = currentOTP;
     }
 
-    public boolean isPersistent() {
+    public boolean isUndeletable() {
         return persistent;
     }
 
-    public void setPersistent(boolean val){
+    public void setUndeletable(boolean val){
         persistent = val;
     }
 }

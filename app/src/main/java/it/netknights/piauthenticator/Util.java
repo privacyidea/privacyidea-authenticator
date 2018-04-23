@@ -142,6 +142,10 @@ public class Util {
         if (o.optBoolean(TAPTOSHOW, false)) {
             tmp.setWithTapToShow(true);
         }
+        if(o.optBoolean("undeletable")){
+            tmp.setUndeletable(true);
+        }
+
         return tmp;
     }
 
@@ -167,6 +171,10 @@ public class Util {
         if (t.isWithTapToShow()) {
             o.put(TAPTOSHOW, true);
         }
+        if(t.isUndeletable()){
+            o.put("undeletable",true);
+        }
+
         return o;
     }
 
