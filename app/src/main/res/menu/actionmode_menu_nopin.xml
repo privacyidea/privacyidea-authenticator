@@ -5,12 +5,12 @@
 
     <item
         android:id="@+id/edit_token2"
-        android:icon="@android:drawable/ic_menu_edit"
+        android:icon="@drawable/ic_edit"
         android:title="@string/rename"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/delete_token2"
-        android:icon="@android:drawable/ic_menu_delete"
+        android:icon="@drawable/ic_delete"
         android:title="@string/item"
         app:showAsAction="always" />
     <item
