@@ -64,7 +64,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
 
         final int supportspinnerid = R.layout.support_simple_spinner_dropdown_item;
 
-        String[] types = {TOTP, HOTP};
+        String[] types = {HOTP, TOTP};
         String[] periods = {PERIOD_30_STR, PERIOD_60_STR};
         String[] algorithms = {SHA1, SHA256, SHA512};
         String[] digits = {DIGITS_6_STR, DIGITS_8_STR};
@@ -74,35 +74,57 @@ public class EnterDetailsActivity extends AppCompatActivity {
             TextView tv = (TextView) tablerow.findViewById(R.id.label);
 
             switch (i) {
-                case 0: {
+                case 2: {
                     spinner_type = (Spinner) tablerow.findViewById(R.id.spinner_row);
+                    spinner_type.setId(AppConstants.spinner_type_id);
                     tv.setText(R.string.type);
                     ArrayAdapter<String> adapter_type = new ArrayAdapter<>(this, supportspinnerid, types);
                     spinner_type.setAdapter(adapter_type);
+                    spinner_type.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            if(position == 0){
+                                periodLabel.setVisibility(View.INVISIBLE);
+                                spinner_period.setVisibility(View.INVISIBLE);
+                            }else{
+                                periodLabel.setVisibility(View.VISIBLE);
+                                spinner_period.setVisibility(View.VISIBLE);
+                            }
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {
+
+                        }
+                    });
                     tl.addView(tablerow);
                     break;
                 }
-                case 1: {
-                    tv.setText(R.string.period);
+                case 3: {
+                    periodLabel = tv;
+                    periodLabel.setText(R.string.period);
                     spinner_period = (Spinner) tablerow.findViewById(R.id.spinner_row);
+                    spinner_period.setId(AppConstants.spinner_period_id);
                     ArrayAdapter<String> adapter_period = new ArrayAdapter<>(this, supportspinnerid, periods);
                     spinner_period.setAdapter(adapter_period);
                     tl.addView(tablerow);
                     break;
                 }
-                case 2: {
+                case 1: {
                     tv.setText(R.string.algorithm);
                     spinner_algorithm = (Spinner) tablerow.findViewById(R.id.spinner_row);
                     ArrayAdapter<String> adapter_algorithm = new ArrayAdapter<>(this, supportspinnerid, algorithms);
                     spinner_algorithm.setAdapter(adapter_algorithm);
+                    spinner_algorithm.setId(AppConstants.spinner_algorithm_id);
                     tl.addView(tablerow);
                     break;
                 }
-                case 3: {
+                case 0: {
                     tv.setText(R.string.digits);
                     spinner_digits = (Spinner) tablerow.findViewById(R.id.spinner_row);
                     ArrayAdapter<String> adapter_digits = new ArrayAdapter<>(this, supportspinnerid, digits);
                     spinner_digits.setAdapter(adapter_digits);
+                    spinner_digits.setId(AppConstants.spinner_digits_id);
                     tl.addView(tablerow);
                     break;
                 }
