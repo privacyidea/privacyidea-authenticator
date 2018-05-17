@@ -803,4 +803,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
     }
 
+    protected void clearTokenlist(){
+        if(tokenlist.size()>0){
+            tokenlist.clear();
+            saveTokenlist();
+        }
+    }
 }

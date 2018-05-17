@@ -1,4 +1,4 @@
-package it.netknights.androidTest;
+package it.netknights.piauthenticator;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -60,27 +60,8 @@ public class MainActivityTest {
     public ActivityTestRule<MainActivity> mActivityTestRule = new ActivityTestRule<>(MainActivity.class);
 
     @Before
-    public void beforeActivityLaunched() throws Exception {
-        //TODO clear app data before running tests
-        //Log.d("piauth.test", "triyng to overwrite datafile");
-        //Context context = getInstrumentation().getTargetContext();
-      /*  Context context = getTargetContext();
-        Util.writeFile(new File(context.getFilesDir() + "/" + AppConstants.DATAFILE), "".getBytes());
-        if (new File(mActivityTestRule.getActivity().getFilesDir() + "/" + AppConstants.DATAFILE).delete()) {
-            Log.d("piauth.test", "datafile deleted");
-        }
-        if (new File(mActivityTestRule.getActivity().getFilesDir() + "/" + AppConstants.KEYFILE).delete()) {
-            Log.d("piauth.test", "keyfile deleted");
-
-        }
-        String[] ls = mActivityTestRule.getActivity().fileList();
-        for (int i = 0; i < ls.length; i++) {
-            Log.d("piauth.test", ls[i]);
-        }*/
-
-        //shell("pm clear it.netknights.piauthenticator");
-        //Process p = Runtime.getRuntime().exec("su");
-        //InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("pm clear it.netknights.piauthenticator");
+    public void setUp() {
+        mActivityTestRule.getActivity().clearTokenlist();
     }
 
     @Test
@@ -128,39 +109,6 @@ public class MainActivityTest {
                 onChildView(withId(R.id.textViewToken))
                 .check(matches(withText(startsWith("163584"))));
 
-        //onData(withItem
-
-        // delete the token
-
-        onData(anything())
-                .inAdapterView(allOf(withId(R.id.listview),
-                        childAtPosition(
-                                withClassName(is("android.support.constraint.ConstraintLayout")),
-                                1)))
-                .atPosition(0).perform(longClick());
-        sleep();
-        ViewInteraction actionMenuItemView = onView(
-                allOf(withId(R.id.delete_token2), withContentDescription("Item"),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(R.id.action_mode_bar),
-                                        2),
-                                1),
-                        isDisplayed()));
-        actionMenuItemView.perform(click());
-
-        sleep();
-
-        ViewInteraction appCompatButton4 = onView(
-                allOf(withId(android.R.id.button1), withText("YES"),
-                        childAtPosition(
-                                allOf(withClassName(is("android.widget.LinearLayout")),
-                                        childAtPosition(
-                                                withClassName(is("android.widget.LinearLayout")),
-                                                3)),
-                                3),
-                        isDisplayed()));
-        appCompatButton4.perform(click());
         Intents.release();
     }
 

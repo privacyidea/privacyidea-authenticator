@@ -1,4 +1,4 @@
-package it.netknights.androidTest;
+package it.netknights.piauthenticator;
 
 import android.content.Context;
 import android.os.Build;

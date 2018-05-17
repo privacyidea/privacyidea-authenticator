@@ -1,7 +1,6 @@
 package it.netknights.piauthenticator;
 
 
-import android.content.Context;
 import android.support.test.espresso.DataInteraction;
 import android.support.test.espresso.ViewInteraction;
 import android.support.test.rule.ActivityTestRule;
@@ -11,6 +10,8 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -20,8 +21,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
-
 import static android.support.test.InstrumentationRegistry.getInstrumentation;
 import static android.support.test.espresso.Espresso.onData;
 import static android.support.test.espresso.Espresso.onView;
@@ -30,7 +29,9 @@ import static android.support.test.espresso.action.ViewActions.click;
 import static android.support.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static android.support.test.espresso.action.ViewActions.longClick;
 import static android.support.test.espresso.action.ViewActions.replaceText;
+import static android.support.test.espresso.action.ViewActions.scrollTo;
 import static android.support.test.espresso.assertion.ViewAssertions.matches;
+import static android.support.test.espresso.intent.Checks.checkNotNull;
 import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static android.support.test.espresso.matcher.ViewMatchers.withClassName;
 import static android.support.test.espresso.matcher.ViewMatchers.withContentDescription;
@@ -50,13 +51,10 @@ public class EnterDetailTest {
     public ActivityTestRule<MainActivity> mActivityTestRule = new ActivityTestRule<>(MainActivity.class);
 
     @Before
-    public void setUp() throws Exception {
-        Log.d("piauth.test", "triyng to overwrite datafile");
-        Context context = getInstrumentation().getTargetContext();
-        Util.writeFile(new File(context.getFilesDir() + "/" + AppConstants.DATAFILE), "".getBytes());
+    public void setUp() {
+        mActivityTestRule.getActivity().clearTokenlist();
     }
 
-    //TODO since deleting appdata before test is not working delete every token after checking
     @Test
     public void testEnterDetail() {
         sleep();
@@ -77,52 +75,6 @@ public class EnterDetailTest {
 
 
         sleep();
-
-        ViewInteraction appCompatSpinner = onView(
-                allOf(withId(R.id.spinner_type),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(android.R.id.content),
-                                        0),
-                                9),
-                        isDisplayed()));
-        appCompatSpinner.perform(click());
-
-        DataInteraction appCompatTextView2 = onData(anything())
-                .inAdapterView(withClassName(is("android.support.v7.widget.DropDownListView")))
-                .atPosition(1);
-        appCompatTextView2.perform(click());
-
-        ViewInteraction appCompatSpinner2 = onView(
-                allOf(withId(R.id.spinner_algorithm),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(android.R.id.content),
-                                        0),
-                                10),
-                        isDisplayed()));
-        appCompatSpinner2.perform(click());
-
-        DataInteraction appCompatTextView3 = onData(anything())
-                .inAdapterView(withClassName(is("android.support.v7.widget.DropDownListView")))
-                .atPosition(2);
-        appCompatTextView3.perform(click());
-        sleep();
-        ViewInteraction appCompatSpinner3 = onView(
-                allOf(withId(R.id.spinner_digits),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(android.R.id.content),
-                                        0),
-                                13),
-                        isDisplayed()));
-        appCompatSpinner3.perform(click());
-        sleep();
-        DataInteraction appCompatTextView4 = onData(anything())
-                .inAdapterView(withClassName(is("android.support.v7.widget.DropDownListView")))
-                .atPosition(1);
-        appCompatTextView4.perform(click());
-        sleep();
         ViewInteraction appCompatCheckBox = onView(
                 allOf(withId(R.id.checkBox_pin), withText("With PIN"),
                         childAtPosition(
@@ -134,7 +86,7 @@ public class EnterDetailTest {
         appCompatCheckBox.perform(click());
         sleep();
         ViewInteraction appCompatButton = onView(
-                allOf(withId(R.id.button_add), withText("Add"),
+                allOf(withId(R.id.button_add), withText("+"),
                         childAtPosition(
                                 childAtPosition(
                                         withId(android.R.id.content),
@@ -179,21 +131,19 @@ public class EnterDetailTest {
         ViewInteraction appCompatButton2 = onView(
                 allOf(withId(android.R.id.button1), withText("Save"),
                         childAtPosition(
-                                allOf(withClassName(is("android.widget.LinearLayout")),
-                                        childAtPosition(
-                                                withClassName(is("android.widget.LinearLayout")),
-                                                3)),
-                                3),
-                        isDisplayed()));
-        appCompatButton2.perform(click());
+                                childAtPosition(
+                                        withClassName(is("android.widget.ScrollView")),
+                                        0),
+                                3)));
+        appCompatButton2.perform(scrollTo(), click());
 
         sleep();
-        // check the first otp at list position 0
+        // check the first otp at list position 0 // 96418505
         onData(anything()).
                 inAdapterView(withId(R.id.listview)).
                 atPosition(0).
                 onChildView(withId(R.id.textViewToken))
-                .check(matches(withText(startsWith("96418505"))));
+                .check(matches(withText(startsWith("292574"))));
         onData(anything()).
                 inAdapterView(withId(R.id.listview)).
                 atPosition(0).
@@ -201,7 +151,7 @@ public class EnterDetailTest {
                 .check(matches(withText(startsWith("Name"))));
         // click next
         ViewInteraction appCompatButton3 = onView(
-                allOf(withId(R.id.next_button), withText("next"),
+                allOf(withId(R.id.next_button), withText("Next"),
                         childAtPosition(
                                 withParent(withId(R.id.listview)),
                                 3),
@@ -213,7 +163,7 @@ public class EnterDetailTest {
                 inAdapterView(withId(R.id.listview)).
                 atPosition(0).
                 onChildView(withId(R.id.textViewToken))
-                .check(matches(withText(startsWith("85216514"))));
+                .check(matches(withText(startsWith("449381")))); //85216514
 
         // rename
         onData(anything())
@@ -241,16 +191,17 @@ public class EnterDetailTest {
                                 0),
                         isDisplayed())).perform(replaceText("peter"));
         sleep();
-        onView(
+
+        ViewInteraction appCompatButton4 = onView(
                 allOf(withId(android.R.id.button1), withText("Save"),
                         childAtPosition(
-                                allOf(withClassName(is("android.widget.LinearLayout")),
-                                        childAtPosition(
-                                                withClassName(is("android.widget.LinearLayout")),
-                                                3)),
-                                3),
-                        isDisplayed())).perform(click());
+                                childAtPosition(
+                                        withClassName(is("android.widget.ScrollView")),
+                                        0),
+                                3)));
+        appCompatButton4.perform(scrollTo(), click());
         sleep();
+
         // check renaming
         onData(anything()).
                 inAdapterView(withId(R.id.listview)).
@@ -271,7 +222,74 @@ public class EnterDetailTest {
 
         sleep();
 
+
         ViewInteraction actionMenuItemView = onView(
+                allOf(withId(R.id.change_pin2), withContentDescription("Change PIN"),
+                        childAtPosition(
+                                childAtPosition(
+                                        withId(R.id.action_mode_bar),
+                                        2),
+                                0),
+                        isDisplayed()));
+        actionMenuItemView.perform(click());
+
+        sleep();
+
+        ViewInteraction editText5 = onView(
+                allOf(childAtPosition(
+                        childAtPosition(
+                                withId(android.R.id.custom),
+                                0),
+                        0),
+                        isDisplayed()));
+        editText5.perform(click());
+
+        sleep();
+
+        ViewInteraction editText6 = onView(
+                allOf(childAtPosition(
+                        childAtPosition(
+                                withId(android.R.id.custom),
+                                0),
+                        0),
+                        isDisplayed()));
+        editText6.perform(replaceText("2"), closeSoftKeyboard());
+
+
+        sleep();
+        ViewInteraction editText7 = onView(
+                allOf(childAtPosition(
+                        childAtPosition(
+                                withId(android.R.id.custom),
+                                0),
+                        1),
+                        isDisplayed()));
+        editText7.perform(replaceText("2"), closeSoftKeyboard());
+
+
+        sleep();
+        ViewInteraction appCompatButton6 = onView(
+                allOf(withId(android.R.id.button1), withText("Save"),
+                        childAtPosition(
+                                childAtPosition(
+                                        withClassName(is("android.widget.ScrollView")),
+                                        0),
+                                3)));
+        appCompatButton6.perform(scrollTo(), click());
+        sleep();
+
+
+        DataInteraction relativeLayout3 = onData(anything())
+                .inAdapterView(allOf(withId(R.id.listview),
+                        childAtPosition(
+                                withClassName(is("android.support.constraint.ConstraintLayout")),
+                                1)))
+                .atPosition(0);
+        relativeLayout3.perform(longClick());
+
+
+        sleep();
+        ViewInteraction actionMenuItemView2 = onView(
                 allOf(withId(R.id.delete_token2), withContentDescription("Item"),
                         childAtPosition(
                                 childAtPosition(
@@ -279,20 +297,19 @@ public class EnterDetailTest {
                                         2),
                                 2),
                         isDisplayed()));
-        actionMenuItemView.perform(click());
+        actionMenuItemView2.perform(click());
+
 
         sleep();
-
-        ViewInteraction appCompatButton4 = onView(
-                allOf(withId(android.R.id.button1), withText("YES"),
+        ViewInteraction appCompatButton7 = onView(
+                allOf(withId(android.R.id.button1), withText("Yes"),
                         childAtPosition(
-                                allOf(withClassName(is("android.widget.LinearLayout")),
-                                        childAtPosition(
-                                                withClassName(is("android.widget.LinearLayout")),
-                                                3)),
-                                3),
-                        isDisplayed()));
-        appCompatButton4.perform(click());
+                                childAtPosition(
+                                        withClassName(is("android.widget.ScrollView")),
+                                        0),
+                                3)));
+        appCompatButton7.perform(scrollTo(), click());
+
     }
 
     private void sleep() {
@@ -324,5 +341,108 @@ public class EnterDetailTest {
                         && view.equals(((ViewGroup) parent).getChildAt(position));
             }
         };
+    }
+
+    static Matcher<View> isInRowBelow(final Matcher<View> viewInRowAbove) {
+        checkNotNull(viewInRowAbove);
+        return new TypeSafeMatcher<View>() {
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("is below a: ");
+                viewInRowAbove.describeTo(description);
+            }
+
+            @Override
+            public boolean matchesSafely(View view) {
+                // Find the current row
+                ViewParent viewParent = view.getParent();
+                if (!(viewParent instanceof TableRow)) {
+                    return false;
+                }
+                TableRow currentRow = (TableRow) viewParent;
+                // Find the row above
+                TableLayout table = (TableLayout) currentRow.getParent();
+                int currentRowIndex = table.indexOfChild(currentRow);
+                if (currentRowIndex < 1) {
+                    return false;
+                }
+                TableRow rowAbove = (TableRow) table.getChildAt(currentRowIndex - 1);
+                // Does the row above contains at least one view that matches viewInRowAbove?
+                for (int i = 0; i < rowAbove.getChildCount(); i++) {
+                    if (viewInRowAbove.matches(rowAbove.getChildAt(i))) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
+    }
+
+    static Matcher<View> hasChildPosition(final int i) {
+        return new TypeSafeMatcher<View>() {
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("is child #" + i);
+            }
+
+            @Override
+            public boolean matchesSafely(View view) {
+                ViewParent viewParent = view.getParent();
+                if (!(viewParent instanceof ViewGroup)) {
+                    return false;
+                }
+                ViewGroup viewGroup = (ViewGroup) viewParent;
+                return (viewGroup.indexOfChild(view) == i);
+            }
+        };
+    }
+
+    static Matcher<View> atPositionInTable(final int x, final int y) {
+
+        return new TypeSafeMatcher<View>() {
+
+
+            @Override
+
+            public void describeTo(Description description) {
+
+                description.appendText("is at position # " + x + " , " + y);
+
+            }
+
+
+            @Override
+
+            public boolean matchesSafely(View view) {
+
+                ViewParent viewParent = view.getParent();
+
+                if (!(viewParent instanceof TableRow)) {
+
+                    return false;
+
+                }
+
+                TableRow row = (TableRow) viewParent;
+
+                TableLayout table = (TableLayout) row.getParent();
+
+                if (table.indexOfChild(row) != y)
+
+                    return false;
+
+                if (row.indexOfChild(view) == x)
+
+                    return true;
+
+                else
+
+                    return false;
+
+            }
+        };
+
     }
 }
