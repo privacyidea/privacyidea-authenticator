@@ -150,6 +150,7 @@ public class TokenListAdapter extends BaseAdapter {
                             int temp_pin = Integer.parseInt(text);
                             String hashedPIN = hashPIN(temp_pin, token);
                             token.setPin(hashedPIN);
+                            token.setLocked(false);
                             notifyDataSetChanged();
                             ArrayList<Token> temp = new ArrayList<>(tokens);
                             Util.saveTokens(mView.getContext(), temp);

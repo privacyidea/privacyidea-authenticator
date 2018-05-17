@@ -98,6 +98,9 @@ public class OTPGenerator {
      */
     static String hashPIN(int pin, Token token) {
         byte[] secretBytes = new Base32().decode(token.getSecret());
+        if (secretBytes.length == 0) {
+            secretBytes = token.getSecret();
+        }
         byte[] pinToHash = hexStringToByteArray(Integer.toHexString(pin));
         byte[] temp = hmac_sha("HmacSHA512", secretBytes, pinToHash);
         return byteArrayToHexString(temp);
