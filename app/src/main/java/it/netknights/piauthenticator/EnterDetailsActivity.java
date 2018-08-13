@@ -76,7 +76,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
             switch (i) {
                 case 2: {
                     spinner_type = (Spinner) tablerow.findViewById(R.id.spinner_row);
-                    spinner_type.setId(AppConstants.spinner_type_id);
+                    //spinner_type.setId(AppConstants.spinner_type_id);
                     tv.setText(R.string.type);
                     ArrayAdapter<String> adapter_type = new ArrayAdapter<>(this, supportspinnerid, types);
                     spinner_type.setAdapter(adapter_type);
@@ -104,7 +104,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
                     periodLabel = tv;
                     periodLabel.setText(R.string.period);
                     spinner_period = (Spinner) tablerow.findViewById(R.id.spinner_row);
-                    spinner_period.setId(AppConstants.spinner_period_id);
+                    //spinner_period.setId(AppConstants.spinner_period_id);
                     ArrayAdapter<String> adapter_period = new ArrayAdapter<>(this, supportspinnerid, periods);
                     spinner_period.setAdapter(adapter_period);
                     tl.addView(tablerow);
@@ -115,7 +115,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
                     spinner_algorithm = (Spinner) tablerow.findViewById(R.id.spinner_row);
                     ArrayAdapter<String> adapter_algorithm = new ArrayAdapter<>(this, supportspinnerid, algorithms);
                     spinner_algorithm.setAdapter(adapter_algorithm);
-                    spinner_algorithm.setId(AppConstants.spinner_algorithm_id);
+                    //spinner_algorithm.setId(AppConstants.spinner_algorithm_id);
                     tl.addView(tablerow);
                     break;
                 }
@@ -124,7 +124,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
                     spinner_digits = (Spinner) tablerow.findViewById(R.id.spinner_row);
                     ArrayAdapter<String> adapter_digits = new ArrayAdapter<>(this, supportspinnerid, digits);
                     spinner_digits.setAdapter(adapter_digits);
-                    spinner_digits.setId(AppConstants.spinner_digits_id);
+                    //spinner_digits.setId(AppConstants.spinner_digits_id);
                     tl.addView(tablerow);
                     break;
                 }

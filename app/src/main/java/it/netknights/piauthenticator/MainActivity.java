@@ -249,6 +249,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     public void onResume() {
         super.onResume();
+        tokenlistadapter.refreshAllTOTP();
         handler.post(timer);
     }
 
