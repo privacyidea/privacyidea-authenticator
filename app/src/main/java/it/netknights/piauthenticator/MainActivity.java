@@ -199,6 +199,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     public boolean onOptionsItemSelected(MenuItem item) {
         // this is the item selected from the toolbar menu
         int id = item.getItemId();
+        // save the tokenlist before another activity starts it's lifecycle
+        saveTokenlist();
         if (id == R.id.action_about) {
             Intent aboutintent = new Intent(this, AboutActivity.class);
             startActivity(aboutintent);
@@ -257,6 +259,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     public void onPause() {
         super.onPause();
         handler.removeCallbacks(timer);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        saveTokenlist();
     }
 
     @Override
