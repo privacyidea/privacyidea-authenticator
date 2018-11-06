@@ -52,7 +52,7 @@ The paramter takes an integer as the byte length of the generated salt. Please n
 a checksum, so that ``2step_salt=2`` will actually create a longer string.
 
 You should not choose a value to high, so that the users do not complain about entering a two long value.
-You should not choose a value to low, to not compromize the security of the enrollment process.
+You should not choose a value to low, to not compromise the security of the enrollment process.
 
 The default value is 10 (bytes).
 
