@@ -7,9 +7,11 @@ It can scan QR codes according to the
 It is meant to be used with the
 [privacyIDEA Authentication Server](https://github/privacyidea/privacyidea).
 
-The privacyIDEA Authenticator will also provide an easier and more secure way of enrollment as
+The privacyIDEA Authenticator also provides an easier and more secure way of enrollment as
 specified in our
 [smartphone concept](https://github.com/privacyidea/privacyidea/wiki/concept%3A-SmartphoneApp).
+
+The iOS App can be found [here](https://github.com/privacyidea/privacyidea-authenticator-ios).
 
 # Development
 
