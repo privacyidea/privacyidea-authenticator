@@ -242,6 +242,7 @@ public class TokenListAdapter extends BaseAdapter {
                         token.setCounter((token.getCounter() + 1));
                         token.setCurrentOTP(OTPGenerator.generate(token));
                         notifyDataSetChanged();
+
                     }
                 });
             } else {

@@ -61,12 +61,9 @@ public class OTPGenerator {
         if (token.getType().equals(TOTP)) {
             return String.format("%0" + token.getDigits() + "d", generateTOTP(secretAsHEX,
                     (System.currentTimeMillis() / 1000), digits, token.getPeriod(), token.getAlgorithm()));
-        }
-        if (token.getType().equals(HOTP)) {
+        } else
             return String.format("%0" + token.getDigits() + "d", generateHOTP(secretAsHEX,
                     String.valueOf(token.getCounter()), digits, token.getAlgorithm()));
-        }
-        return "";
     }
 
     /**
@@ -77,9 +74,9 @@ public class OTPGenerator {
      * @param digits    The number of digits of the calculated OTP value. Would be usually either 6 or 8
      * @param period    The time step as defined in RFC. Usually 30 or 60
      * @param algorithm The hashing algorithm, "HmacSHA1", "HmacSHA256", "HmacSHA512"
-     * @return The OTP value for the HOTP Token
+     * @return The OTP value for the TOTP Token
      */
-    private static int generateTOTP(String key, long t, String digits, int period, String algorithm) {
+    public static int generateTOTP(String key, long t, String digits, int period, String algorithm) {
          /*
         The unix system time is devided by the time step. This number of time slices is used as
         counter input for the normal HOTP algorithm
@@ -174,7 +171,6 @@ public class OTPGenerator {
         } catch (GeneralSecurityException gse) {
             gse.printStackTrace();
             throw new UndeclaredThrowableException(gse);
-
         }
     }
 

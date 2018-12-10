@@ -27,18 +27,17 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.view.ActionMode;
-import android.support.v7.widget.Toolbar;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ActionMode;
+import androidx.appcompat.widget.Toolbar;
 import android.text.InputType;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -77,7 +76,7 @@ import static it.netknights.piauthenticator.AppConstants.INTENT_ADD_TOKEN_MANUAL
 import static it.netknights.piauthenticator.AppConstants.ISSUER;
 import static it.netknights.piauthenticator.AppConstants.LABEL;
 import static it.netknights.piauthenticator.AppConstants.PERIOD;
-import static it.netknights.piauthenticator.AppConstants.PERSISTENT;
+import static it.netknights.piauthenticator.AppConstants.UNDELETABLE;
 import static it.netknights.piauthenticator.AppConstants.PIN;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
@@ -93,7 +92,7 @@ import static it.netknights.piauthenticator.R.color.PIBLUE;
 
 public class MainActivity extends AppCompatActivity implements ActionMode.Callback {
     private TokenListAdapter tokenlistadapter;
-    private ArrayList<Token> tokenlist;
+    ArrayList<Token> tokenlist;
     private Handler handler;
     private Runnable timer;
     private Util util;
@@ -103,7 +102,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        PRNGFixes.apply();
         util = new Util(this);
         setupViews();
         setupFab();
@@ -507,7 +505,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             tmp.setWithPIN(true);
             tmp.setLocked(true);
         }
-        if (uri.getBooleanQueryParameter(PERSISTENT, false)) {
+        if (uri.getBooleanQueryParameter(UNDELETABLE, false)) {
             tmp.setUndeletable(true);
         }
 
@@ -764,29 +762,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         //Toast.makeText(this, "Tokens saved", Toast.LENGTH_SHORT).show();
     }
 
-    /* private void checkScanPermission() {
-         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-             scanQR();
-         } else {
-             ActivityCompat.requestPermissions(this,
-                     new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
-         }
-     }
-
-     @Override
-     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-         if (requestCode == PERMISSIONS_REQUEST_CAMERA) {
-             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                 // permission was granted
-                 scanQR();
-             } else {
-                 Toast.makeText(this, "Camera permission request was denied.", Toast.LENGTH_SHORT).show();
-             }
-         } else {
-             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-         }
-     }
- */
     private void scanQR() {
         try {
             IntentIntegrator ii = new IntentIntegrator(this);

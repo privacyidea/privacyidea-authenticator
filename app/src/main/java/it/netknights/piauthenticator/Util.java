@@ -54,6 +54,7 @@ import static it.netknights.piauthenticator.AppConstants.SECRET;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.AppConstants.TYPE;
+import static it.netknights.piauthenticator.AppConstants.UNDELETABLE;
 import static it.netknights.piauthenticator.AppConstants.WITHPIN;
 
 public class Util {
@@ -81,11 +82,9 @@ public class Util {
         try {
             byte[] data = readFile(new File(context.getFilesDir() + "/" + DATAFILE));
             //-------check if keystore is supported (API 18+)-------------------
-            int currentApiVersion = android.os.Build.VERSION.SDK_INT;
-            if (currentApiVersion >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                SecretKey key = EncryptionHelper.loadOrGenerateKeys(context, new File(context.getFilesDir() + "/" + KEYFILE));
-                data = EncryptionHelper.decrypt(key, data);
-            }
+            SecretKey key = EncryptionHelper.loadOrGenerateKeys(context, new File(context.getFilesDir() + "/" + KEYFILE));
+            data = EncryptionHelper.decrypt(key, data);
+
             JSONArray a = new JSONArray(new String(data));
             for (int i = 0; i < a.length(); i++) {
                 tokens.add(makeTokenFromJSON(a.getJSONObject(i)));
@@ -114,11 +113,9 @@ public class Util {
         }
         try {
             byte[] data = tmp.toString().getBytes();
-            int currentApiVersion = android.os.Build.VERSION.SDK_INT;
-            if (currentApiVersion >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                SecretKey key = EncryptionHelper.loadOrGenerateKeys(context, new File(context.getFilesDir() + "/" + KEYFILE));
-                data = EncryptionHelper.encrypt(key, data);
-            }
+            SecretKey key = EncryptionHelper.loadOrGenerateKeys(context, new File(context.getFilesDir() + "/" + KEYFILE));
+            data = EncryptionHelper.encrypt(key, data);
+
             writeFile(new File(context.getFilesDir() + "/" + DATAFILE), data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -142,7 +139,7 @@ public class Util {
         if (o.optBoolean(TAPTOSHOW, false)) {
             tmp.setWithTapToShow(true);
         }
-        if(o.optBoolean("undeletable")){
+        if(o.optBoolean(UNDELETABLE)){
             tmp.setUndeletable(true);
         }
 
@@ -172,7 +169,7 @@ public class Util {
             o.put(TAPTOSHOW, true);
         }
         if(t.isUndeletable()){
-            o.put("undeletable",true);
+            o.put(UNDELETABLE,true);
         }
 
         return o;
@@ -188,6 +185,9 @@ public class Util {
     }
 
     public static byte[] readFile(File file) throws IOException {
+        if(!file.exists()) {
+            return null;
+        }
         final InputStream in = new FileInputStream(file);
         try {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
