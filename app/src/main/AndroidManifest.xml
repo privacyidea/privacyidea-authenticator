@@ -2,8 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="it.netknights.piauthenticator">
 
-    <uses-permission android:name="android.permission.INTERNET" />
-
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -39,13 +37,6 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="it.netknights.piauthenticator.MainActivity" />
         </activity>
-
-        <service android:name=".FCMReceiverService">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
-
     </application>
 
 </manifest>

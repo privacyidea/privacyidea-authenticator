@@ -6,10 +6,6 @@ public class AppConstants {
     static final String PACKAGE_NAME = "it.netknights.piauthenticator";
     static String TAG = "it.netknights.piauth";
 
-    enum TokenType {
-        TOTP, HOTP, PUSH
-    }
-
     static final int INTENT_ADD_TOKEN_MANUALLY = 101;
     static final int INTENT_ABOUT = 102;
     static final int PERMISSIONS_REQUEST_CAMERA = 103;
@@ -47,6 +43,8 @@ public class AppConstants {
     static final String HMACSHA256 = "HmacSHA256";
     static final String HMACSHA512 = "HmacSHA512";
 
+
+
     static final String PERIOD_30_STR = "30s";
     static final String PERIOD_60_STR = "60s";
     static final int PERIOD_30 = 30;
@@ -56,31 +54,4 @@ public class AppConstants {
     static final String DIGITS_8_STR = "8";
     static final int DIGITS_6 = 6;
     static final int DIGITS_8 = 8;
-
-    // Stuff for push
-    static final String PUSH = "pipush";
-    static final String ROLLOUT_URL = "url";
-    static final String TTL = "ttl";
-
-    static final String NONCE = "nonce";
-    static final String SIGNATURE = "signature";
-    static final String SERIAL = "serial";
-    static final String NOTIFICATION_TEXT = "question";
-
-    static final int READ_TIMEOUT = 10000;
-    static final int CONNECT_TIMEOUT = 15000;
-
-    static final String PUBKEYFILE = "pubkey.key";
-    static final String NOTIFICATION_CHANNEL_ID = "privacyIDEAPush";
-
-    static final int PRO_STATUS_STEP_1 = 1001;
-    static final int PRO_STATUS_STEP_2 = 1002;
-    static final int PRO_STATUS_STEP_3 = 1003;
-    static final int PRO_STATUS_DONE = 1004;
-    static final int PRO_STATUS_REGISTRATION_TIME_EXPIRED = 1010;
-    static final int PRO_STATUS_RESPONSE_NO_KEY = 1011;
-
-    static final String ROLLOUT_FINISHED = "rollout_finished";
-    static final String ROLLOUT_EXPIRATION = "rollout_expiration";
-
 }

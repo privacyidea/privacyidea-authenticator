@@ -37,8 +37,6 @@ import javax.crypto.spec.SecretKeySpec;
 
 import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
-import static it.netknights.piauthenticator.Util.byteArrayToHexString;
-import static it.netknights.piauthenticator.Util.hexStringToByteArray;
 
 
 public class OTPGenerator {
@@ -178,6 +176,37 @@ public class OTPGenerator {
             throw new UndeclaredThrowableException(gse);
 
         }
+    }
+
+    /**
+     * This method converts a byte array to a Hex String
+     *
+     * @param ba byte array to convert
+     * @return the Hex as String
+     */
+    public static String byteArrayToHexString(byte[] ba) {
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < ba.length; i++)
+            str.append(String.format("%02x", ba[i]));
+        return str.toString();
+    }
+
+    /**
+     * This method converts a Hex string to a byte array
+     *
+     * @param hex: the Hex string to convert
+     * @return a byte array
+     */
+    public static byte[] hexStringToByteArray(String hex) {
+        // Adding one byte to get the right conversion
+        // Values starting with "0" can be converted
+        byte[] bArray = new BigInteger("10" + hex, 16).toByteArray();
+
+        // Copy all the REAL bytes, not the "first"
+        byte[] ret = new byte[bArray.length - 1];
+        for (int i = 0; i < ret.length; i++)
+            ret[i] = bArray[i + 1];
+        return ret;
     }
 
     /**
