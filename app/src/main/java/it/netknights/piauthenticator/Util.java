@@ -23,7 +23,8 @@ package it.netknights.piauthenticator;
 
 import android.app.Activity;
 import android.content.Context;
-import android.os.Build;
+import android.util.Base64;
+import android.util.Log;
 
 import org.apache.commons.codec.binary.Base32;
 import org.json.JSONArray;
@@ -33,12 +34,26 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
@@ -49,11 +64,17 @@ import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.KEYFILE;
 import static it.netknights.piauthenticator.AppConstants.LABEL;
 import static it.netknights.piauthenticator.AppConstants.PERIOD;
+import static it.netknights.piauthenticator.AppConstants.PERSISTENT;
 import static it.netknights.piauthenticator.AppConstants.PIN;
+import static it.netknights.piauthenticator.AppConstants.PUBKEYFILE;
+import static it.netknights.piauthenticator.AppConstants.ROLLOUT_EXPIRATION;
+import static it.netknights.piauthenticator.AppConstants.ROLLOUT_FINISHED;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
+import static it.netknights.piauthenticator.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.AppConstants.TYPE;
+import static it.netknights.piauthenticator.AppConstants.TokenType;
 import static it.netknights.piauthenticator.AppConstants.WITHPIN;
 
 public class Util {
@@ -80,12 +101,9 @@ public class Util {
 
         try {
             byte[] data = readFile(new File(context.getFilesDir() + "/" + DATAFILE));
-            //-------check if keystore is supported (API 18+)-------------------
-            int currentApiVersion = android.os.Build.VERSION.SDK_INT;
-            if (currentApiVersion >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                SecretKey key = EncryptionHelper.loadOrGenerateKeys(context, new File(context.getFilesDir() + "/" + KEYFILE));
-                data = EncryptionHelper.decrypt(key, data);
-            }
+            SecretKey key = EncryptionHelper.loadOrGenerateKeys(context, new File(context.getFilesDir() + "/" + KEYFILE));
+            data = EncryptionHelper.decrypt(key, data);
+
             JSONArray a = new JSONArray(new String(data));
             for (int i = 0; i < a.length(); i++) {
                 tokens.add(makeTokenFromJSON(a.getJSONObject(i)));
@@ -105,6 +123,9 @@ public class Util {
      */
     public static void saveTokens(Context context, ArrayList<Token> tokens) {
         JSONArray tmp = new JSONArray();
+        if (tokens == null) {
+            return;
+        }
         for (Token t : tokens) {
             try {
                 tmp.put(makeJSONfromToken(t));
@@ -114,11 +135,8 @@ public class Util {
         }
         try {
             byte[] data = tmp.toString().getBytes();
-            int currentApiVersion = android.os.Build.VERSION.SDK_INT;
-            if (currentApiVersion >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                SecretKey key = EncryptionHelper.loadOrGenerateKeys(context, new File(context.getFilesDir() + "/" + KEYFILE));
-                data = EncryptionHelper.encrypt(key, data);
-            }
+            SecretKey key = EncryptionHelper.loadOrGenerateKeys(context, new File(context.getFilesDir() + "/" + KEYFILE));
+            data = EncryptionHelper.encrypt(key, data);
             writeFile(new File(context.getFilesDir() + "/" + DATAFILE), data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -126,7 +144,47 @@ public class Util {
     }
 
     private static Token makeTokenFromJSON(JSONObject o) throws JSONException {
-        Token tmp = new Token(new Base32().decode(o.getString(SECRET)), o.getString(LABEL), o.getString(TYPE), o.getInt(DIGITS));
+        //Log.d("LOAD TOKEN FROM: ", o.toString());
+
+        // when no serial is found (for "old" data) it is set to the label
+        String serial;
+        try {
+            serial = o.getString(SERIAL);
+        } catch (JSONException e) {
+            serial = o.getString(SERIAL);
+        }
+        // when loading "old" data the type is still a string so we convert it here
+        String type;
+        AppConstants.TokenType tokentype;
+        try {
+            type = o.getString(TYPE);
+            switch (type) {
+                case "HOTP":
+                    tokentype = TokenType.HOTP;
+                    break;
+                case "TOTP":
+                    tokentype = TokenType.TOTP;
+                    break;
+                default:
+                    tokentype = TokenType.PUSH;
+                    break;
+            }
+        } catch (JSONException e) {
+            tokentype = (TokenType) o.get(TYPE);
+            //logprint("tokentype found: " + tokentype);
+        }
+        String label = o.getString(LABEL);
+
+        if (tokentype == TokenType.PUSH) {
+            Token t = new Token(serial, label);
+            t.rollout_finished = o.getBoolean(ROLLOUT_FINISHED);
+            // TODO add exp date / url
+            return t;
+        }
+
+        Token tmp = new Token(new Base32().decode(o.getString(SECRET)), serial, label,
+                tokentype, o.getInt(DIGITS));
+
         tmp.setAlgorithm(o.getString(ALGORITHM));
         if (o.getString(TYPE).equals(HOTP)) {
             tmp.setCounter(o.getInt(COUNTER));
@@ -142,7 +200,7 @@ public class Util {
         if (o.optBoolean(TAPTOSHOW, false)) {
             tmp.setWithTapToShow(true);
         }
-        if(o.optBoolean("undeletable")){
+        if (o.optBoolean(PERSISTENT)) {
             tmp.setUndeletable(true);
         }
 
@@ -150,16 +208,28 @@ public class Util {
     }
 
     private static JSONObject makeJSONfromToken(Token t) throws JSONException {
+        //logprint("saving tokens");
         JSONObject o = new JSONObject();
-        o.put(SECRET, new String(new Base32().encode(t.getSecret())));
+
+        o.put(SERIAL, t.getSerial());
         o.put(LABEL, t.getLabel());
+        o.put(TYPE, t.getType());
+
+        if (t.getType() == TokenType.PUSH) {
+            //logprint("saving push token as: " + o.toString());
+            o.put(ROLLOUT_FINISHED, t.rollout_finished);
+            //TODO add exp date / url
+            return o;
+        }
+
+        o.put(SECRET, new String(new Base32().encode(t.getSecret())));
         o.put(DIGITS, t.getDigits());
         o.put(ALGORITHM, t.getAlgorithm());
-        o.put(TYPE, t.getType());
-        if (t.getType().equals(HOTP)) {
+
+        if (t.getType().equals(TokenType.HOTP)) {
             o.put(COUNTER, t.getCounter());
         }
-        if (t.getType().equals(TOTP)) {
+        if (t.getType().equals(TokenType.TOTP)) {
             o.put(PERIOD, t.getPeriod());
         }
         if (t.isWithPIN()) {
@@ -171,25 +241,86 @@ public class Util {
         if (t.isWithTapToShow()) {
             o.put(TAPTOSHOW, true);
         }
-        if(t.isUndeletable()){
-            o.put("undeletable",true);
+        if (t.isUndeletable()) {
+            o.put(PERSISTENT, true);
         }
-
+        Log.d("SAVE TOKEN AS: ", o.toString());
         return o;
     }
 
-    public static void writeFile(File file, byte[] data) throws IOException {
-        final OutputStream out = new FileOutputStream(file);
+    public static void storePIPubkey(String key, String serial, Context context) throws GeneralSecurityException, IOException {
+        byte[] keybytes = Base64.decode(key.getBytes(), Base64.DEFAULT);
+        // TODO how is the key encoded?
+        X509EncodedKeySpec X509publicKey = new X509EncodedKeySpec(keybytes);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        PublicKey pubkey = kf.generatePublic(X509publicKey);
+        // encrypt
+        SecretKey encryptionKey = EncryptionHelper.loadOrGenerateKeys(context,
+                new File(context.getFilesDir() + "/" + KEYFILE));
+
+        byte[] dataToSave = EncryptionHelper.encrypt(encryptionKey, pubkey.getEncoded());
+        // write to file
+        writeFile(new File(context.getFilesDir() + "/" + serial + "_" + PUBKEYFILE), dataToSave);
+    }
+
+    public static PublicKey getPIPubkey(Context context, String serial) {
         try {
+            byte[] encryptedData = readFile(new File(context.getFilesDir() + "/" + serial + "_" + PUBKEYFILE));
+            // decrypt
+            SecretKey encryptionKey = EncryptionHelper.loadOrGenerateKeys(context,
+                    new File(context.getFilesDir() + "/" + KEYFILE));
+
+            byte[] keybytes = EncryptionHelper.decrypt(encryptionKey, encryptedData);
+            // build pubkey
+            X509EncodedKeySpec X509publicKey = new X509EncodedKeySpec(keybytes);
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            return kf.generatePublic(X509publicKey);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * This method converts a byte array to a Hex String
+     *
+     * @param ba byte array to convert
+     * @return the Hex as String
+     */
+    public static String byteArrayToHexString(byte[] ba) {
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < ba.length; i++)
+            str.append(String.format("%02x", ba[i]));
+        return str.toString();
+    }
+
+    /**
+     * This method converts a Hex string to a byte array
+     *
+     * @param hex: the Hex string to convert
+     * @return a byte array
+     */
+    public static byte[] hexStringToByteArray(String hex) {
+        // Adding one byte to get the right conversion
+        // Values starting with "0" can be converted
+        byte[] bArray = new BigInteger("10" + hex, 16).toByteArray();
+
+        // Copy all the REAL bytes, not the "first"
+        byte[] ret = new byte[bArray.length - 1];
+        for (int i = 0; i < ret.length; i++)
+            ret[i] = bArray[i + 1];
+        return ret;
+    }
+
+    public static void writeFile(File file, byte[] data) throws IOException {
+        try (OutputStream out = new FileOutputStream(file)) {
             out.write(data);
-        } finally {
-            out.close();
         }
     }
 
     public static byte[] readFile(File file) throws IOException {
-        final InputStream in = new FileInputStream(file);
-        try {
+        try (InputStream in = new FileInputStream(file)) {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             byte[] buffer = new byte[1024];
             int count;
@@ -197,8 +328,39 @@ public class Util {
                 bytes.write(buffer, 0, count);
             }
             return bytes.toByteArray();
-        } finally {
-            in.close();
+        } catch (FileNotFoundException e) {
+            logprint("File: " + file.getAbsolutePath() + "not found");
+            return null;
+        }
+    }
+
+    public static void logprint(String msg) {
+        Log.e("AAAAAAAAAAAAA", msg);
+    }
+
+    void printPubkeys(ArrayList<Token> tokenlist) {
+        PublicKey pub;
+        for (Token t : tokenlist) {
+            if (t.getType() == TokenType.PUSH) {
+                pub = getPIPubkey(mActivity.getBaseContext(), t.getSerial());
+                if (pub != null)
+                    logprint(t.getSerial() + " : " + pub.getFormat());
+            }
+        }
+    }
+
+    public void removePubkeyFor(String serial) {
+        File f = new File(mActivity.getFilesDir() + "/" + serial + "_" + PUBKEYFILE);
+        boolean res = false;
+        if (f.exists()) {
+            res = f.delete();
+            if (res) {
+                logprint("pubkey file of " + serial + " was found and deleted!");
+            } else {
+                logprint("pubkey file of " + serial + " was not deleted!");
+            }
+        } else {
+            logprint("pubkey file of " + serial + " was not found!");
         }
     }
 

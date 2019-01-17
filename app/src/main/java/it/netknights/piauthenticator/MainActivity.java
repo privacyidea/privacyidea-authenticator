@@ -22,24 +22,28 @@ package it.netknights.piauthenticator;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.SystemClock;
+import android.support.annotation.RequiresApi;
+import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -50,6 +54,7 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -60,11 +65,16 @@ import org.apache.commons.codec.binary.Base32;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.UnrecoverableEntryException;
+import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
 import static it.netknights.piauthenticator.AppConstants.COUNTER;
@@ -76,19 +86,26 @@ import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
 import static it.netknights.piauthenticator.AppConstants.ISSUER;
 import static it.netknights.piauthenticator.AppConstants.LABEL;
+import static it.netknights.piauthenticator.AppConstants.NONCE;
+import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_CHANNEL_ID;
 import static it.netknights.piauthenticator.AppConstants.PERIOD;
 import static it.netknights.piauthenticator.AppConstants.PERSISTENT;
 import static it.netknights.piauthenticator.AppConstants.PIN;
+import static it.netknights.piauthenticator.AppConstants.PUSH;
+import static it.netknights.piauthenticator.AppConstants.ROLLOUT_URL;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
+import static it.netknights.piauthenticator.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
+import static it.netknights.piauthenticator.AppConstants.TTL;
 import static it.netknights.piauthenticator.AppConstants.TWOSTEP_DIFFICULTY;
 import static it.netknights.piauthenticator.AppConstants.TWOSTEP_OUTPUT;
 import static it.netknights.piauthenticator.AppConstants.TWOSTEP_SALT;
 import static it.netknights.piauthenticator.AppConstants.TYPE;
 import static it.netknights.piauthenticator.AppConstants.WITHPIN;
-import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
+import static it.netknights.piauthenticator.Util.byteArrayToHexString;
+import static it.netknights.piauthenticator.Util.logprint;
 
 
 public class MainActivity extends AppCompatActivity implements ActionMode.Callback {
@@ -99,34 +116,67 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private Util util;
     private Token nextSelection = null;
     private ListView listview;
+    private View view_pro_progress;
+    private TextView tv_pro_status;
+    private ConstraintLayout layout_pro;
+    private AlertDialog rollout_status_dialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        PRNGFixes.apply();
+
+        Intent push = getIntent();
+        String serial = push.getStringExtra(SERIAL);
+        if (serial != null) {
+            logprint(serial);
+            logprint(push.getStringExtra(NONCE));
+            logprint(push.getStringExtra("message"));
+        }
+
+        //PRNGFixes.apply();
         util = new Util(this);
         setupViews();
         setupFab();
-        paintStatusbar();
+
+        if (!isNotificationChannelEnabled(this, NOTIFICATION_CHANNEL_ID)) {
+            createNotificationChannel();
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            paintStatusbar();
+        }
         setupAdapter();
         startTimerThread();
 
-       /* Locale locale = new Locale("de");
-        Locale.setDefault(locale);
-        Configuration config = new Configuration();
-        config.locale = locale;
-        getBaseContext().getResources().updateConfiguration(config, getBaseContext().getResources().getDisplayMetrics());
-        Toast.makeText(MainActivity.this,Locale. ,Toast.LENGTH_SHORT).show();*/
+        //Log.e("TOKEN MAINACTIVITY", " " + FirebaseInstanceId.getInstance().getToken());
     }
 
     private void setupFab() {
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        FloatingActionButton fab = findViewById(R.id.fab);
         fab.setBackgroundColor(getResources().getColor(PIBLUE));
         fab.bringToFront();
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                scanQR();
+                //scanQR();
+                // TODO for faster testing purposes skip the qr scan
+                long random = Math.round(Math.random() * 100);
+                String serial = "PIPU000FSA" + String.valueOf(random);
+                String s = "otpauth://pipush/" + serial + "?url=http://requestbin.fullcontact.com/13wmy3w1&ttl=120";
+                Token t = null;
+                try {
+                    t = makeTokenFromURI(s);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                if (t != null) {
+                    tokenlist.add(t);
+                    //   Toast.makeText(this, getString(R.string.toast_token_added_for) + " " + t.getLabel(), Toast.LENGTH_SHORT).show();
+                    tokenlistadapter.refreshOTPs();
+                    saveTokenlist();
+                } else {
+                    logprint("ERROR MAKETOKENFROMURI returned null");
+                }
             }
         });
     }
@@ -157,20 +207,18 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         tokenlistadapter.refreshOTPs();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public void paintStatusbar() {
-        //------------------ try to paint the statusbar -------------------------------
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            Window window = getWindow();
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            window.setStatusBarColor(getResources().getColor(PIBLUE));
-        }
+        Window window = getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        window.setStatusBarColor(getResources().getColor(PIBLUE));
     }
 
     private void setupViews() {
         setTitle(AppConstants.APP_TITLE);
         setContentView(R.layout.activity_main);
-        listview = (ListView) findViewById(R.id.listview);
+        listview = findViewById(R.id.listview);
         listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -179,7 +227,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 return true;
             }
         });
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setBackgroundColor(getResources().getColor(PIBLUE));
         if (getSupportActionBar() != null) {
@@ -210,6 +258,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             Intent settingsIntent = EnterDetailsActivity.makeIntent(MainActivity.this);
             startActivityForResult(settingsIntent, INTENT_ADD_TOKEN_MANUALLY);
         }
+
+        if (id == R.id.print_keys) {
+            printKeystore();
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -224,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 try {
                     Token t = makeTokenFromURI(result.getContents());
                     tokenlist.add(t);
-                    Toast.makeText(this, getString(R.string.toast_token_added_for) + " " + t.getLabel(), Toast.LENGTH_SHORT).show();
+                    //   Toast.makeText(this, getString(R.string.toast_token_added_for) + " " + t.getLabel(), Toast.LENGTH_SHORT).show();
                     tokenlistadapter.refreshOTPs();
                     saveTokenlist();
                 } catch (Exception e) {
@@ -322,33 +375,42 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 MainActivity.changeDialogFontColor(alert);
                 alert.show();
             } else {*/
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle(R.string.confirm_deletion_title);
-                builder.setMessage(getString(R.string.confirm_deletion_text) + " " + currToken.getLabel() + " ?");
-                builder.setPositiveButton(R.string.button_text_yes, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        int pos = tokenlist.indexOf(currToken);
-                        tokenlist.remove(pos);
-                        tokenlistadapter.getPbs().remove(pos);
-                        tokenlistadapter.notifyDataSetChanged();
-                        Toast.makeText(MainActivity.this, R.string.toast_token_removed, Toast.LENGTH_SHORT).show();
-                        saveTokenlist();
-                        //Log.d(Util.TAG,"deletion: pos: "+pos+" ");
-                        mode.finish();
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(R.string.confirm_deletion_title);
+            builder.setMessage(getString(R.string.confirm_deletion_text) + " " + currToken.getLabel() + " ?");
+            builder.setPositiveButton(R.string.button_text_yes, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    // TODO remove keys of push tokens
+                    if (currToken.getType() == AppConstants.TokenType.PUSH) {
+                        util.removePubkeyFor(currToken.getSerial());
+                        try {
+                            SecretKeyWrapper.removePrivKeyFor(currToken.getSerial());
+                        } catch (CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException e) {
+                            e.printStackTrace();
+                        }
                     }
-                });
-                builder.setNegativeButton(R.string.button_text_no, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Toast.makeText(MainActivity.this, R.string.toast_deletion_cancelled, Toast.LENGTH_SHORT).show();
-                        dialog.cancel();
-                        mode.finish();
-                    }
-                });
-                final AlertDialog alert = builder.create();
-                MainActivity.changeDialogFontColor(alert);
-                alert.show();
+                    int pos = tokenlist.indexOf(currToken);
+                    tokenlist.remove(pos);
+                    tokenlistadapter.getPbs().remove(pos);
+                    tokenlistadapter.notifyDataSetChanged();
+                    Toast.makeText(MainActivity.this, R.string.toast_token_removed, Toast.LENGTH_SHORT).show();
+                    saveTokenlist();
+                    //Log.d(Util.TAG,"deletion: pos: "+pos+" ");
+                    mode.finish();
+                }
+            });
+            builder.setNegativeButton(R.string.button_text_no, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    Toast.makeText(MainActivity.this, R.string.toast_deletion_cancelled, Toast.LENGTH_SHORT).show();
+                    dialog.cancel();
+                    mode.finish();
+                }
+            });
+            final AlertDialog alert = builder.create();
+            MainActivity.changeDialogFontColor(alert);
+            alert.show();
             //}
             return true;
         }
@@ -466,34 +528,76 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
         if (!url.getHost().equals(TOTP)) {
             if (!url.getHost().equals(HOTP)) {
-                throw new Exception("No TOTP or HOTP Token");
+                if (!url.getHost().equals(PUSH)) {
+                    throw new Exception("No TOTP, HOTP or Push Token"); //TODO handle this without crash
+                }
             }
         }
-
+        // TOKEN TYPE
         String type = url.getHost();
-        String secret_string = uri.getQueryParameter(SECRET);
+        AppConstants.TokenType tokentype = AppConstants.TokenType.HOTP;
+        if (type.equals(TOTP)) {
+            tokentype = AppConstants.TokenType.TOTP;
+        } else if (type.equals(PUSH)) {
+            tokentype = AppConstants.TokenType.PUSH;
+        }
+
+        // LABEL, SERIAL
         String label = uri.getPath().substring(1);
+
+        String serial = label;
         String issuer = uri.getQueryParameter(ISSUER);
         if (issuer != null && !label.startsWith(issuer)) {
             label = issuer + ": " + label;
         }
+        // https://github.com/privacyidea/privacyidea/wiki/concept:-PushToken
+        // if its a push token, it is returned and the push-rollout is initiated
+        if (tokentype == AppConstants.TokenType.PUSH) {
+            // TODO start "loading screen"
+            //startLoadingScreen();
 
+            Token token = new Token(serial, label);
+            token.rollout_url = uri.getQueryParameter(ROLLOUT_URL);
+            token.rollout_finished = false;
+
+            // Add the TTL to the token
+            int ttl = 10;   // default
+            if (uri.getQueryParameter(TTL) != null) {
+                ttl = Integer.parseInt(uri.getQueryParameter(TTL));
+            }
+            Calendar now = Calendar.getInstance();
+            now.add(Calendar.MINUTE, ttl);
+            Date maxTime = now.getTime();
+            token.rollout_expiration = maxTime;
+
+            AsyncTask<Void, Integer, Boolean> pushrollout = new PushRollout(token, this);
+
+            pushrollout.execute();
+            return token;
+        }
+
+        // SECRET
+        String secret_string = uri.getQueryParameter(SECRET);
+        byte[] secret = new Base32().decode(secret_string.toUpperCase());
+
+        // DIGITS
         int digits = 6;
         if (uri.getQueryParameter(DIGITS) != null) {
             digits = Integer.parseInt(uri.getQueryParameter(DIGITS));
         }
 
-        byte[] secret = new Base32().decode(secret_string.toUpperCase());
-        Token tmp = new Token(secret, label, type, digits);
+        // CREATE BASE TOKEN (HOTP/TOTP)
+        Token tmp = new Token(secret, serial, label, tokentype, digits);
 
-        if (type.equals(TOTP)) {
+        // ADD ADDITIONAL INFORMATION TO IT
+        if (tokentype == AppConstants.TokenType.TOTP) {
             if (uri.getQueryParameter(PERIOD) != null) {
                 tmp.setPeriod(Integer.parseInt(uri.getQueryParameter(PERIOD)));
             } else {
                 tmp.setPeriod(30);
             }
         }
-        if (type.equals(HOTP)) {
+        if (tokentype == AppConstants.TokenType.HOTP) {
             if (uri.getQueryParameter(COUNTER) != null) {
                 tmp.setCounter(Integer.parseInt(uri.getQueryParameter(COUNTER)));
             } else {
@@ -524,7 +628,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             if (uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null) {
                 iterations = Integer.parseInt(uri.getQueryParameter(TWOSTEP_DIFFICULTY));
             }
-            // comes in bytes, need to be converted to bit as parameter for pbkdf2
+            // comes in bytes, needs to be converted to bit as parameter for pbkdf2
             int output_size = 160;
 
             if (uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
@@ -573,12 +677,17 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     private Token makeTokenFromIntent(Intent data) {
+        // Push tokens cannot be created manually so this is simplified
         String type = data.getStringExtra(TYPE);
+        AppConstants.TokenType tokentype = AppConstants.TokenType.HOTP;
+        if (type.equals(TOTP)) {
+            tokentype = AppConstants.TokenType.TOTP;
+        }
         byte[] secret = data.getByteArrayExtra(SECRET);
         String label = data.getStringExtra(LABEL);
         int digits = data.getIntExtra(DIGITS, 6);
         String algorithm = data.getStringExtra(ALGORITHM);
-        Token tmp = new Token(secret, label, type, digits);
+        Token tmp = new Token(secret, label, label, tokentype, digits);
 
         if (type.equals(TOTP)) {
             int period = data.getIntExtra(PERIOD, 30);
@@ -623,13 +732,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     static class SecretGenerator extends AsyncTask<Void, Void, Boolean> {
 
         private final Token token;
-        private final int phonepartlength;
         private Util util;
         private ProgressDialog pd;
-        private String output;
         private int iterations;
         private int output_size_bit;
-        Response delegate = null;
+        Response delegate;
         byte[] phonepartBytes;
 
         public interface Response {
@@ -639,7 +746,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         SecretGenerator(Util util, Token t, int phonepartlength, int iterations, int output_size, Response delegate) {
             this.util = util;
             this.token = t;
-            this.phonepartlength = phonepartlength;
             this.iterations = iterations;
             this.output_size_bit = output_size;
             this.delegate = delegate;
@@ -660,38 +766,26 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            // generate random bytes for the phonepartBytes
+            // 1. Generate random bytes for the phonepartBytes
             SecureRandom sr = new SecureRandom(); //Seeded by PRNGFixes
             sr.nextBytes(phonepartBytes);
 
-            output = byteArrayToHexString(phonepartBytes);
-            //Log.d(Util.TAG, "client_part_hex: " + output);
-
-            // combine the phone- and QR-part
             String server_secret_hex = byteArrayToHexString(token.getSecret());
-            //Log.d(Util.TAG, "server_secret_hex: "+server_secret_hex + " , server_secret_b32 "+ new Base32().encodeAsString(token.getSecret()));
             char[] ch = server_secret_hex.toCharArray();
             byte[] completesecretBytes = new byte[(output_size_bit / 8)];
-            //phonepartBytes = new Base32().decode("OF3XYLDSPTMWK===");
-            long startTime = SystemClock.elapsedRealtime();
+            // 2. PBKDF2 with the specified parameters
             try {
                 completesecretBytes = OTPGenerator.generatePBKDFKey(ch, phonepartBytes, iterations, output_size_bit);
-                //Log.d(Util.TAG, "complete_secret_hex : "+byteArrayToHexString(completesecretBytes));
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            } catch (InvalidKeySpecException e) {
+            } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
                 e.printStackTrace();
             }
-            long endTime = SystemClock.elapsedRealtime() - startTime;
             token.setSecret(completesecretBytes);
-            //Log.d(Util.TAG, "time for PBKDF2 computation: " + endTime + "ms, with " + iterations + " Iterations");
-            //Log.d(Util.TAG, "complete secret HexString: " + completeSecretAsHexString);
             return true;
         }
 
         @Override
         protected void onPostExecute(final Boolean success) {
-            // display the phone-part of the secret and first OTP to verify
+            // 4. Display the phone-part of the secret and first OTP to verify
             pd.dismiss();
             AlertDialog.Builder builder = new AlertDialog.Builder(util.getmActivity());
             builder.setCancelable(false);
@@ -710,7 +804,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
 
         private String buildResultMessage() {
-            /*We use the first 4 characters of the sha1 hash of the client(phone) part as checksum.
+            /* 3. Build the result to show to the user
+            We use the first 4 characters of the sha1 hash of the client(phone) part as checksum.
             client_part being the binary random value, that the client(phone) generated:
             b32encode( sha1(client_part)[0:3] + client_part)*/
             String result;
@@ -728,13 +823,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             try {
                 outputStream.write(checksumBytes);
                 outputStream.write(phonepartBytes);
-                //Log.d(Util.TAG, "checksumbytes_b32: " + new Base32().encodeAsString(checksumBytes) + " ,client_part_b32: " + new Base32().encodeAsString(phonepartBytes));
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
             byte completeOutputBytes[] = outputStream.toByteArray();
-            //Log.d(Util.TAG, "client_part_withCRC_b32: " + new Base32().encodeAsString(completeOutputBytes));
             result = insertPeriodically(new Base32().encodeAsString(completeOutputBytes), " ", 4);
             result = result.replaceAll("=", "");
             return result;
@@ -764,29 +857,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         //Toast.makeText(this, "Tokens saved", Toast.LENGTH_SHORT).show();
     }
 
-    /* private void checkScanPermission() {
-         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-             scanQR();
-         } else {
-             ActivityCompat.requestPermissions(this,
-                     new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
-         }
-     }
-
-     @Override
-     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-         if (requestCode == PERMISSIONS_REQUEST_CAMERA) {
-             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                 // permission was granted
-                 scanQR();
-             } else {
-                 Toast.makeText(this, "Camera permission request was denied.", Toast.LENGTH_SHORT).show();
-             }
-         } else {
-             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-         }
-     }
- */
     private void scanQR() {
         try {
             IntentIntegrator ii = new IntentIntegrator(this);
@@ -800,22 +870,62 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     private void copyToClipboard(Context context, String text) {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
-            android.text.ClipboardManager clipboard = (android.text.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-            if (clipboard != null)
-                clipboard.setText(text);
-        } else {
-            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-            android.content.ClipData clip = android.content.ClipData.newPlainText("Copied Text", text);
-            if (clipboard != null)
-                clipboard.setPrimaryClip(clip);
+        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+        android.content.ClipData clip = android.content.ClipData.newPlainText("Copied Text", text);
+        if (clipboard != null)
+            clipboard.setPrimaryClip(clip);
+    }
+
+    protected void clearTokenlist() {
+        if (tokenlist.size() > 0) {
+            tokenlist.clear();
+            saveTokenlist();
         }
     }
 
-    protected void clearTokenlist(){
-        if(tokenlist.size()>0){
-            tokenlist.clear();
-            saveTokenlist();
+    void printKeystore() {
+        try {
+            SecretKeyWrapper.printKeystore();
+            this.util.printPubkeys(tokenlist);
+        } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException | UnrecoverableEntryException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public boolean isNotificationChannelEnabled(Context context, String channelId) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (!TextUtils.isEmpty(channelId)) {
+                NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                NotificationChannel channel = null;
+                if (manager != null) {
+                    channel = manager.getNotificationChannel(channelId);
+                }
+                if (channel != null) {
+                    return channel.getImportance() != NotificationManager.IMPORTANCE_NONE;
+                }
+            }
+            return false;
+        } else {
+            return NotificationManagerCompat.from(context).areNotificationsEnabled();
+        }
+    }
+
+    private void createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "privacyIDEAPush";
+            String description = "push for privacyIDEA";
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
         }
     }
 }

@@ -21,12 +21,15 @@
 
 package it.netknights.piauthenticator;
 
+
+import java.util.Date;
+
 public class Token {
 
     private String currentOTP;
     private byte[] secret;
     private String label;
-    private String type;
+    private AppConstants.TokenType type;
     private int digits;
     private int period;
     private String algorithm = "HmacSHA1"; //default is SHA1
@@ -37,15 +40,31 @@ public class Token {
     private boolean withTapToShow = false;
     private boolean tapped = false;
     private boolean persistent = false;
+    private String serial;
 
+    boolean rollout_finished = true;
+    Date rollout_expiration;
+    String rollout_url;
 
-    Token(byte[] secret, String label, String type, int digits) {
-        this.label = label;
+    Token(byte[] secret, String serial, String label, AppConstants.TokenType type, int digits) {
         this.secret = secret;
+        this.serial = serial;
+        this.label = label;
         this.type = type;
         this.digits = digits;
         this.period = 0;
         this.counter = 0;
+    }
+
+    // A push token only contains the serial and a label
+    Token(String serial, String label) {
+        type = AppConstants.TokenType.PUSH;
+        this.serial = serial;
+        this.label = label;
+    }
+
+    public String getSerial() {
+        return serial;
     }
 
     void setTapped(boolean tapped) {
@@ -116,11 +135,11 @@ public class Token {
         return label;
     }
 
-    public void setType(String type) {
+    public void setType(AppConstants.TokenType type) {
         this.type = type;
     }
 
-    public String getType() {
+    public AppConstants.TokenType getType() {
         return type;
     }
 

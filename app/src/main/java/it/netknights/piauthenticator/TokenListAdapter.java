@@ -85,14 +85,16 @@ public class TokenListAdapter extends BaseAdapter {
 
     void refreshOTPs() {
         for (int i = 0; i < tokens.size(); i++) {
-            tokens.get(i).setCurrentOTP(OTPGenerator.generate(tokens.get(i)));
+            if (tokens.get(i).getType() != AppConstants.TokenType.PUSH) {
+                tokens.get(i).setCurrentOTP(OTPGenerator.generate(tokens.get(i)));
+            }
         }
         this.notifyDataSetChanged();
     }
 
     void refreshAllTOTP() {
         for (int i = 0; i < tokens.size(); i++) {
-            if (tokens.get(i).getType().equals(TOTP)) {
+            if (tokens.get(i).getType() == AppConstants.TokenType.TOTP) {
                 tokens.get(i).setCurrentOTP(OTPGenerator.generate(tokens.get(i)));
             }
         }
@@ -233,7 +235,7 @@ public class TokenListAdapter extends BaseAdapter {
             v.setLongClickable(true);
             v.setOnClickListener(null);
             //------------------ differenciate hotp and totp ---------------------------
-            if (token.getType().equals(HOTP)) {
+            if (token.getType() == AppConstants.TokenType.HOTP) {
                 progressBar.setVisibility(GONE);
                 nextbtn.setVisibility(VISIBLE);
                 nextbtn.setOnClickListener(new View.OnClickListener() {
@@ -244,14 +246,23 @@ public class TokenListAdapter extends BaseAdapter {
                         notifyDataSetChanged();
                     }
                 });
-            } else {
+                otptext.setText(token.getCurrentOTP());
+            } else if (token.getType() == AppConstants.TokenType.TOTP) {
                 nextbtn.setVisibility(GONE);
                 nextbtn.setClickable(false);
                 nextbtn.setLongClickable(false);
                 progressBar.setVisibility(VISIBLE);
                 v.setClickable(false);
+                otptext.setText(token.getCurrentOTP());
+            } else if (token.getType() == AppConstants.TokenType.PUSH) {
+                nextbtn.setVisibility(GONE);
+                nextbtn.setClickable(false);
+                nextbtn.setLongClickable(false);
+                progressBar.setVisibility(GONE);
+                labeltext.setVisibility(GONE);
+                otptext.setText("[PUSH] "+token.getSerial());
             }
-            otptext.setText(token.getCurrentOTP());
+
         }
         setupOnDrags(v, position);
         return v;

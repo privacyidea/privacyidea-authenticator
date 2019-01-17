@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "850240559902",
+    "firebase_url": "https://test-d3861.firebaseio.com",
+    "project_id": "test-d3861",
+    "storage_bucket": "test-d3861.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:850240559902:android:812605f9a33242a9",
+        "android_client_info": {
+          "package_name": "it.netknights.piauthenticator"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "850240559902-cvl6pltq1a2hr143r5ohl37if54preac.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeFSjwJ8aEcHQaj4-iqT-sLAX6lmSrvbo"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
