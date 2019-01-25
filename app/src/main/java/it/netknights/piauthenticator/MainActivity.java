@@ -35,7 +35,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.RequiresApi;
-import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.NotificationManagerCompat;
@@ -54,7 +53,6 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -78,6 +76,7 @@ import java.util.Date;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
 import static it.netknights.piauthenticator.AppConstants.COUNTER;
+import static it.netknights.piauthenticator.AppConstants.DATA;
 import static it.netknights.piauthenticator.AppConstants.DIGITS;
 import static it.netknights.piauthenticator.AppConstants.HMACSHA1;
 import static it.netknights.piauthenticator.AppConstants.HMACSHA256;
@@ -95,6 +94,7 @@ import static it.netknights.piauthenticator.AppConstants.PUSH;
 import static it.netknights.piauthenticator.AppConstants.ROLLOUT_URL;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
 import static it.netknights.piauthenticator.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.AppConstants.TTL;
@@ -108,35 +108,33 @@ import static it.netknights.piauthenticator.Util.byteArrayToHexString;
 import static it.netknights.piauthenticator.Util.logprint;
 
 
-public class MainActivity extends AppCompatActivity implements ActionMode.Callback {
-    private TokenListAdapter tokenlistadapter;
-    private ArrayList<Token> tokenlist;
+public class MainActivity extends AppCompatActivity implements ActionMode.Callback, ActivityInterface {
+    TokenListAdapter tokenlistadapter;
+    ArrayList<Token> tokenlist;
     private Handler handler;
     private Runnable timer;
     private Util util;
     private Token nextSelection = null;
     private ListView listview;
-    private View view_pro_progress;
-    private TextView tv_pro_status;
-    private ConstraintLayout layout_pro;
-    private AlertDialog rollout_status_dialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         Intent push = getIntent();
-        String serial = push.getStringExtra(SERIAL);
-        if (serial != null) {
-            logprint(serial);
-            logprint(push.getStringExtra(NONCE));
-            logprint(push.getStringExtra("message"));
+        if (push == null) {
+            logprint("NO INTENT FOUND ONCREATE");
         }
-
+        String push_data = push.getStringExtra(DATA);
         //PRNGFixes.apply();
         util = new Util(this);
         setupViews();
         setupFab();
+
+        setupAdapter();
+        startTimerThread();
+
+        checkForExpiredTokens();
 
         if (!isNotificationChannelEnabled(this, NOTIFICATION_CHANNEL_ID)) {
             createNotificationChannel();
@@ -145,10 +143,18 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             paintStatusbar();
         }
-        setupAdapter();
-        startTimerThread();
+
+        if (push_data != null) {
+            logprint("push data:" + push_data);
+        } else {
+            logprint("push data is empty");
+        }
 
         //Log.e("TOKEN MAINACTIVITY", " " + FirebaseInstanceId.getInstance().getToken());
+    }
+
+    private void checkForExpiredTokens() {
+
     }
 
     private void setupFab() {
@@ -160,9 +166,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             public void onClick(View v) {
                 //scanQR();
                 // TODO for faster testing purposes skip the qr scan
-                long random = Math.round(Math.random() * 100);
-                String serial = "PIPU000FSA" + String.valueOf(random);
-                String s = "otpauth://pipush/" + serial + "?url=http://requestbin.fullcontact.com/13wmy3w1&ttl=120";
+                String serial = "PIPU000FSA" + String.valueOf(Math.round(Math.random() * 100));
+                String url = "https://sdffffff.free.beeceptor.com";
+                //String url = "";
+                String s = "otpauth://pipush/" + serial + "?url=" + url + "&ttl=120";
                 Token t = null;
                 try {
                     t = makeTokenFromURI(s);
@@ -204,7 +211,25 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         tokenlistadapter = new TokenListAdapter();
         listview.setAdapter(tokenlistadapter);
         tokenlistadapter.setTokens(tokenlist);
+        tokenlistadapter.setActivityInterface(this);
         tokenlistadapter.refreshOTPs();
+    }
+
+    void removeToken(Token currToken) {
+        if (currToken.getType() == AppConstants.TokenType.PUSH) {
+            util.removePubkeyFor(currToken.getSerial());
+            try {
+                SecretKeyWrapper.removePrivKeyFor(currToken.getSerial());
+            } catch (CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException e) {
+                e.printStackTrace();
+            }
+        }
+        int pos = tokenlist.indexOf(currToken);
+        tokenlist.remove(pos);
+        tokenlistadapter.getPbs().remove(pos);
+        tokenlistadapter.notifyDataSetChanged();
+        Toast.makeText(MainActivity.this, R.string.toast_token_removed, Toast.LENGTH_SHORT).show();
+        saveTokenlist();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -381,21 +406,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             builder.setPositiveButton(R.string.button_text_yes, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    // TODO remove keys of push tokens
-                    if (currToken.getType() == AppConstants.TokenType.PUSH) {
-                        util.removePubkeyFor(currToken.getSerial());
-                        try {
-                            SecretKeyWrapper.removePrivKeyFor(currToken.getSerial());
-                        } catch (CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    int pos = tokenlist.indexOf(currToken);
-                    tokenlist.remove(pos);
-                    tokenlistadapter.getPbs().remove(pos);
-                    tokenlistadapter.notifyDataSetChanged();
-                    Toast.makeText(MainActivity.this, R.string.toast_token_removed, Toast.LENGTH_SHORT).show();
-                    saveTokenlist();
+                    removeToken(currToken);
+
                     //Log.d(Util.TAG,"deletion: pos: "+pos+" ");
                     mode.finish();
                 }
@@ -569,7 +581,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             now.add(Calendar.MINUTE, ttl);
             Date maxTime = now.getTime();
             token.rollout_expiration = maxTime;
-
             AsyncTask<Void, Integer, Boolean> pushrollout = new PushRollout(token, this);
 
             pushrollout.execute();
@@ -727,6 +738,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(piblue);
         }
+    }
+
+    @Override
+    public Activity getPresentActivity() {
+        return this;
     }
 
     static class SecretGenerator extends AsyncTask<Void, Void, Boolean> {
@@ -928,4 +944,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             }
         }
     }
+
+}
+
+interface ActivityInterface {
+    public Activity getPresentActivity();
 }

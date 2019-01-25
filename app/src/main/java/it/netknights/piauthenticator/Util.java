@@ -39,21 +39,21 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.spec.X509EncodedKeySpec;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
@@ -69,6 +69,7 @@ import static it.netknights.piauthenticator.AppConstants.PIN;
 import static it.netknights.piauthenticator.AppConstants.PUBKEYFILE;
 import static it.netknights.piauthenticator.AppConstants.ROLLOUT_EXPIRATION;
 import static it.netknights.piauthenticator.AppConstants.ROLLOUT_FINISHED;
+import static it.netknights.piauthenticator.AppConstants.ROLLOUT_URL;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
 import static it.netknights.piauthenticator.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
@@ -171,7 +172,6 @@ public class Util {
             }
         } catch (JSONException e) {
             tokentype = (TokenType) o.get(TYPE);
-            //logprint("tokentype found: " + tokentype);
         }
         String label = o.getString(LABEL);
 
@@ -179,6 +179,12 @@ public class Util {
             Token t = new Token(serial, label);
             t.rollout_finished = o.getBoolean(ROLLOUT_FINISHED);
             // TODO add exp date / url
+            t.rollout_url = o.getString(ROLLOUT_URL);
+            try {
+                t.rollout_expiration = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(o.getString(ROLLOUT_EXPIRATION));
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
             return t;
         }
 
@@ -216,9 +222,10 @@ public class Util {
         o.put(TYPE, t.getType());
 
         if (t.getType() == TokenType.PUSH) {
-            //logprint("saving push token as: " + o.toString());
             o.put(ROLLOUT_FINISHED, t.rollout_finished);
             //TODO add exp date / url
+            o.put(ROLLOUT_URL, t.rollout_url);
+            o.put(ROLLOUT_EXPIRATION, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(t.rollout_expiration));
             return o;
         }
 
@@ -244,13 +251,12 @@ public class Util {
         if (t.isUndeletable()) {
             o.put(PERSISTENT, true);
         }
-        Log.d("SAVE TOKEN AS: ", o.toString());
+        logprint("SAVE TOKEN AS: " + o.toString());
         return o;
     }
 
-    public static void storePIPubkey(String key, String serial, Context context) throws GeneralSecurityException, IOException {
+    public static void storePIPubkey(String key, String serial, Context context) throws GeneralSecurityException, IOException, IllegalArgumentException {
         byte[] keybytes = Base64.decode(key.getBytes(), Base64.DEFAULT);
-        // TODO how is the key encoded?
         X509EncodedKeySpec X509publicKey = new X509EncodedKeySpec(keybytes);
         KeyFactory kf = KeyFactory.getInstance("RSA");
         PublicKey pubkey = kf.generatePublic(X509publicKey);
@@ -280,6 +286,27 @@ public class Util {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static Map<String, String> convert(String str) {
+        str = str.replace(",", "");
+        String[] tokens = str.split(" |=");
+        Map<String, String> map = new HashMap<>();
+        for (int i=0; i<tokens.length-1; ) map.put(tokens[i++], tokens[i++]);
+        return map;
+    }
+
+    public static boolean verifySignature(String serial, String signature, String payload, Context context) throws InvalidKeyException,
+            NoSuchAlgorithmException, SignatureException {
+        PublicKey pubkey = getPIPubkey(context, serial);
+        // TODO format
+        byte[] message = payload.getBytes();
+        byte[] bSignature = signature.getBytes();
+        Signature sig = Signature.getInstance("RSA");
+
+        sig.initVerify(pubkey);
+        sig.update(message);
+        return sig.verify(bSignature);
     }
 
     /**
@@ -335,10 +362,13 @@ public class Util {
     }
 
     public static void logprint(String msg) {
+        if(msg == null)
+            return;
         Log.e("AAAAAAAAAAAAA", msg);
     }
 
     void printPubkeys(ArrayList<Token> tokenlist) {
+        logprint("------ PUBKEYS (IN FILES) ------");
         PublicKey pub;
         for (Token t : tokenlist) {
             if (t.getType() == TokenType.PUSH) {

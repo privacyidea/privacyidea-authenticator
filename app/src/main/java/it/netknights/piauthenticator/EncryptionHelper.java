@@ -29,7 +29,6 @@ import android.content.Context;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -45,14 +44,15 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import static it.netknights.piauthenticator.AppConstants.*;
+import static it.netknights.piauthenticator.AppConstants.CRYPT_ALGORITHM;
+import static it.netknights.piauthenticator.AppConstants.IV_LENGTH;
 
 public class EncryptionHelper {
 
 
     public static byte[] encrypt(SecretKey secretKey, IvParameterSpec iv, byte[] plainText)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
-            InvalidKeyException, UnsupportedEncodingException, BadPaddingException, IllegalBlockSizeException {
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         Cipher cipher = Cipher.getInstance(CRYPT_ALGORITHM);
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
         return cipher.doFinal(plainText);
@@ -68,7 +68,7 @@ public class EncryptionHelper {
 
     static byte[] encrypt(SecretKey secretKey, byte[] plaintext)
             throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException,
-            IllegalBlockSizeException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
+            IllegalBlockSizeException, InvalidAlgorithmParameterException {
         final byte[] iv = new byte[AppConstants.IV_LENGTH];
         new SecureRandom().nextBytes(iv);
         byte[] cipherText = encrypt(secretKey, new IvParameterSpec(iv), plaintext);

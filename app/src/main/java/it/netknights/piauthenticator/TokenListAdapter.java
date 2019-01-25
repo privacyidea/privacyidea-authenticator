@@ -27,6 +27,7 @@ import android.content.ClipData;
 import android.content.DialogInterface;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.os.AsyncTask;
 import android.text.InputType;
 import android.view.DragEvent;
 import android.view.LayoutInflater;
@@ -46,7 +47,6 @@ import java.util.List;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
-import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.OTPGenerator.hashPIN;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
@@ -74,6 +74,12 @@ public class TokenListAdapter extends BaseAdapter {
 
     TokenListAdapter() {
         this.pbs = new ArrayList<>();
+    }
+
+    private ActivityInterface activityInterface;
+
+    public void setActivityInterface(ActivityInterface activityInterface) {
+        this.activityInterface = activityInterface;
     }
 
     private void setProgressAnimate(ProgressBar pb, int progressTo) {
@@ -112,7 +118,7 @@ public class TokenListAdapter extends BaseAdapter {
 
 
         final Token token = getItem(position);
-        ProgressBar progressBar = (ProgressBar) v.findViewById(R.id.progressBar);
+        ProgressBar progressBar = v.findViewById(R.id.progressBar);
         progressBar.setMax(30 * 100);
         if (token.getType().equals(TOTP)) {
             if (token.getPeriod() == 60) {
@@ -122,9 +128,9 @@ public class TokenListAdapter extends BaseAdapter {
         progressBar.getProgressDrawable().setColorFilter(
                 Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
         pbs.add(position, progressBar);
-        final TextView otptext = (TextView) v.findViewById(R.id.textViewToken);
-        final TextView labeltext = (TextView) v.findViewById(R.id.textViewLabel);
-        Button nextbtn = (Button) v.findViewById(R.id.next_button);
+        final TextView otptext = v.findViewById(R.id.textViewToken);
+        final TextView labeltext = v.findViewById(R.id.textViewLabel);
+        Button nextbtn = v.findViewById(R.id.next_button);
         nextbtn.setVisibility(GONE);
         progressBar.setVisibility(GONE);
         otptext.setText(token.getCurrentOTP());
@@ -234,7 +240,7 @@ public class TokenListAdapter extends BaseAdapter {
             //--------------- no PIN protection or token is unlocked ---------------------------
             v.setLongClickable(true);
             v.setOnClickListener(null);
-            //------------------ differenciate hotp and totp ---------------------------
+            //------------------ differenciate hotp, totp and push ---------------------------
             if (token.getType() == AppConstants.TokenType.HOTP) {
                 progressBar.setVisibility(GONE);
                 nextbtn.setVisibility(VISIBLE);
@@ -255,14 +261,32 @@ public class TokenListAdapter extends BaseAdapter {
                 v.setClickable(false);
                 otptext.setText(token.getCurrentOTP());
             } else if (token.getType() == AppConstants.TokenType.PUSH) {
-                nextbtn.setVisibility(GONE);
-                nextbtn.setClickable(false);
-                nextbtn.setLongClickable(false);
-                progressBar.setVisibility(GONE);
-                labeltext.setVisibility(GONE);
-                otptext.setText("[PUSH] "+token.getSerial());
-            }
+                if(token.rollout_finished) {
+                    nextbtn.setVisibility(GONE);
+                    nextbtn.setClickable(false);
+                    nextbtn.setLongClickable(false);
+                    progressBar.setVisibility(GONE);
+                    labeltext.setVisibility(GONE);
+                    otptext.setText("[PUSH] " + token.getSerial());
+                } else {
+                    nextbtn.setVisibility(GONE);
+                    nextbtn.setClickable(false);
+                    nextbtn.setLongClickable(false);
+                    progressBar.setVisibility(GONE);
+                    labeltext.setVisibility(GONE);
+                    otptext.setText("[PUSH] " + token.getSerial());
+                    nextbtn.setVisibility(VISIBLE);
+                    nextbtn.setText("Retry");
+                    nextbtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            AsyncTask<Void, Integer, Boolean> pushrollout = new PushRollout(token, TokenListAdapter.this.activityInterface);
 
+                            pushrollout.execute();
+                        }
+                    });
+                }
+            }
         }
         setupOnDrags(v, position);
         return v;

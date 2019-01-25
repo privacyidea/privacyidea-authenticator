@@ -24,7 +24,6 @@ package it.netknights.piauthenticator;
 import org.apache.commons.codec.binary.Base32;
 
 import java.lang.reflect.UndeclaredThrowableException;
-import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;

@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -37,6 +38,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
 import java.util.Calendar;
@@ -213,6 +216,20 @@ public class SecretKeyWrapper {
         keyStore.deleteEntry(serial);
         logprint("key for alias " + serial + " was deleted from keystore!");
 
+    }
+
+    static String sign(String serial, String nonce) throws CertificateException, UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException, IOException, InvalidKeyException, SignatureException {
+        PrivateKey privkey = getPrivKeyFor(serial);
+        // TODO format of nonce??
+        byte[] message = Base64.decode(nonce, Base64.DEFAULT);
+
+        Signature s = Signature.getInstance("SHA512withRSA");
+        s.initSign(privkey);
+        s.update(message);
+
+        byte[] signature = s.sign();
+        // TODO format of signature
+        return Base64.encodeToString(signature, Base64.DEFAULT);
     }
 
 }

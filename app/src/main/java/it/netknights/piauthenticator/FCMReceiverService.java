@@ -15,6 +15,7 @@ import com.google.firebase.messaging.RemoteMessage;
 import java.util.Map;
 
 import static android.support.v4.app.NotificationCompat.PRIORITY_DEFAULT;
+import static android.support.v4.app.NotificationCompat.PRIORITY_MAX;
 import static it.netknights.piauthenticator.AppConstants.*;
 
 public class FCMReceiverService extends FirebaseMessagingService {
@@ -23,38 +24,31 @@ public class FCMReceiverService extends FirebaseMessagingService {
 
     @Override
     public void onMessageReceived(RemoteMessage message) {
-
-
-        Log.e("MESSAGE", message.getData().toString());
-
         // get the key-value pairs
-        Map<String,String> map = message.getData();
+        Map<String, String> map = message.getData();
 
-        if(map.containsKey(NOTIFICATION_TEXT)) {
+        if (map.containsKey(NOTIFICATION_TEXT)) {
             question = map.get(NOTIFICATION_TEXT);
         } else {
             // TODO default question?
         }
-        if(map.containsKey(NONCE)) {
+        if (map.containsKey(NONCE)) {
             nonce = map.get(NONCE);
         } else {
             // TODO no nonce in push
         }
-        if(map.containsKey(SERIAL)){
+        if (map.containsKey(SERIAL)) {
             serial = map.get(SERIAL);
         } else {
             // TODO no serial in push
         }
-        if(map.containsKey(SIGNATURE)){
+        if (map.containsKey(SIGNATURE)) {
             signature = map.get(SIGNATURE);
         } else {
             // TODO reject request?
         }
 
-        // if(!verifySignature(signature, token)){
-            // return
-        // }
-        sendNotification(question, serial, nonce);
+        sendNotification(message.getData().toString(), question);
     }
 
     @Override
@@ -63,23 +57,13 @@ public class FCMReceiverService extends FirebaseMessagingService {
         Log.e("NEW TOKEN", s);
     }
 
-    private void sendNotification(String message, String serial, String nonce) {
+    private void sendNotification(String data, String message) {
         Intent intent = new Intent(this, MainActivity.class);
-        intent.putExtra("serial", serial);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
-
-
-        Intent intent2 = new Intent(this, MainActivity.class);
-        intent2.putExtra(SERIAL, serial)
-        .putExtra("message", message)
-        .putExtra(NONCE, nonce);
-        PendingIntent pendingIntent2 = PendingIntent.getActivity(this, 0, intent2, PendingIntent.FLAG_ONE_SHOT);
-
-
+        intent.putExtra(DATA, data);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         // TODO indicate verification from within app?
-        Uri soundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this,
                 NOTIFICATION_CHANNEL_ID)    // Android 8 uses notification channels
@@ -88,9 +72,9 @@ public class FCMReceiverService extends FirebaseMessagingService {
                 .setContentText(message)
                 .setAutoCancel(false)                   // dont remove the notification after tabbing it
                 .setSound(soundUri)
-                .setPriority(PRIORITY_DEFAULT)          // 7.1 and lower
+                .setPriority(PRIORITY_MAX)          // 7.1 and lower
                 .setContentIntent(pendingIntent)
-                .addAction(R.drawable.ic_info_black_24dp, "blaaa", pendingIntent2);
+                .addAction(R.drawable.ic_info_black_24dp, "blaaa", pendingIntent);
 
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);

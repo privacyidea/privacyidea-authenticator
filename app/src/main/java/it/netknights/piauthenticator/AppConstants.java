@@ -57,30 +57,39 @@ public class AppConstants {
     static final int DIGITS_6 = 6;
     static final int DIGITS_8 = 8;
 
-    // Stuff for push
+    // ----- Stuff for push -----
+    // Attribute names
     static final String PUSH = "pipush";
     static final String ROLLOUT_URL = "url";
     static final String TTL = "ttl";
+    // TODO
+    static final String AUTHENTICATION_ENDPOINT_URL = "url";
 
     static final String NONCE = "nonce";
     static final String SIGNATURE = "signature";
     static final String SERIAL = "serial";
     static final String NOTIFICATION_TEXT = "question";
-
+    static final String ROLLOUT_FINISHED = "rollout_finished";
+    static final String ROLLOUT_EXPIRATION = "rollout_expiration";
+    static final String DATA = "data";
+    // Constants
     static final int READ_TIMEOUT = 10000;
     static final int CONNECT_TIMEOUT = 15000;
 
     static final String PUBKEYFILE = "pubkey.key";
     static final String NOTIFICATION_CHANNEL_ID = "privacyIDEAPush";
 
+    // Status codes
     static final int PRO_STATUS_STEP_1 = 1001;
     static final int PRO_STATUS_STEP_2 = 1002;
     static final int PRO_STATUS_STEP_3 = 1003;
     static final int PRO_STATUS_DONE = 1004;
     static final int PRO_STATUS_REGISTRATION_TIME_EXPIRED = 1010;
     static final int PRO_STATUS_RESPONSE_NO_KEY = 1011;
+    static final int PRO_STATUS_MALFORMED_URL = 1012;
+    static final int PRO_STATUS_BAD_BASE64 = 1013;
 
-    static final String ROLLOUT_FINISHED = "rollout_finished";
-    static final String ROLLOUT_EXPIRATION = "rollout_expiration";
+    static final int PA_INVALID_SIGNATURE = 2001;
+    static final int PA_SIGNING_FAILURE = 2002;
 
 }
