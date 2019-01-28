@@ -154,7 +154,34 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     private void checkForExpiredTokens() {
+        ArrayList<Token> upForDeletion = new ArrayList<>();
+        Date now = new Date();
+        for (Token t : tokenlist) {
+            if (t.getType() == AppConstants.TokenType.PUSH) {
+                if (!t.rollout_finished && t.rollout_expiration.before(now)) {
+                    upForDeletion.add(t);
+                }
+            }
+        }
 
+        if (!upForDeletion.isEmpty()) {
+            StringBuffer sb = new StringBuffer();
+            for (Token t : upForDeletion) {
+                sb.append(t.getSerial() + "\n");
+                removeToken(t);
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("Pushtoken rollout expired")
+                    .setMessage("The rollout time expired for the following token:\n\n" +
+                            sb.toString())
+            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.cancel();
+                }
+            });
+            builder.show();
+        }
     }
 
     private void setupFab() {
@@ -169,7 +196,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 String serial = "PIPU000FSA" + String.valueOf(Math.round(Math.random() * 100));
                 String url = "https://sdffffff.free.beeceptor.com";
                 //String url = "";
-                String s = "otpauth://pipush/" + serial + "?url=" + url + "&ttl=120";
+                String s = "otpauth://pipush/" + serial + "?url=" + url + "&ttl=1";
                 Token t = null;
                 try {
                     t = makeTokenFromURI(s);
@@ -215,6 +242,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         tokenlistadapter.refreshOTPs();
     }
 
+    /**
+     * Remove a token from the list. This includes Pub/Priv Keys for Pushtoken
+     *
+     * @param currToken the token to delete
+     */
     void removeToken(Token currToken) {
         if (currToken.getType() == AppConstants.TokenType.PUSH) {
             util.removePubkeyFor(currToken.getSerial());
@@ -226,7 +258,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
         int pos = tokenlist.indexOf(currToken);
         tokenlist.remove(pos);
-        tokenlistadapter.getPbs().remove(pos);
+        if (tokenlistadapter.getPbs().size() >= pos) {
+            tokenlistadapter.getPbs().remove(pos);
+        }
         tokenlistadapter.notifyDataSetChanged();
         Toast.makeText(MainActivity.this, R.string.toast_token_removed, Toast.LENGTH_SHORT).show();
         saveTokenlist();
@@ -719,25 +753,20 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         dialog.setOnShowListener(new DialogInterface.OnShowListener() {
             @Override
             public void onShow(DialogInterface dialogInterface) {
-                doChangeDialogFontColor(dialog);
+                int piblue = dialog.getContext().getResources().getColor(PIBLUE);
+                if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null) {
+                    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(piblue);
+                }
+
+                if (dialog.getButton(AlertDialog.BUTTON_NEUTRAL) != null) {
+                    dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(piblue);
+                }
+
+                if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(piblue);
+                }
             }
         });
-
-    }
-
-    private static void doChangeDialogFontColor(AlertDialog dialog) {
-        int piblue = dialog.getContext().getResources().getColor(PIBLUE);
-        if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null) {
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(piblue);
-        }
-
-        if (dialog.getButton(AlertDialog.BUTTON_NEUTRAL) != null) {
-            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(piblue);
-        }
-
-        if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(piblue);
-        }
     }
 
     @Override

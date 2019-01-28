@@ -215,7 +215,6 @@ public class SecretKeyWrapper {
         }
         keyStore.deleteEntry(serial);
         logprint("key for alias " + serial + " was deleted from keystore!");
-
     }
 
     static String sign(String serial, String nonce) throws CertificateException, UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException, IOException, InvalidKeyException, SignatureException {
@@ -231,5 +230,4 @@ public class SecretKeyWrapper {
         // TODO format of signature
         return Base64.encodeToString(signature, Base64.DEFAULT);
     }
-
 }

@@ -298,7 +298,7 @@ public class PushRollout extends AsyncTask<Void, Integer, Boolean> {
             case PRO_STATUS_BAD_BASE64: {
                 logprint("KEY NOT IN BASE64 FORMAT");
                 rollout_status_dialog.cancel();
-                showFailureDialog("The key from the server was not in the correct format!\nToken will be removed.");
+                showFailureDialog("The key from the server was not in the correct format!");
                 break;
             }
             default:
