@@ -31,14 +31,18 @@ import static it.netknights.piauthenticator.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
 import static it.netknights.piauthenticator.Util.logprint;
 
-public class PushAuthenticationTask extends AsyncTask<Void, Integer, Boolean> {
+public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> {
 
     private String data;
     private ActivityInterface activityInterface;
 
-    PushAuthenticationTask(String data, ActivityInterface activityInterface) {
+    PushAuthTask(String data, ActivityInterface activityInterface) {
         this.data = data;
         this.activityInterface = activityInterface;
+    }
+
+    PushAuthTask(String data) {
+        this.data = data;
     }
 
     @Override

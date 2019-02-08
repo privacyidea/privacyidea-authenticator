@@ -280,7 +280,7 @@ public class TokenListAdapter extends BaseAdapter {
                     nextbtn.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            AsyncTask<Void, Integer, Boolean> pushrollout = new PushRollout(token, TokenListAdapter.this.activityInterface);
+                            AsyncTask<Void, Integer, Boolean> pushrollout = new PushRolloutTask(token, TokenListAdapter.this.activityInterface);
 
                             pushrollout.execute();
                         }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="it.netknights.piauthenticator">
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -46,6 +47,21 @@
             </intent-filter>
         </service>
 
+        <service
+            android:name=".PushAuthService"
+            android:icon="@mipmap/ic_launcher"
+            android:label="PushAuthService"
+            >
+        </service>
+
+        <!-- remove the firebase init -->
+        <provider
+        android:name="com.google.firebase.provider.FirebaseInitProvider"
+        android:authorities="${applicationId}.firebaseinitprovider"
+        tools:node="remove"
+        />
     </application>
+
+
 
 </manifest>

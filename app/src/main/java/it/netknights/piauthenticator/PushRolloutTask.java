@@ -26,6 +26,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStoreException;
@@ -48,14 +49,14 @@ import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_3;
 import static it.netknights.piauthenticator.AppConstants.READ_TIMEOUT;
 import static it.netknights.piauthenticator.Util.logprint;
 
-public class PushRollout extends AsyncTask<Void, Integer, Boolean> {
+public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
 
     private String serial, rollout_url, fb_token;
     private Token token;
     private AlertDialog rollout_status_dialog;
     private ActivityInterface activityInterface;
 
-    PushRollout(Token t, ActivityInterface activityInterface) {
+    PushRolloutTask(Token t, ActivityInterface activityInterface) {
         this.token = t;
         this.serial = t.getSerial();
         this.rollout_url = t.rollout_url;
@@ -106,9 +107,7 @@ public class PushRollout extends AsyncTask<Void, Integer, Boolean> {
                 fb_token = instanceIdResult.getToken();
             }
         });
-        if (fb_token != null) {
-            logprint("TOKEN: " + fb_token);
-        }
+        logprint("TOKEN: " + fb_token);
 
         // 2. Send the pubkey and the firebase token to the rollout URL
         publishProgress(PRO_STATUS_STEP_2);
@@ -147,12 +146,9 @@ public class PushRollout extends AsyncTask<Void, Integer, Boolean> {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        BufferedWriter writer = null;
-        try {
-            writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
+        BufferedWriter writer;
+        assert os != null;
+        writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
         String key = null;
         if (pubkey != null) {
             key = Base64.encodeToString(pubkey.getEncoded(), Base64.DEFAULT);
@@ -164,7 +160,7 @@ public class PushRollout extends AsyncTask<Void, Integer, Boolean> {
         logprint("Pubkey: " + key);
         try {
             writer.write("serial=" + serial);
-            writer.write("&otpkey=" + fb_token);
+            writer.write("&fbtoken=" + fb_token);
             writer.write("&pubkey=" + key);
             writer.flush();
             writer.close();
@@ -245,7 +241,7 @@ public class PushRollout extends AsyncTask<Void, Integer, Boolean> {
             logprint("cant find status dialog");
             return;
         } else {
-            tv_pro_status = rollout_status_dialog.findViewById(R.id.pro_status);
+            tv_pro_status = rollout_status_dialog.findViewById(R.id.tv_status);
         }
         if (tv_pro_status == null) {
             logprint("cant find status text view");

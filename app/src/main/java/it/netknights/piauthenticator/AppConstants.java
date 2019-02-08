@@ -62,6 +62,10 @@ public class AppConstants {
     static final String PUSH = "pipush";
     static final String ROLLOUT_URL = "url";
     static final String TTL = "ttl";
+    static final String PROJECT_ID = "projectid";
+    static final String APP_ID = "appid";
+    static final String API_KEY = "apikey";
+    static final String PROJECT_NUMBER = "projectnumber";
     // TODO
     static final String AUTHENTICATION_ENDPOINT_URL = "url";
 

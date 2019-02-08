@@ -364,7 +364,7 @@ public class Util {
     public static void logprint(String msg) {
         if(msg == null)
             return;
-        Log.e("AAAAAAAAAAAAA", msg);
+        Log.e("PI-Authenticator", msg);
     }
 
     void printPubkeys(ArrayList<Token> tokenlist) {

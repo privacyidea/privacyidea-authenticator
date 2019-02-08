@@ -43,6 +43,7 @@ import android.support.v7.view.ActionMode;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -55,6 +56,11 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
@@ -75,6 +81,8 @@ import java.util.Calendar;
 import java.util.Date;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
+import static it.netknights.piauthenticator.AppConstants.API_KEY;
+import static it.netknights.piauthenticator.AppConstants.APP_ID;
 import static it.netknights.piauthenticator.AppConstants.COUNTER;
 import static it.netknights.piauthenticator.AppConstants.DATA;
 import static it.netknights.piauthenticator.AppConstants.DIGITS;
@@ -85,16 +93,15 @@ import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
 import static it.netknights.piauthenticator.AppConstants.ISSUER;
 import static it.netknights.piauthenticator.AppConstants.LABEL;
-import static it.netknights.piauthenticator.AppConstants.NONCE;
 import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_CHANNEL_ID;
 import static it.netknights.piauthenticator.AppConstants.PERIOD;
 import static it.netknights.piauthenticator.AppConstants.PERSISTENT;
 import static it.netknights.piauthenticator.AppConstants.PIN;
+import static it.netknights.piauthenticator.AppConstants.PROJECT_ID;
+import static it.netknights.piauthenticator.AppConstants.PROJECT_NUMBER;
 import static it.netknights.piauthenticator.AppConstants.PUSH;
 import static it.netknights.piauthenticator.AppConstants.ROLLOUT_URL;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
-import static it.netknights.piauthenticator.AppConstants.SERIAL;
-import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.AppConstants.TTL;
@@ -121,11 +128,17 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Intent push = getIntent();
-        if (push == null) {
-            logprint("NO INTENT FOUND ONCREATE");
+        Intent intent = getIntent();
+        if (intent == null) {
+            logprint("NO INTENT FOUND ON CREATE");
+        } else {
+            String push_data = intent.getStringExtra(DATA);
+            if (push_data != null)
+                logprint(push_data.toString());
+            if (intent.getExtras() != null)
+                logprint(intent.getExtras().toString());
         }
-        String push_data = push.getStringExtra(DATA);
+
         //PRNGFixes.apply();
         util = new Util(this);
         setupViews();
@@ -135,22 +148,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         startTimerThread();
 
         checkForExpiredTokens();
-
-        if (!isNotificationChannelEnabled(this, NOTIFICATION_CHANNEL_ID)) {
-            createNotificationChannel();
-        }
+        createNotificationChannel();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             paintStatusbar();
         }
-
-        if (push_data != null) {
-            logprint("push data:" + push_data);
-        } else {
-            logprint("push data is empty");
-        }
-
-        //Log.e("TOKEN MAINACTIVITY", " " + FirebaseInstanceId.getInstance().getToken());
     }
 
     private void checkForExpiredTokens() {
@@ -174,12 +176,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             builder.setTitle("Pushtoken rollout expired")
                     .setMessage("The rollout time expired for the following token:\n\n" +
                             sb.toString())
-            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dialog.cancel();
-                }
-            });
+                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.cancel();
+                        }
+                    });
             builder.show();
         }
     }
@@ -192,11 +194,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             @Override
             public void onClick(View v) {
                 //scanQR();
+
                 // TODO for faster testing purposes skip the qr scan
                 String serial = "PIPU000FSA" + String.valueOf(Math.round(Math.random() * 100));
                 String url = "https://sdffffff.free.beeceptor.com";
                 //String url = "";
-                String s = "otpauth://pipush/" + serial + "?url=" + url + "&ttl=1";
+                String s = "otpauth://pipush/" + serial + "?url=" + url + "&ttl=120" +
+                        "&projectid=test-d3861&appid=1:0123456789012:android:0123456789abcdef&apikey=AIzaSyBeFSjwJ8aEcHQaj4-isT-sLAX6lmSrvbb&projectnumber=850240559902";
                 Token t = null;
                 try {
                     t = makeTokenFromURI(s);
@@ -211,7 +215,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 } else {
                     logprint("ERROR MAKETOKENFROMURI returned null");
                 }
+
             }
+
         });
     }
 
@@ -565,6 +571,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
      * @throws Exception Invalid Protocol / Not HOTP or TOTP type of token
      */
     public Token makeTokenFromURI(String content) throws Exception {
+        logprint("QR CONTENT: " + content);
         content = content.replaceFirst("otpauth", "http");
         Uri uri = Uri.parse(content);
         URL url = new URL(content);
@@ -596,11 +603,25 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         if (issuer != null && !label.startsWith(issuer)) {
             label = issuer + ": " + label;
         }
+
+        // --------------------- PUSH ---------------------
         // https://github.com/privacyidea/privacyidea/wiki/concept:-PushToken
-        // if its a push token, it is returned and the push-rollout is initiated
+        // if its a push token, it is returned early and the push-rollout (+firebase init) is initiated
         if (tokentype == AppConstants.TokenType.PUSH) {
-            // TODO start "loading screen"
-            //startLoadingScreen();
+
+            // Check for FirebaseInit info
+            if (uri.getQueryParameter(PROJECT_ID) != null) {
+                String projID = uri.getQueryParameter(PROJECT_ID);
+                String appID = uri.getQueryParameter(APP_ID);
+                String api_key = uri.getQueryParameter(API_KEY);
+                String projNumber = uri.getQueryParameter(PROJECT_NUMBER);
+                logprint("projID: " + projID);
+                logprint("appID: " + appID);
+                logprint("API Key: " + api_key);
+                logprint("Proj Number: " + projNumber);
+                AsyncTask<Void, Integer, Boolean> FirebaseInit = new FirebaseInitTask(projID, appID, api_key, projNumber, this);
+                FirebaseInit.execute();
+            }
 
             Token token = new Token(serial, label);
             token.rollout_url = uri.getQueryParameter(ROLLOUT_URL);
@@ -613,14 +634,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             }
             Calendar now = Calendar.getInstance();
             now.add(Calendar.MINUTE, ttl);
-            Date maxTime = now.getTime();
-            token.rollout_expiration = maxTime;
-            AsyncTask<Void, Integer, Boolean> pushrollout = new PushRollout(token, this);
+            token.rollout_expiration = now.getTime();
+            AsyncTask<Void, Integer, Boolean> pushrollout = new PushRolloutTask(token, this);
 
             pushrollout.execute();
             return token;
         }
-
+        // --------------------- END PUSH ---------------------
         // SECRET
         String secret_string = uri.getQueryParameter(SECRET);
         byte[] secret = new Base32().decode(secret_string.toUpperCase());
@@ -659,7 +679,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         if (uri.getBooleanQueryParameter(PERSISTENT, false)) {
             tmp.setUndeletable(true);
         }
+        // tap to show is currently not used
+        if (uri.getBooleanQueryParameter(TAPTOSHOW, false)) {
+            tmp.setWithTapToShow(true);
+        }
 
+        // --------------------- 2 STEP ---------------------
         // if at least one parameter for 2step is set do 2step init
         if (uri.getQueryParameter(TWOSTEP_SALT) != null ||
                 uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null ||
@@ -673,13 +698,15 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             if (uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null) {
                 iterations = Integer.parseInt(uri.getQueryParameter(TWOSTEP_DIFFICULTY));
             }
-            // comes in bytes, needs to be converted to bit as parameter for pbkdf2
+            // comes in bytes, needs to be converted to bit as parameter for PBKDF2
             int output_size = 160;
 
             if (uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
                 output_size = Integer.parseInt(uri.getQueryParameter(TWOSTEP_OUTPUT)) * 8;
             } else {
                 // if the output size is not specified, it is derived from the OTP algorithm
+                // Check here for HMACSHA... because when setting the tokens algorithm above,
+                // it is converted to the Hmac
                 if (tmp.getAlgorithm().equals(HMACSHA1)) {
                     // do nothing default is already 20bytes = 160bit
                 } else if (tmp.getAlgorithm().equals(HMACSHA256)) {
@@ -689,10 +716,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 }
             }
             return do2StepInit(tmp, phonepartlength, iterations, output_size);
-        }
-        // tap to show is currently not used
-        if (uri.getBooleanQueryParameter(TAPTOSHOW, false)) {
-            tmp.setWithTapToShow(true);
         }
         return tmp;
     }
@@ -938,31 +961,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     }
 
-    public boolean isNotificationChannelEnabled(Context context, String channelId) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (!TextUtils.isEmpty(channelId)) {
-                NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                NotificationChannel channel = null;
-                if (manager != null) {
-                    channel = manager.getNotificationChannel(channelId);
-                }
-                if (channel != null) {
-                    return channel.getImportance() != NotificationManager.IMPORTANCE_NONE;
-                }
-            }
-            return false;
-        } else {
-            return NotificationManagerCompat.from(context).areNotificationsEnabled();
-        }
-    }
-
     private void createNotificationChannel() {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = "privacyIDEAPush";
             String description = "push for privacyIDEA";
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            int importance = NotificationManager.IMPORTANCE_HIGH;
             NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, name, importance);
             channel.setDescription(description);
             // Register the channel with the system; you can't change the importance
