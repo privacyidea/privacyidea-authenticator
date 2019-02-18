@@ -42,6 +42,7 @@ public class Token {
     private boolean persistent = false;
     private String serial;
 
+    String enrollment_credential;
     boolean rollout_finished = true;
     Date rollout_expiration;
     String rollout_url;

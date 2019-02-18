@@ -28,6 +28,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -86,6 +87,7 @@ import static it.netknights.piauthenticator.AppConstants.APP_ID;
 import static it.netknights.piauthenticator.AppConstants.COUNTER;
 import static it.netknights.piauthenticator.AppConstants.DATA;
 import static it.netknights.piauthenticator.AppConstants.DIGITS;
+import static it.netknights.piauthenticator.AppConstants.FB_TOKEN;
 import static it.netknights.piauthenticator.AppConstants.HMACSHA1;
 import static it.netknights.piauthenticator.AppConstants.HMACSHA256;
 import static it.netknights.piauthenticator.AppConstants.HMACSHA512;
@@ -127,6 +129,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        util = new Util(this);
+        util.initFirebase();
 
         Intent intent = getIntent();
         if (intent == null) {
@@ -134,13 +138,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         } else {
             String push_data = intent.getStringExtra(DATA);
             if (push_data != null)
-                logprint(push_data.toString());
+                logprint(push_data);
             if (intent.getExtras() != null)
                 logprint(intent.getExtras().toString());
         }
 
         //PRNGFixes.apply();
-        util = new Util(this);
+
         setupViews();
         setupFab();
 
@@ -198,24 +202,17 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 // TODO for faster testing purposes skip the qr scan
                 String serial = "PIPU000FSA" + String.valueOf(Math.round(Math.random() * 100));
                 String url = "https://sdffffff.free.beeceptor.com";
-                //String url = "";
-                String s = "otpauth://pipush/" + serial + "?url=" + url + "&ttl=120" +
-                        "&projectid=test-d3861&appid=1:0123456789012:android:0123456789abcdef&apikey=AIzaSyBeFSjwJ8aEcHQaj4-isT-sLAX6lmSrvbb&projectnumber=850240559902";
-                Token t = null;
+
+                String s2 = "otpauth://pipush/PIPU0012F668?url=https%3A//sdffffff.free.beeceptor.com&ttl=10&issuer=privacyIDEA&projectid=test-d3861" +
+                        "&apikey=AIzaSyBeFSjwJ8aEcHQaj4-iqT-sLAX6lmSrvbo" +
+                        "&appid=1%3A850240559902%3Aandroid%3A812605f9a33242a9&enrollment_credential=9311ee50678983c0f29d3d843f86e39405e2b427" +
+                        "&projectnumber=850240559902";
                 try {
-                    t = makeTokenFromURI(s);
+                    AsyncTask<String, Integer, Boolean> tokenCreation = new TokenCreationTask(MainActivity.this, MainActivity.this.util);
+                    tokenCreation.execute(s2);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                if (t != null) {
-                    tokenlist.add(t);
-                    //   Toast.makeText(this, getString(R.string.toast_token_added_for) + " " + t.getLabel(), Toast.LENGTH_SHORT).show();
-                    tokenlistadapter.refreshOTPs();
-                    saveTokenlist();
-                } else {
-                    logprint("ERROR MAKETOKENFROMURI returned null");
-                }
-
             }
 
         });
@@ -263,8 +260,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             }
         }
         int pos = tokenlist.indexOf(currToken);
-        tokenlist.remove(pos);
-        if (tokenlistadapter.getPbs().size() >= pos) {
+
+        if (tokenlist.size() >= pos && pos >= 0) {
+            tokenlist.remove(pos);
+        }
+
+        if (tokenlistadapter.getPbs().size() >= pos && pos >= 0) {
             tokenlistadapter.getPbs().remove(pos);
         }
         tokenlistadapter.notifyDataSetChanged();
@@ -326,6 +327,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
         if (id == R.id.print_keys) {
             printKeystore();
+            FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(MainActivity.this, new OnSuccessListener<InstanceIdResult>() {
+                @Override
+                public void onSuccess(InstanceIdResult instanceIdResult) {
+                    logprint("TOKEN: " + instanceIdResult.getToken());
+                }
+            });
         }
 
         return super.onOptionsItemSelected(item);
@@ -340,11 +347,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 Toast.makeText(this, R.string.toast_cancelled, Toast.LENGTH_SHORT).show();
             } else {
                 try {
-                    Token t = makeTokenFromURI(result.getContents());
-                    tokenlist.add(t);
-                    //   Toast.makeText(this, getString(R.string.toast_token_added_for) + " " + t.getLabel(), Toast.LENGTH_SHORT).show();
-                    tokenlistadapter.refreshOTPs();
-                    saveTokenlist();
+                    AsyncTask<String, Integer, Boolean> tokenCreation = new TokenCreationTask(this, this.util);
+                    tokenCreation.execute(result.getContents());
                 } catch (Exception e) {
                     Toast.makeText(this, R.string.toast_invalid_qr, Toast.LENGTH_SHORT).show();
                     e.printStackTrace();
@@ -360,8 +364,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             } else {
                 Toast.makeText(this, R.string.toast_cancelled, Toast.LENGTH_SHORT).show();
             }
-        } /*else if (requestCode == INTENT_ABOUT) {
-        }*/ else {
+        } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
     }
@@ -563,187 +566,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         saveTokenlist();
     }
 
-    /**
-     * Creates a token with the parameters passed in KeyURI format
-     *
-     * @param content The URI String
-     * @return Token Object
-     * @throws Exception Invalid Protocol / Not HOTP or TOTP type of token
-     */
-    public Token makeTokenFromURI(String content) throws Exception {
-        logprint("QR CONTENT: " + content);
-        content = content.replaceFirst("otpauth", "http");
-        Uri uri = Uri.parse(content);
-        URL url = new URL(content);
-
-        if (!url.getProtocol().equals("http")) {
-            throw new Exception("Invalid Protocol");
-        }
-        if (!url.getHost().equals(TOTP)) {
-            if (!url.getHost().equals(HOTP)) {
-                if (!url.getHost().equals(PUSH)) {
-                    throw new Exception("No TOTP, HOTP or Push Token"); //TODO handle this without crash
-                }
-            }
-        }
-        // TOKEN TYPE
-        String type = url.getHost();
-        AppConstants.TokenType tokentype = AppConstants.TokenType.HOTP;
-        if (type.equals(TOTP)) {
-            tokentype = AppConstants.TokenType.TOTP;
-        } else if (type.equals(PUSH)) {
-            tokentype = AppConstants.TokenType.PUSH;
-        }
-
-        // LABEL, SERIAL
-        String label = uri.getPath().substring(1);
-
-        String serial = label;
-        String issuer = uri.getQueryParameter(ISSUER);
-        if (issuer != null && !label.startsWith(issuer)) {
-            label = issuer + ": " + label;
-        }
-
-        // --------------------- PUSH ---------------------
-        // https://github.com/privacyidea/privacyidea/wiki/concept:-PushToken
-        // if its a push token, it is returned early and the push-rollout (+firebase init) is initiated
-        if (tokentype == AppConstants.TokenType.PUSH) {
-
-            // Check for FirebaseInit info
-            if (uri.getQueryParameter(PROJECT_ID) != null) {
-                String projID = uri.getQueryParameter(PROJECT_ID);
-                String appID = uri.getQueryParameter(APP_ID);
-                String api_key = uri.getQueryParameter(API_KEY);
-                String projNumber = uri.getQueryParameter(PROJECT_NUMBER);
-                logprint("projID: " + projID);
-                logprint("appID: " + appID);
-                logprint("API Key: " + api_key);
-                logprint("Proj Number: " + projNumber);
-                AsyncTask<Void, Integer, Boolean> FirebaseInit = new FirebaseInitTask(projID, appID, api_key, projNumber, this);
-                FirebaseInit.execute();
-            }
-
-            Token token = new Token(serial, label);
-            token.rollout_url = uri.getQueryParameter(ROLLOUT_URL);
-            token.rollout_finished = false;
-
-            // Add the TTL to the token
-            int ttl = 10;   // default
-            if (uri.getQueryParameter(TTL) != null) {
-                ttl = Integer.parseInt(uri.getQueryParameter(TTL));
-            }
-            Calendar now = Calendar.getInstance();
-            now.add(Calendar.MINUTE, ttl);
-            token.rollout_expiration = now.getTime();
-            AsyncTask<Void, Integer, Boolean> pushrollout = new PushRolloutTask(token, this);
-
-            pushrollout.execute();
-            return token;
-        }
-        // --------------------- END PUSH ---------------------
-        // SECRET
-        String secret_string = uri.getQueryParameter(SECRET);
-        byte[] secret = new Base32().decode(secret_string.toUpperCase());
-
-        // DIGITS
-        int digits = 6;
-        if (uri.getQueryParameter(DIGITS) != null) {
-            digits = Integer.parseInt(uri.getQueryParameter(DIGITS));
-        }
-
-        // CREATE BASE TOKEN (HOTP/TOTP)
-        Token tmp = new Token(secret, serial, label, tokentype, digits);
-
-        // ADD ADDITIONAL INFORMATION TO IT
-        if (tokentype == AppConstants.TokenType.TOTP) {
-            if (uri.getQueryParameter(PERIOD) != null) {
-                tmp.setPeriod(Integer.parseInt(uri.getQueryParameter(PERIOD)));
-            } else {
-                tmp.setPeriod(30);
-            }
-        }
-        if (tokentype == AppConstants.TokenType.HOTP) {
-            if (uri.getQueryParameter(COUNTER) != null) {
-                tmp.setCounter(Integer.parseInt(uri.getQueryParameter(COUNTER)));
-            } else {
-                tmp.setCounter(1);
-            }
-        }
-        if (uri.getQueryParameter(ALGORITHM) != null) {
-            tmp.setAlgorithm(uri.getQueryParameter(ALGORITHM).toUpperCase());
-        }
-        if (uri.getBooleanQueryParameter(PIN, false)) {
-            tmp.setWithPIN(true);
-            tmp.setLocked(true);
-        }
-        if (uri.getBooleanQueryParameter(PERSISTENT, false)) {
-            tmp.setUndeletable(true);
-        }
-        // tap to show is currently not used
-        if (uri.getBooleanQueryParameter(TAPTOSHOW, false)) {
-            tmp.setWithTapToShow(true);
-        }
-
-        // --------------------- 2 STEP ---------------------
-        // if at least one parameter for 2step is set do 2step init
-        if (uri.getQueryParameter(TWOSTEP_SALT) != null ||
-                uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null ||
-                uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
-
-            int phonepartlength = 10; // default value
-            if (uri.getQueryParameter(TWOSTEP_SALT) != null) {
-                phonepartlength = Integer.parseInt(uri.getQueryParameter(TWOSTEP_SALT));
-            }
-            int iterations = 10000;
-            if (uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null) {
-                iterations = Integer.parseInt(uri.getQueryParameter(TWOSTEP_DIFFICULTY));
-            }
-            // comes in bytes, needs to be converted to bit as parameter for PBKDF2
-            int output_size = 160;
-
-            if (uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
-                output_size = Integer.parseInt(uri.getQueryParameter(TWOSTEP_OUTPUT)) * 8;
-            } else {
-                // if the output size is not specified, it is derived from the OTP algorithm
-                // Check here for HMACSHA... because when setting the tokens algorithm above,
-                // it is converted to the Hmac
-                if (tmp.getAlgorithm().equals(HMACSHA1)) {
-                    // do nothing default is already 20bytes = 160bit
-                } else if (tmp.getAlgorithm().equals(HMACSHA256)) {
-                    output_size = 256;
-                } else if (tmp.getAlgorithm().equals(HMACSHA512)) {
-                    output_size = 512;
-                }
-            }
-            return do2StepInit(tmp, phonepartlength, iterations, output_size);
-        }
-        return tmp;
-    }
-
-    /**
-     * This method enhances the "usual" rollout process by combining the secret in the scanned QRCode
-     * with a randomly generated salt on the phone. The Phonepart has to be entered into
-     * PrivacyIDEA, then the first OTP values can be compared to ensure the rollout was successful
-     *
-     * @param token           The token after the normal rollout process, secret is only the QR-part
-     * @param phonepartlength Number of bytes which shall be generated by the phone (default is 10)
-     * @return A token with the combined secret (phone- and QR-part)
-     */
-    private Token do2StepInit(final Token token, final int phonepartlength,
-                              final int iterations, final int output_size) {
-        AsyncTask<Void, Void, Boolean> asyncTask = new SecretGenerator(util, token, phonepartlength, iterations, output_size, new SecretGenerator.Response() {
-            @Override
-            public void processFinished(Token t) {
-                tokenlistadapter.refreshOTPs();
-                tokenlistadapter.notifyDataSetChanged();
-                saveTokenlist();
-            }
-        });
-        asyncTask.execute();
-
-        return token;
-    }
-
     private Token makeTokenFromIntent(Intent data) {
         // Push tokens cannot be created manually so this is simplified
         String type = data.getStringExtra(TYPE);
@@ -792,134 +614,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         });
     }
 
-    @Override
-    public Activity getPresentActivity() {
-        return this;
-    }
-
-    static class SecretGenerator extends AsyncTask<Void, Void, Boolean> {
-
-        private final Token token;
-        private Util util;
-        private ProgressDialog pd;
-        private int iterations;
-        private int output_size_bit;
-        Response delegate;
-        byte[] phonepartBytes;
-
-        public interface Response {
-            void processFinished(Token t);
-        }
-
-        SecretGenerator(Util util, Token t, int phonepartlength, int iterations, int output_size, Response delegate) {
-            this.util = util;
-            this.token = t;
-            this.iterations = iterations;
-            this.output_size_bit = output_size;
-            this.delegate = delegate;
-            this.phonepartBytes = new byte[phonepartlength];
-            //Log.d(Util.TAG, "ppl: " + phonepartlength + ", it: " + iterations + " ,outs: " + output_size);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            pd = new ProgressDialog(util.getmActivity());
-            pd.setMessage("Please wait while the secret is generated");
-            pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-            pd.setCancelable(false);
-            pd.setIndeterminate(true);
-            pd.show();
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            // 1. Generate random bytes for the phonepartBytes
-            SecureRandom sr = new SecureRandom(); //Seeded by PRNGFixes
-            sr.nextBytes(phonepartBytes);
-
-            String server_secret_hex = byteArrayToHexString(token.getSecret());
-            char[] ch = server_secret_hex.toCharArray();
-            byte[] completesecretBytes = new byte[(output_size_bit / 8)];
-            // 2. PBKDF2 with the specified parameters
-            try {
-                completesecretBytes = OTPGenerator.generatePBKDFKey(ch, phonepartBytes, iterations, output_size_bit);
-            } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-                e.printStackTrace();
-            }
-            token.setSecret(completesecretBytes);
-            return true;
-        }
-
-        @Override
-        protected void onPostExecute(final Boolean success) {
-            // 4. Display the phone-part of the secret and first OTP to verify
-            pd.dismiss();
-            AlertDialog.Builder builder = new AlertDialog.Builder(util.getmActivity());
-            builder.setCancelable(false);
-            builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dialog.cancel();
-                }
-            });
-            builder.setTitle("Phonepart");
-            builder.setMessage(buildResultMessage());
-            final AlertDialog alert = builder.create();
-            MainActivity.changeDialogFontColor(alert);
-            alert.show();
-            delegate.processFinished(token);
-        }
-
-        private String buildResultMessage() {
-            /* 3. Build the result to show to the user
-            We use the first 4 characters of the sha1 hash of the client(phone) part as checksum.
-            client_part being the binary random value, that the client(phone) generated:
-            b32encode( sha1(client_part)[0:3] + client_part)*/
-            String result;
-            byte[] digest = new byte[20];
-            try {
-                MessageDigest md = MessageDigest.getInstance("SHA-1");
-                digest = md.digest(phonepartBytes);
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            }
-
-            byte[] checksumBytes = new byte[4];
-            System.arraycopy(digest, 0, checksumBytes, 0, 4);
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            try {
-                outputStream.write(checksumBytes);
-                outputStream.write(phonepartBytes);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            byte completeOutputBytes[] = outputStream.toByteArray();
-            result = insertPeriodically(new Base32().encodeAsString(completeOutputBytes), " ", 4);
-            result = result.replaceAll("=", "");
-            return result;
-        }
-
-        @Override
-        protected void onCancelled() {
-        }
-
-        String insertPeriodically(String text, String insert, int period) {
-            StringBuilder builder = new StringBuilder(text.length() + insert.length() * (text.length() / period) + 1);
-            int index = 0;
-            String prefix = "";
-            while (index < text.length()) {
-                builder.append(prefix);
-                prefix = insert;
-                builder.append(text.substring(index,
-                        Math.min(index + period, text.length())));
-                index += period;
-            }
-            return builder.toString();
-        }
-    }
-
     public void saveTokenlist() {
         Util.saveTokens(this, tokenlist);
         //Toast.makeText(this, "Tokens saved", Toast.LENGTH_SHORT).show();
@@ -928,6 +622,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private void scanQR() {
         try {
             IntentIntegrator ii = new IntentIntegrator(this);
+            ii.setBeepEnabled(false);
             ii.initiateScan();
         } catch (Exception e) {
             if (this.getCurrentFocus() != null) {
@@ -979,8 +674,23 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
     }
 
+    // ----------------- ActivityInterface implementation -----------------
+    @Override
+    public Activity getPresentActivity() {
+        return this;
+    }
+
+    @Override
+    public void addToken(Token t) {
+        if (t == null) return;
+        this.tokenlist.add(t);
+        saveTokenlist();
+        this.tokenlistadapter.notifyDataSetChanged();
+    }
 }
 
 interface ActivityInterface {
     public Activity getPresentActivity();
+
+    public void addToken(Token t);
 }

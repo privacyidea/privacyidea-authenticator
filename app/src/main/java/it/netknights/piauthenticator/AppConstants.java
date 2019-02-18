@@ -18,8 +18,11 @@ public class AppConstants {
     static final int KEY_LENGTH = 16;
     static final int IV_LENGTH = 12;
 
+    // ----- FILE NAMES -----
     static final String DATAFILE = "data.dat";
     static final String KEYFILE = "key.key";
+    static final String FB_CONFIG_FILE = "fbconf.dat";
+    // -----------------------
 
     static final String DIGITS = "digits";
     static final String PERIOD = "period";
@@ -66,6 +69,9 @@ public class AppConstants {
     static final String APP_ID = "appid";
     static final String API_KEY = "apikey";
     static final String PROJECT_NUMBER = "projectnumber";
+    static final String FB_TOKEN = "fb_token";
+    static final String ENROLLMENT_CRED = "enrollment_credential";
+
     // TODO
     static final String AUTHENTICATION_ENDPOINT_URL = "url";
 
@@ -92,8 +98,14 @@ public class AppConstants {
     static final int PRO_STATUS_RESPONSE_NO_KEY = 1011;
     static final int PRO_STATUS_MALFORMED_URL = 1012;
     static final int PRO_STATUS_BAD_BASE64 = 1013;
+    static final int PRO_STATUS_UNKNOWN_HOST = 1014;
 
     static final int PA_INVALID_SIGNATURE = 2001;
     static final int PA_SIGNING_FAILURE = 2002;
+
+    static final int STATUS_DO_FIREBASE_INIT = 3001;
+    static final int STATUS_DO_PUSH_ROLLOUT = 3002;
+    static final int STATUS_DO_2STEP_ROLLOUT = 3003;
+
 
 }

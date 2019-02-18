@@ -26,6 +26,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
@@ -46,6 +47,7 @@ import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NO_
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_1;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_2;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_3;
+import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_UNKNOWN_HOST;
 import static it.netknights.piauthenticator.AppConstants.READ_TIMEOUT;
 import static it.netknights.piauthenticator.Util.logprint;
 
@@ -66,6 +68,8 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
     @Override
     protected void onPreExecute() {
         super.onPreExecute();
+        logprint("Starting push rollout...");
+        logprint("rollout url: "+rollout_url);
         View view_pro_progress = activityInterface.getPresentActivity().getLayoutInflater().inflate(R.layout.pushrollout_loading, null);
         AlertDialog.Builder dialog_builder = new AlertDialog.Builder(activityInterface.getPresentActivity());
         dialog_builder.setView(view_pro_progress);
@@ -84,7 +88,6 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
             return false;
         }
 
-        logprint("PUSH ROLLOUT STARTED");
         // 1. Generate a new keypair (RSA 4096bit), the private key is stored with the serial as alias
         PublicKey pubkey = null;
         try {
@@ -145,7 +148,10 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
             os = con.getOutputStream();
         } catch (IOException e) {
             e.printStackTrace();
+            publishProgress(PRO_STATUS_UNKNOWN_HOST);
+            return false;
         }
+
         BufferedWriter writer;
         assert os != null;
         writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
@@ -157,7 +163,7 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
             logprint("Serial: " + serial);
             logprint("Token: " + fb_token);
             logprint("Pubkey format: " + pubkey.getFormat()); */
-        logprint("Pubkey: " + key);
+        logprint("pubkey: " + key);
         try {
             writer.write("serial=" + serial);
             writer.write("&fbtoken=" + fb_token);
@@ -218,8 +224,7 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
                     e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
-                }
-                catch (IllegalArgumentException e) {
+                } catch (IllegalArgumentException e) {
                     logprint("BAD BASE64");
                     e.printStackTrace();
                     publishProgress(PRO_STATUS_BAD_BASE64);
@@ -238,13 +243,13 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
         TextView tv_pro_status;
 
         if (rollout_status_dialog == null) {
-            logprint("cant find status dialog");
+            logprint("cannot find status dialog");
             return;
         } else {
             tv_pro_status = rollout_status_dialog.findViewById(R.id.tv_status);
         }
         if (tv_pro_status == null) {
-            logprint("cant find status text view");
+            logprint("cannot find status text view");
             return;
         }
 
@@ -284,9 +289,9 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
                 break;
             }
             case PRO_STATUS_MALFORMED_URL: {
-                logprint("REGISTRATION TIME EXPIRED");
+                logprint("URL MALFORMED");
                 rollout_status_dialog.cancel();
-                showFailureDialog("Rollout URL is valid:\n"+rollout_url+"\nToken will be removed.");
+                showFailureDialog("Rollout URL is invalid:\n" + rollout_url + "\nToken will be removed.");
                 MainActivity main = (MainActivity) activityInterface.getPresentActivity();
                 main.removeToken(token);
                 break;
@@ -295,6 +300,14 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
                 logprint("KEY NOT IN BASE64 FORMAT");
                 rollout_status_dialog.cancel();
                 showFailureDialog("The key from the server was not in the correct format!");
+                break;
+            }
+            case PRO_STATUS_UNKNOWN_HOST: {
+                logprint("UNKNOWN HOST");
+                rollout_status_dialog.cancel();
+                showFailureDialog("The rollout URL:\n"
+                        + rollout_url
+                        + "\ncannot be resolved!");
                 break;
             }
             default:
@@ -319,5 +332,6 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
     @Override
     protected void onPostExecute(Boolean aBoolean) {
         super.onPostExecute(aBoolean);
+        activityInterface.addToken(token);
     }
 }

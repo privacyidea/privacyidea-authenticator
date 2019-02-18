@@ -23,6 +23,7 @@ package it.netknights.piauthenticator;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.AsyncTask;
 import android.util.Base64;
 import android.util.Log;
 
@@ -57,15 +58,20 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
+import static it.netknights.piauthenticator.AppConstants.API_KEY;
+import static it.netknights.piauthenticator.AppConstants.APP_ID;
 import static it.netknights.piauthenticator.AppConstants.COUNTER;
 import static it.netknights.piauthenticator.AppConstants.DATAFILE;
 import static it.netknights.piauthenticator.AppConstants.DIGITS;
+import static it.netknights.piauthenticator.AppConstants.FB_CONFIG_FILE;
 import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.KEYFILE;
 import static it.netknights.piauthenticator.AppConstants.LABEL;
 import static it.netknights.piauthenticator.AppConstants.PERIOD;
 import static it.netknights.piauthenticator.AppConstants.PERSISTENT;
 import static it.netknights.piauthenticator.AppConstants.PIN;
+import static it.netknights.piauthenticator.AppConstants.PROJECT_ID;
+import static it.netknights.piauthenticator.AppConstants.PROJECT_NUMBER;
 import static it.netknights.piauthenticator.AppConstants.PUBKEYFILE;
 import static it.netknights.piauthenticator.AppConstants.ROLLOUT_EXPIRATION;
 import static it.netknights.piauthenticator.AppConstants.ROLLOUT_FINISHED;
@@ -80,15 +86,12 @@ import static it.netknights.piauthenticator.AppConstants.WITHPIN;
 
 public class Util {
 
-    private Activity mActivity;
+    ActivityInterface activityInterface;
 
-    Util(MainActivity mainActivity) {
-        mActivity = mainActivity;
+    Util(ActivityInterface activityInterface) {
+        this.activityInterface = activityInterface;
     }
 
-    Activity getmActivity() {
-        return mActivity;
-    }
 
     /**
      * This Method loads the encrypted saved tokens, in the progress the Secret Key is unwrapped
@@ -292,7 +295,7 @@ public class Util {
         str = str.replace(",", "");
         String[] tokens = str.split(" |=");
         Map<String, String> map = new HashMap<>();
-        for (int i=0; i<tokens.length-1; ) map.put(tokens[i++], tokens[i++]);
+        for (int i = 0; i < tokens.length - 1; ) map.put(tokens[i++], tokens[i++]);
         return map;
     }
 
@@ -356,13 +359,13 @@ public class Util {
             }
             return bytes.toByteArray();
         } catch (FileNotFoundException e) {
-            logprint("File: " + file.getAbsolutePath() + "not found");
+            logprint("File: " + file.getAbsolutePath() + " not found");
             return null;
         }
     }
 
     public static void logprint(String msg) {
-        if(msg == null)
+        if (msg == null)
             return;
         Log.e("PI-Authenticator", msg);
     }
@@ -372,7 +375,7 @@ public class Util {
         PublicKey pub;
         for (Token t : tokenlist) {
             if (t.getType() == TokenType.PUSH) {
-                pub = getPIPubkey(mActivity.getBaseContext(), t.getSerial());
+                pub = getPIPubkey(activityInterface.getPresentActivity().getBaseContext(), t.getSerial());
                 if (pub != null)
                     logprint(t.getSerial() + " : " + pub.getFormat());
             }
@@ -380,7 +383,7 @@ public class Util {
     }
 
     public void removePubkeyFor(String serial) {
-        File f = new File(mActivity.getFilesDir() + "/" + serial + "_" + PUBKEYFILE);
+        File f = new File(activityInterface.getPresentActivity().getFilesDir() + "/" + serial + "_" + PUBKEYFILE);
         boolean res = false;
         if (f.exists()) {
             res = f.delete();
@@ -392,6 +395,72 @@ public class Util {
         } else {
             logprint("pubkey file of " + serial + " was not found!");
         }
+    }
+
+    void storeFirebaseConfig(String projID, String appID, String api_key, String projNumber) {
+        logprint("Storing Firebase config...");
+        JSONObject o = new JSONObject();
+        try {
+            o.put(PROJECT_ID, projID);
+            o.put(APP_ID, appID);
+            o.put(API_KEY, api_key);
+            o.put(PROJECT_NUMBER, projNumber);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        byte[] data = o.toString().getBytes();
+        SecretKey key = null;
+        try {
+            key = EncryptionHelper.loadOrGenerateKeys(activityInterface.getPresentActivity(),
+                    new File(activityInterface.getPresentActivity().getFilesDir() + "/" + KEYFILE));
+            data = EncryptionHelper.encrypt(key, data);
+            writeFile(new File(activityInterface.getPresentActivity().getFilesDir() + "/" + FB_CONFIG_FILE), data);
+        } catch (GeneralSecurityException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        logprint("Firebase config stored.");
+    }
+
+    /**
+     * Load the Firebase config and start the manual init
+     *
+     * @return true if Firebase could be initialized, false if no config was found
+     */
+    boolean initFirebase(){
+        logprint("Loading Firebase config...");
+        try {
+            byte[] data = readFile(new File(activityInterface.getPresentActivity().getFilesDir() + "/" + FB_CONFIG_FILE));
+            if(data == null){
+                logprint("Firebase config not found!");
+                return false;
+            }
+
+            SecretKey key = EncryptionHelper.loadOrGenerateKeys(activityInterface.getPresentActivity(),
+                    new File(activityInterface.getPresentActivity().getFilesDir() + "/" + KEYFILE));
+            data = EncryptionHelper.decrypt(key, data);
+
+            JSONObject o = new JSONObject(new String(data));
+            String projID = o.getString(PROJECT_ID);
+            String appID = o.getString(APP_ID);
+            String api_key = o.getString(API_KEY);
+            String projNumber = o.getString(PROJECT_NUMBER);
+
+            if(projID == null || appID == null || api_key == null || projNumber == null){
+                logprint("Missing paramter from config!");
+                return false;
+            }
+            logprint("Firebase config loaded.");
+            new FirebaseInitTask(projID, appID, api_key, projNumber, activityInterface).execute();
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        return true;
     }
 
 }

@@ -41,6 +41,7 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Calendar;
 import java.util.Enumeration;
@@ -84,9 +85,20 @@ public class SecretKeyWrapper {
 
         // Even if we just generated the key, always read it back to ensure we
         // can read it successfully.
-        final KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(
-                alias, null);
-        mPair = new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            //Following code is for API 28+
+            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, null);
+            Certificate certificate = keyStore.getCertificate(alias);
+            KeyStore.PrivateKeyEntry entry = new KeyStore.PrivateKeyEntry(privateKey, new Certificate[]{certificate});
+            mPair = new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey());
+        } else {
+            final KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(alias, null);
+            mPair = new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey());
+        }
+
+        /*final PrivateKey privateKey = (PrivateKey) keyStore.getKey("alias", null);
+        final PublicKey publicKey = privateKey != null ? keyStore.getCertificate("alias").getPublicKey() : null;
+        mPair = new KeyPair(publicKey, privateKey);*/
     }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
@@ -164,10 +176,15 @@ public class SecretKeyWrapper {
                 .build();
         gen.initialize(spec);
         gen.generateKeyPair();
-        // read the key from the keystore to ensure it was successful
-        final KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(
-                alias, null);
-        return entry.getCertificate().getPublicKey();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            //Following code is for API 28+
+            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, null);
+            Certificate certificate = keyStore.getCertificate(alias);
+            return new KeyStore.PrivateKeyEntry(privateKey, new Certificate[]{certificate}).getCertificate().getPublicKey();
+        } else {
+            final KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(alias, null);
+            return entry.getCertificate().getPublicKey();
+        }
     }
 
     /**
@@ -183,9 +200,16 @@ public class SecretKeyWrapper {
             // TODO key not found
             return null;
         }
-        final KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(
-                alias, null);
-        return entry.getPrivateKey();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            //Following code is for API 28+
+            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, null);
+            Certificate certificate = keyStore.getCertificate(alias);
+            return new KeyStore.PrivateKeyEntry(privateKey, new Certificate[]{certificate}).getPrivateKey();
+        } else {
+            final KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(alias, null);
+            return entry.getPrivateKey();
+        }
     }
 
     static void printKeystore() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException, UnrecoverableEntryException {
