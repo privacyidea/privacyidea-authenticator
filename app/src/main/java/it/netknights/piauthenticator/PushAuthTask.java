@@ -46,6 +46,12 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> {
     }
 
     @Override
+    protected void onPreExecute() {
+        super.onPreExecute();
+        logprint("Push authentication starting...");
+    }
+
+    @Override
     protected Boolean doInBackground(Void... voids) {
         // 0. Split data
         Map<String, String> map = Util.convert(data);

@@ -50,18 +50,14 @@
         <service
             android:name=".PushAuthService"
             android:icon="@mipmap/ic_launcher"
-            android:label="PushAuthService"
-            >
-        </service>
+            android:label="PushAuthService"></service>
 
         <!-- remove the firebase init -->
         <provider
-        android:name="com.google.firebase.provider.FirebaseInitProvider"
-        android:authorities="${applicationId}.firebaseinitprovider"
-        tools:node="remove"
-        />
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:authorities="${applicationId}.firebaseinitprovider"
+            tools:node="remove" />
     </application>
-
 
 
 </manifest>

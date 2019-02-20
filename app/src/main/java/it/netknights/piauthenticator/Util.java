@@ -48,6 +48,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -260,9 +262,14 @@ public class Util {
 
     public static void storePIPubkey(String key, String serial, Context context) throws GeneralSecurityException, IOException, IllegalArgumentException {
         byte[] keybytes = Base64.decode(key.getBytes(), Base64.DEFAULT);
-        X509EncodedKeySpec X509publicKey = new X509EncodedKeySpec(keybytes);
+       
+        PublicKey pubkey = PKCS1ToSubjectPublicKeyInfo.decodePKCS1PublicKey(keybytes);
+
+        // this code is expecting pkcs8
+        /*X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keybytes);
         KeyFactory kf = KeyFactory.getInstance("RSA");
-        PublicKey pubkey = kf.generatePublic(X509publicKey);
+        PublicKey pubkey = kf.generatePublic(keySpec); */
+
         // encrypt
         SecretKey encryptionKey = EncryptionHelper.loadOrGenerateKeys(context,
                 new File(context.getFilesDir() + "/" + KEYFILE));
@@ -278,7 +285,9 @@ public class Util {
             // decrypt
             SecretKey encryptionKey = EncryptionHelper.loadOrGenerateKeys(context,
                     new File(context.getFilesDir() + "/" + KEYFILE));
-
+            if (encryptedData == null) {
+                return null;
+            }
             byte[] keybytes = EncryptionHelper.decrypt(encryptionKey, encryptedData);
             // build pubkey
             X509EncodedKeySpec X509publicKey = new X509EncodedKeySpec(keybytes);
@@ -428,11 +437,11 @@ public class Util {
      *
      * @return true if Firebase could be initialized, false if no config was found
      */
-    boolean initFirebase(){
+    boolean initFirebase() {
         logprint("Loading Firebase config...");
         try {
             byte[] data = readFile(new File(activityInterface.getPresentActivity().getFilesDir() + "/" + FB_CONFIG_FILE));
-            if(data == null){
+            if (data == null) {
                 logprint("Firebase config not found!");
                 return false;
             }
@@ -447,8 +456,8 @@ public class Util {
             String api_key = o.getString(API_KEY);
             String projNumber = o.getString(PROJECT_NUMBER);
 
-            if(projID == null || appID == null || api_key == null || projNumber == null){
-                logprint("Missing paramter from config!");
+            if (projID == null || appID == null || api_key == null || projNumber == null) {
+                logprint("Missing parameter from config!");
                 return false;
             }
             logprint("Firebase config loaded.");
@@ -458,8 +467,6 @@ public class Util {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-
         return true;
     }
 

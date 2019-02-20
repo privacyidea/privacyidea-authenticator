@@ -21,7 +21,7 @@ public class PushAuthService extends Service {
         logprint("AuthService started");
         String data = intent.getStringExtra(AppConstants.DATA);
         logprint("data: " + data);
-        AsyncTask<Void,Integer,Boolean> pushAuth = new PushAuthTask(data);
+        AsyncTask<Void, Integer, Boolean> pushAuth = new PushAuthTask(data);
         pushAuth.execute();
         return Service.START_REDELIVER_INTENT;
     }

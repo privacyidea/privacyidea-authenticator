@@ -20,6 +20,7 @@ import static android.support.v4.app.NotificationCompat.PRIORITY_DEFAULT;
 import static android.support.v4.app.NotificationCompat.PRIORITY_HIGH;
 import static android.support.v4.app.NotificationCompat.PRIORITY_MAX;
 import static it.netknights.piauthenticator.AppConstants.*;
+import static it.netknights.piauthenticator.Util.logprint;
 
 public class FCMReceiverService extends FirebaseMessagingService {
 
@@ -29,7 +30,7 @@ public class FCMReceiverService extends FirebaseMessagingService {
     public void onMessageReceived(RemoteMessage message) {
         // get the key-value pairs
         Map<String, String> map = message.getData();
-
+        logprint("FCM message received: " + message.toString());
         if (map.containsKey(NOTIFICATION_TEXT)) {
             question = map.get(NOTIFICATION_TEXT);
         } else {
@@ -79,9 +80,8 @@ public class FCMReceiverService extends FirebaseMessagingService {
                 .setStyle(new NotificationCompat.BigTextStyle()
                         .bigText("BIG TEXT"))
                 .setAutoCancel(true)                  // dont remove the notification after tabbing it
-                .setWhen(0)
-                ;
-                //.setContentIntent(pendingIntent)
+                .setWhen(0);
+        //.setContentIntent(pendingIntent)
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
         if (notificationManager != null) {

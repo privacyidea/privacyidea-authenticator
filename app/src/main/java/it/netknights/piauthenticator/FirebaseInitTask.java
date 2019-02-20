@@ -89,7 +89,7 @@ public class FirebaseInitTask extends AsyncTask<Void, Integer, Boolean> {
         FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(activityInterface.getPresentActivity(), new OnSuccessListener<InstanceIdResult>() {
             @Override
             public void onSuccess(InstanceIdResult instanceIdResult) {
-                logprint("TOKEN: " + instanceIdResult.getToken());
+                logprint("Firebase Token: " + instanceIdResult.getToken());
             }
         });
         return true;

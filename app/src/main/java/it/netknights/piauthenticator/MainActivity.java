@@ -70,6 +70,7 @@ import org.apache.commons.codec.binary.Base32;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.security.GeneralSecurityException;
 import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -197,8 +198,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //scanQR();
-
+                scanQR();
+/*
                 // TODO for faster testing purposes skip the qr scan
                 String serial = "PIPU000FSA" + String.valueOf(Math.round(Math.random() * 100));
                 String url = "https://sdffffff.free.beeceptor.com";
@@ -212,7 +213,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                     tokenCreation.execute(s2);
                 } catch (Exception e) {
                     e.printStackTrace();
-                }
+                } */
             }
 
         });
@@ -261,11 +262,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
         int pos = tokenlist.indexOf(currToken);
 
-        if (tokenlist.size() >= pos && pos >= 0) {
+        if (tokenlist.size() >= pos && pos >= 0 && !tokenlist.isEmpty()) {
             tokenlist.remove(pos);
         }
 
-        if (tokenlistadapter.getPbs().size() >= pos && pos >= 0) {
+        if (tokenlistadapter.getPbs().size() >= pos && pos >= 0
+                && !tokenlistadapter.getPbs().isEmpty()) {
             tokenlistadapter.getPbs().remove(pos);
         }
         tokenlistadapter.notifyDataSetChanged();
@@ -330,7 +332,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(MainActivity.this, new OnSuccessListener<InstanceIdResult>() {
                 @Override
                 public void onSuccess(InstanceIdResult instanceIdResult) {
-                    logprint("TOKEN: " + instanceIdResult.getToken());
+                    logprint("Firebase Token: " + instanceIdResult.getToken());
                 }
             });
         }

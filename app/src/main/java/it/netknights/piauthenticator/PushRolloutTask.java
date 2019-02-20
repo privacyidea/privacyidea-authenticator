@@ -69,7 +69,7 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
     protected void onPreExecute() {
         super.onPreExecute();
         logprint("Starting push rollout...");
-        logprint("rollout url: "+rollout_url);
+        logprint("rollout url: " + rollout_url);
         View view_pro_progress = activityInterface.getPresentActivity().getLayoutInflater().inflate(R.layout.pushrollout_loading, null);
         AlertDialog.Builder dialog_builder = new AlertDialog.Builder(activityInterface.getPresentActivity());
         dialog_builder.setView(view_pro_progress);
@@ -165,7 +165,8 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
             logprint("Pubkey format: " + pubkey.getFormat()); */
         logprint("pubkey: " + key);
         try {
-            writer.write("serial=" + serial);
+            writer.write("enrollment_credential=" + token.enrollment_credential);
+            writer.write("&serial=" + serial);
             writer.write("&fbtoken=" + fb_token);
             writer.write("&pubkey=" + key);
             writer.flush();
@@ -205,8 +206,9 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
         if (responsecode == 200) {
             if (!response.equals("")) {
                 try {
-                    JSONObject o = new JSONObject(response.toString());
-                    String in_key = o.getString("status");
+                    JSONObject resp = new JSONObject(response.toString());
+                    JSONObject detail = resp.getJSONObject("detail");
+                    String in_key = detail.getString("public_key");
                     logprint("in_key:" + in_key);
                     Util.storePIPubkey(in_key, serial, activityInterface.getPresentActivity().getBaseContext());
                     token.rollout_finished = true;
