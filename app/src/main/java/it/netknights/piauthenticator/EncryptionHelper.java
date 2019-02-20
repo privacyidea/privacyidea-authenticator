@@ -42,15 +42,16 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import static it.netknights.piauthenticator.AppConstants.*;
 
-public class EncryptionHelper {
+class EncryptionHelper {
 
 
-    public static byte[] encrypt(SecretKey secretKey, IvParameterSpec iv, byte[] plainText)
+    private static byte[] encrypt(SecretKey secretKey, GCMParameterSpec iv, byte[] plainText)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
             InvalidKeyException, UnsupportedEncodingException, BadPaddingException, IllegalBlockSizeException {
         Cipher cipher = Cipher.getInstance(CRYPT_ALGORITHM);
@@ -58,7 +59,7 @@ public class EncryptionHelper {
         return cipher.doFinal(plainText);
     }
 
-    public static byte[] decrypt(SecretKey secretKey, IvParameterSpec iv, byte[] cipherText)
+    private static byte[] decrypt(SecretKey secretKey, GCMParameterSpec iv, byte[] cipherText)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
             InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         Cipher cipher = Cipher.getInstance(CRYPT_ALGORITHM);
@@ -71,7 +72,8 @@ public class EncryptionHelper {
             IllegalBlockSizeException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
         final byte[] iv = new byte[AppConstants.IV_LENGTH];
         new SecureRandom().nextBytes(iv);
-        byte[] cipherText = encrypt(secretKey, new IvParameterSpec(iv), plaintext);
+        GCMParameterSpec params = new GCMParameterSpec(128, iv, 0, 12);
+        byte[] cipherText = encrypt(secretKey, params, plaintext);
         byte[] combined = new byte[iv.length + cipherText.length];
         System.arraycopy(iv, 0, combined, 0, iv.length);
         System.arraycopy(cipherText, 0, combined, iv.length, cipherText.length);
@@ -81,9 +83,10 @@ public class EncryptionHelper {
     static byte[] decrypt(SecretKey secretKey, byte[] cipherText)
             throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException {
-        byte[] iv = Arrays.copyOfRange(cipherText, 0, IV_LENGTH);
+        //byte[] iv = Arrays.copyOfRange(cipherText, 0, IV_LENGTH);
+        GCMParameterSpec params = new GCMParameterSpec(128, cipherText, 0, 12);
         byte[] cipher = Arrays.copyOfRange(cipherText, IV_LENGTH, cipherText.length);
-        return decrypt(secretKey, new IvParameterSpec(iv), cipher);
+        return decrypt(secretKey, params, cipher);
     }
 
     /**
