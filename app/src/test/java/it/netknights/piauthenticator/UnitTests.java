@@ -1,12 +1,8 @@
 package it.netknights.piauthenticator;
 
-import android.content.Context;
 import android.os.Build;
-import android.support.test.rule.ActivityTestRule;
 
 import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -19,22 +15,21 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.SecretKey;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import static it.netknights.piauthenticator.AppConstants.HOTP;
-import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.OTPGenerator.generateHOTP;
 import static it.netknights.piauthenticator.OTPGenerator.generatePBKDFKey;
+import static it.netknights.piauthenticator.OTPGenerator.generateTOTP;
+import static it.netknights.piauthenticator.OTPGenerator.hexStringToByteArray;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
@@ -57,7 +52,7 @@ public class UnitTests {
     }
 
     @Test
-    public void testOTPGenerator() throws Exception {
+    public void testOTPGenerator() {
         // Testvectors for TOTP are from https://tools.ietf.org/html/rfc6238#appendix-B
 
         String sha256 = "HmacSHA256";
@@ -111,32 +106,35 @@ public class UnitTests {
         assertEquals(65353130, generateHOTP(seed, step5, digits, sha1));
         assertEquals(77737706, generateHOTP(seed32, step5, digits, sha256));
         assertEquals(47863826, generateHOTP(seed64, step5, digits, sha512));
+
+        // TOTP for once
+        assertEquals(94287082, generateTOTP(seed, testTime[0], digits, 30, sha1));
+        // Hash pin
+        byte[] secret = "testtesttesttest".getBytes();
+        Token t = new Token(secret, "test", "hotp", 6);
+        assertEquals("4e25988118d7e38ef94c1f32d14d5de463f159fa34304bdc9acba6728a60b541cb948e75c75493705ee4e43e0d2d224f0f0fc0cd803bd707ba4b0acccf702ab7"
+                ,OTPGenerator.hashPIN(1234567890, t));
+
+        // Generate for token
+        assertEquals("766082", OTPGenerator.generate(t));  // HOTP
+        secret = "edb642c8348a20b6c2a19a65cc71bc2eb4c2b8fc29c42a00c489e57f9b8ed73b".getBytes();
+        Token t2 = new Token(secret, "test", "totp", 6); //TOTP
+        assertEquals(OTPGenerator.generateTOTP(byteArrayToHexString(secret), (System.currentTimeMillis() / 1000), "6", 30, sha1),
+                Integer.parseInt(OTPGenerator.generate(t2)));
     }
 
     @Test
     public void testEncryptionHelper() throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException,
-            IllegalBlockSizeException, UnsupportedEncodingException, InvalidAlgorithmParameterException, DecoderException {
+            IllegalBlockSizeException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
 
-        // https://golang.org/src/crypto/cipher/gcm_test.go
-        String[][] testCases = new String[][]{
-                new String[]{"11754cd72aec309bf52f7687212e8957", "3c819d9a9bed087615030b65", "", "250327c674aaf477aef2675748cf6971"},
-                new String[]{"ca47248ac0b6f8372a97ac43508308ed", "ffd2b598feabc9019262d2be", "", "60d20404af527d248d893ae495707d1a"},
-                new String[]{"7fddb57453c241d03efbed3ac44e371c", "ee283a3fc75575e33efd4887", "d5de42b461646c255c87bd2962d3b9a2", "2ccda4a5415cb91e135c2a0f78c9b2fdb36d1df9b9d5e596f83e8b7f52971cb3"},
-                new String[]{"ab72c77b97cb5fe9a382d9fe81ffdbed", "54cc7dc2c37ec006bcc6d1da", "007c5e5b3e59df24a7c355584fc1518d", "0e1bde206a07a9c2c1b65300f8c649972b4401346697138c7a4891ee59867d0c"},
-                new String[]{"feffe9928665731c6d6a8f9467308308", "cafebabefacedbaddecaf888", "d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255",
-                        "42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091473f59854d5c2af327cd64a62cf35abd2ba6fab4"},
-        };
-        for (String[] testCase : testCases) {
+        SecretKey key = KeyGenerator.getInstance("AES").generateKey();
 
-            SecretKeySpec k = new SecretKeySpec(new Hex().decode(testCase[0].getBytes()), "AES");
-            IvParameterSpec iv = new IvParameterSpec(new Hex().decode(testCase[1].getBytes()));
+        String plaintext = "edb642c8348a20b6c2a19a65cc71bc2eb4c2b8fc29c42a00c489e57f9b8ed73b";
+        byte[] data = hexStringToByteArray(plaintext);
 
-            byte[] cipherTExt = EncryptionHelper.encrypt(k, iv, new Hex().decode(testCase[2].getBytes()));
-            String cipher = new String(new Hex().encode(cipherTExt));
-
-            assertEquals(cipher, testCase[3]);
-            assertEquals(testCase[2], new String(new Hex().encode(EncryptionHelper.decrypt(k, iv, cipherTExt))));
-        }
+        byte[] encrypted = EncryptionHelper.encrypt(key, data);
+        byte[] decrypted = EncryptionHelper.decrypt(key, encrypted);
+        assertEquals(plaintext, byteArrayToHexString(decrypted));
     }
 
     @Test
