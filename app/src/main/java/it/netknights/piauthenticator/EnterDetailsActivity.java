@@ -60,7 +60,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
     }
 
     private void setupTable() {
-        tl = (TableLayout) findViewById(R.id.tableLayout);
+        tl = findViewById(R.id.tableLayout);
 
         final int supportspinnerid = R.layout.support_simple_spinner_dropdown_item;
 
@@ -71,12 +71,11 @@ public class EnterDetailsActivity extends AppCompatActivity {
 
         for (int i = 0; i < 4; i++) {
             ConstraintLayout tablerow = (ConstraintLayout) getLayoutInflater().inflate(R.layout.tablelayout, null);
-            TextView tv = (TextView) tablerow.findViewById(R.id.label);
+            TextView tv = tablerow.findViewById(R.id.label);
 
             switch (i) {
                 case 2: {
-                    spinner_type = (Spinner) tablerow.findViewById(R.id.spinner_row);
-                    //spinner_type.setId(AppConstants.spinner_type_id);
+                    spinner_type = tablerow.findViewById(R.id.spinner_row);
                     tv.setText(R.string.type);
                     ArrayAdapter<String> adapter_type = new ArrayAdapter<>(this, supportspinnerid, types);
                     spinner_type.setAdapter(adapter_type);
@@ -103,8 +102,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
                 case 3: {
                     periodLabel = tv;
                     periodLabel.setText(R.string.period);
-                    spinner_period = (Spinner) tablerow.findViewById(R.id.spinner_row);
-                    //spinner_period.setId(AppConstants.spinner_period_id);
+                    spinner_period = tablerow.findViewById(R.id.spinner_row);
                     ArrayAdapter<String> adapter_period = new ArrayAdapter<>(this, supportspinnerid, periods);
                     spinner_period.setAdapter(adapter_period);
                     tl.addView(tablerow);
@@ -112,19 +110,17 @@ public class EnterDetailsActivity extends AppCompatActivity {
                 }
                 case 1: {
                     tv.setText(R.string.algorithm);
-                    spinner_algorithm = (Spinner) tablerow.findViewById(R.id.spinner_row);
+                    spinner_algorithm = tablerow.findViewById(R.id.spinner_row);
                     ArrayAdapter<String> adapter_algorithm = new ArrayAdapter<>(this, supportspinnerid, algorithms);
                     spinner_algorithm.setAdapter(adapter_algorithm);
-                    //spinner_algorithm.setId(AppConstants.spinner_algorithm_id);
                     tl.addView(tablerow);
                     break;
                 }
                 case 0: {
                     tv.setText(R.string.digits);
-                    spinner_digits = (Spinner) tablerow.findViewById(R.id.spinner_row);
+                    spinner_digits = tablerow.findViewById(R.id.spinner_row);
                     ArrayAdapter<String> adapter_digits = new ArrayAdapter<>(this, supportspinnerid, digits);
                     spinner_digits.setAdapter(adapter_digits);
-                    //spinner_digits.setId(AppConstants.spinner_digits_id);
                     tl.addView(tablerow);
                     break;
                 }

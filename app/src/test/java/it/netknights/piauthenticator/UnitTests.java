@@ -2,26 +2,21 @@ package it.netknights.piauthenticator;
 
 import android.content.Context;
 import android.os.Build;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.LargeTest;
-import android.support.test.runner.AndroidJUnit4;
-import android.util.Log;
+import android.support.test.rule.ActivityTestRule;
 
 import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.KeyStore;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
@@ -33,113 +28,32 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import it.netknights.piauthenticator.EncryptionHelper;
-import it.netknights.piauthenticator.MainActivity;
-import it.netknights.piauthenticator.OTPGenerator;
-import it.netknights.piauthenticator.Token;
-import it.netknights.piauthenticator.Util;
+import androidx.test.platform.app.InstrumentationRegistry;
 
-import static android.content.ContentValues.TAG;
+import static it.netknights.piauthenticator.AppConstants.HOTP;
+import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.OTPGenerator.generateHOTP;
 import static it.netknights.piauthenticator.OTPGenerator.generatePBKDFKey;
-import static it.netknights.piauthenticator.OTPGenerator.hexStringToByteArray;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
-@RunWith(AndroidJUnit4.class)
-@LargeTest
-public class ApplicationTest {
-
-     //TODO update this test - token creation in mainactivity is problematic
-    /*  @Test
-    public void testMakeTokenFromURI() throws Exception {
-         Context context = InstrumentationRegistry.getTargetContext();
-         //delete all files to simulate a fresh installation, especially the generation of a new keypair
-         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-             final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
-             keyStore.load(null);
-             keyStore.deleteEntry("settings");
-
-         }
-         MainActivity utils = new MainActivity();
-         assertTrue(new File(context.getFilesDir() + "/data.dat").delete());
-         assertTrue(new File(context.getFilesDir() + "/key.key").delete());
-
-
-         Token hotp = utils.makeTokenFromURI("otpauth://hotp" +
-                 "/OATH00014BE1?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=privacyIDEA");
-         Token totp = utils.makeTokenFromURI("otpauth://totp" +
-                 "/TOTP00114F8F?secret=HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N&period=60&digits=6&issuer=privacyIDEA&algorithm=SHA256");
-
-         assertEquals("privacyIDEA: OATH00014BE1", hotp.getLabel());
-         assertEquals(6, hotp.getDigits());
-         assertEquals("HmacSHA1", hotp.getAlgorithm());
-         assertEquals(1, hotp.getCounter());
-         assertEquals(0, hotp.getPeriod());
-         assertEquals("hotp", hotp.getType());
-         assertEquals("2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY", hotp.getSecret());
-         assertEquals("privacyIDEA: TOTP00114F8F", totp.getLabel());
-         assertEquals(60, totp.getPeriod());
-         assertEquals(0, totp.getCounter());
-         assertEquals("HmacSHA256", totp.getAlgorithm());
-
-
-         ArrayList<Token> ar = new ArrayList<>();
-         ar.add(hotp);
-         ar.add(totp);
-         Util.saveTokens(context, ar);
-         ArrayList<Token> loaded = Util.loadTokens(context);
-
-         assertEquals("privacyIDEA: OATH00014BE1", loaded.get(0).getLabel());
-         assertEquals(6, loaded.get(0).getDigits());
-         assertEquals("HmacSHA1", loaded.get(0).getAlgorithm());
-         assertEquals(1, loaded.get(0).getCounter());
-         assertEquals(0, loaded.get(0).getPeriod());
-         assertEquals("hotp", loaded.get(0).getType());
-         assertEquals("2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY", loaded.get(0).getSecret());
-
-         assertEquals("privacyIDEA: TOTP00114F8F", loaded.get(1).getLabel());
-         assertEquals(60, loaded.get(1).getPeriod());
-         assertEquals(0, loaded.get(1).getCounter());
-         assertEquals("HmacSHA256", loaded.get(1).getAlgorithm());
-         assertEquals("HI64N3EHBUWXWHJWAGLNYBHAXWPZMD3N", loaded.get(1).getSecret());
-
-         hotp.setCurrentOTP("523432");
-         hotp.setType("totp");
-         hotp.setLabel("test setlabel");
-         byte[] s = "Hallo test123".getBytes();
-         hotp.setSecret(s);
-         assertEquals("523432", hotp.getCurrentOTP());
-         assertEquals("totp", hotp.getType());
-         assertEquals(s, hotp.getSecret());
-         assertEquals("test setlabel", hotp.getLabel());
-
-         //test the exceptions
-         try {
-             Token fail1 = utils.makeTokenFromURI("ftp://hotp" +
-                     "/OATH00014BE1?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=privacyIDEA");
-             fail("this should throw: invalid protocol");
-         } catch (Exception e) {
-             assertEquals("Invalid Protocol", e.getMessage());
-         }
-         try {
-             Token fail2 = utils.makeTokenFromURI("otpauth://ptoh" +
-                     "/OATH00014BE1?secret=2VKLHJMESGDZDXO7UO5GRH6T34CSYWYY&counter=1&digits=6&issuer=privacyIDEA");
-             fail("this should throw: no totp/hotp");
-         } catch (Exception e) {
-             assertEquals("No TOTP or HOTP Token", e.getMessage());
-         }
-     }*/
+@RunWith(RobolectricTestRunner.class)
+public class UnitTests {
 
     @Test
-    public void testRWFile() throws IOException {
-        File f = new File(InstrumentationRegistry.getTargetContext().getFilesDir() + "/test");
+    public void testRWFile() {
+        File f = new File(InstrumentationRegistry.getInstrumentation().getTargetContext().getFilesDir() + "/test");
         String text = "testtext";
-        Util.writeFile(f, text.getBytes());
-        byte[] retrieved = Util.readFile(f);
-        assertTrue(Arrays.equals(retrieved, text.getBytes()));
+        try {
+            Util.writeFile(f, text.getBytes());
+            byte[] retrieved = Util.readFile(f);
+            assertTrue(Arrays.equals(retrieved, text.getBytes()));
+        } catch (IOException e) {
+            fail("IOException");
+            e.printStackTrace();
+        }
     }
 
     @Test
@@ -199,7 +113,6 @@ public class ApplicationTest {
         assertEquals(47863826, generateHOTP(seed64, step5, digits, sha512));
     }
 
-
     @Test
     public void testEncryptionHelper() throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException,
             IllegalBlockSizeException, UnsupportedEncodingException, InvalidAlgorithmParameterException, DecoderException {
@@ -256,50 +169,33 @@ public class ApplicationTest {
     }
 
     @Test
-    public void test2step() throws InvalidKeySpecException, NoSuchAlgorithmException {
-        String server_secret = "3d228545e86d18d29affc4c52a427cb751c4aa15bbe2f9e91f0e116658d4bef6";
-        String server_secret_b32 = new Base32().encodeAsString(hexStringToByteArray(server_secret));
-        //String client_secret_hex = "71777c2c727cd965";
-        String client_secret_b32 = "OF3XYLDSPTMWK===";
-        byte[] client_secret_bytes = new Base32().decode(client_secret_b32);
+    public void saveAndLoadTokenlist() {
+        /*Util util = new Util(activityRule.getActivity());
 
-        // complete_secret = pbkdf2(server_secret, client_secret, 10000, 32,'hmac-sha1')
-        Log.d(TAG, "server_secret_b32: " + server_secret_b32 + " ,  server_secret_hex: " + server_secret);
-        Log.d(TAG, "client_secret_b32: " + client_secret_b32 + " , client_secret_hex: " + byteArrayToHexString(client_secret_bytes));
-        //char[] server_secret_chararray = server_secret_b32.toCharArray();
-        char[] server_secret_chararray = server_secret.toCharArray();
-        byte[] complete_secret_bytes = generatePBKDFKey(server_secret_chararray, client_secret_bytes, 10000, 32 * 8);
+        byte[] secret = "testtesttesttesttesttesttest".getBytes();
+        String label = "testtoken";
+        Token totp = new Token(secret, label, TOTP, 6);
+        Token hotp = new Token(secret, label, HOTP, 6);
 
-        Log.d(TAG, "complete_secret_hex: " + byteArrayToHexString(complete_secret_bytes) + " , len: " + complete_secret_bytes.length + " complete_secret_bytes: " + complete_secret_bytes);
-        //------------- create CRC bytes and concat with client_part ---------------------------------------
-        byte[] digest = new byte[20];
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-1");
-            digest = md.digest(client_secret_bytes);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
+        ArrayList<Token> tokens = new ArrayList<>();
+        tokens.add(totp);
+        tokens.add(hotp);
 
-        byte[] checksumBytes = new byte[4];
-        System.arraycopy(digest, 0, checksumBytes, 0, 4);
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try {
-            outputStream.write(checksumBytes);
-            outputStream.write(client_secret_bytes);
-            Log.d(TAG, "checksum_b32: " + new Base32().encodeAsString(checksumBytes) + " ,checksum_hex: " + byteArrayToHexString(checksumBytes));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        byte complete_client_bytes[] = outputStream.toByteArray();
-        Log.d(TAG, "complete_client_secret_b32: " + new Base32().encodeAsString(complete_client_bytes) + " , complete_client_secret_hex: " + byteArrayToHexString(complete_client_bytes));
-        //-------------------------------------------------------------------------------------------
-        String full_secret = byteArrayToHexString(complete_secret_bytes);
-        int otp1 = OTPGenerator.generateHOTP(full_secret, "1", "6", "HmacSHA256");
-        int otp2 = OTPGenerator.generateHOTP(full_secret, "2", "6", "HmacSHA256");
-        int otp3 = OTPGenerator.generateHOTP(full_secret, "3", "6", "HmacSHA256");
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        util.saveTokens(context, tokens);
 
-        Log.d(TAG, "1. " + otp1 + " 2. " + otp2 + " 3. " + otp3);
+        ArrayList<Token> loaded = util.loadTokens(context);
+        for (int i = 0; i < tokens.size(); i++) {
+            assertEquals(tokens.get(i) , loaded.get(i));
+
+            assertEquals(tokens.get(i).getType() , loaded.get(i).getType());
+            assertEquals(tokens.get(i).getAlgorithm() , loaded.get(i).getAlgorithm());
+            assertEquals(tokens.get(i).getDigits() , loaded.get(i).getDigits());
+            assertEquals(tokens.get(i).getPeriod() , loaded.get(i).getPeriod());
+            assertEquals(tokens.get(i).getSecret() , loaded.get(i).getSecret());
+            assertEquals(tokens.get(i).getLabel() , loaded.get(i).getLabel());
+
+
+    }*/
     }
-
-
 }
