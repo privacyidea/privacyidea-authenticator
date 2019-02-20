@@ -21,6 +21,8 @@
 
 package it.netknights.piauthenticator;
 
+import static it.netknights.piauthenticator.AppConstants.TOTP;
+
 public class Token {
 
     private String currentOTP;
@@ -44,7 +46,7 @@ public class Token {
         this.secret = secret;
         this.type = type;
         this.digits = digits;
-        this.period = 0;
+        this.period = type.equals(TOTP) ? 30 : 0;
         this.counter = 0;
     }
 
