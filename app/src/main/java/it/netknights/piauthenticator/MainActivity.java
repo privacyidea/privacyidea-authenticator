@@ -164,7 +164,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         ArrayList<Token> upForDeletion = new ArrayList<>();
         Date now = new Date();
         for (Token t : tokenlist) {
-            if (t.getType() == AppConstants.TokenType.PUSH) {
+            if (t.getType() == PUSH) {
                 if (!t.rollout_finished && t.rollout_expiration.before(now)) {
                     upForDeletion.add(t);
                 }
@@ -252,7 +252,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
      * @param currToken the token to delete
      */
     void removeToken(Token currToken) {
-        if (currToken.getType() == AppConstants.TokenType.PUSH) {
+        if (currToken.getType() == PUSH) {
             util.removePubkeyFor(currToken.getSerial());
             try {
                 SecretKeyWrapper.removePrivKeyFor(currToken.getSerial());
@@ -571,15 +571,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private Token makeTokenFromIntent(Intent data) {
         // Push tokens cannot be created manually so this is simplified
         String type = data.getStringExtra(TYPE);
-        AppConstants.TokenType tokentype = AppConstants.TokenType.HOTP;
-        if (type.equals(TOTP)) {
-            tokentype = AppConstants.TokenType.TOTP;
-        }
+
         byte[] secret = data.getByteArrayExtra(SECRET);
         String label = data.getStringExtra(LABEL);
         int digits = data.getIntExtra(DIGITS, 6);
         String algorithm = data.getStringExtra(ALGORITHM);
-        Token tmp = new Token(secret, label, label, tokentype, digits);
+        Token tmp = new Token(secret, label, label, type, digits);
 
         if (type.equals(TOTP)) {
             int period = data.getIntExtra(PERIOD, 30);

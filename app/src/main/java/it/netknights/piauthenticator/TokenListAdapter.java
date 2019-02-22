@@ -47,6 +47,8 @@ import java.util.List;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static it.netknights.piauthenticator.AppConstants.HOTP;
+import static it.netknights.piauthenticator.AppConstants.PUSH;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.OTPGenerator.hashPIN;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
@@ -78,7 +80,7 @@ public class TokenListAdapter extends BaseAdapter {
 
     private ActivityInterface activityInterface;
 
-    public void setActivityInterface(ActivityInterface activityInterface) {
+    void setActivityInterface(ActivityInterface activityInterface) {
         this.activityInterface = activityInterface;
     }
 
@@ -91,7 +93,7 @@ public class TokenListAdapter extends BaseAdapter {
 
     void refreshOTPs() {
         for (int i = 0; i < tokens.size(); i++) {
-            if (tokens.get(i).getType() != AppConstants.TokenType.PUSH) {
+            if (!tokens.get(i).getType().equals(PUSH)) {
                 tokens.get(i).setCurrentOTP(OTPGenerator.generate(tokens.get(i)));
             }
         }
@@ -100,7 +102,7 @@ public class TokenListAdapter extends BaseAdapter {
 
     void refreshAllTOTP() {
         for (int i = 0; i < tokens.size(); i++) {
-            if (tokens.get(i).getType() == AppConstants.TokenType.TOTP) {
+            if (tokens.get(i).getType().equals(TOTP)) {
                 tokens.get(i).setCurrentOTP(OTPGenerator.generate(tokens.get(i)));
             }
         }
@@ -241,51 +243,55 @@ public class TokenListAdapter extends BaseAdapter {
             v.setLongClickable(true);
             v.setOnClickListener(null);
             //------------------ differenciate hotp, totp and push ---------------------------
-            if (token.getType() == AppConstants.TokenType.HOTP) {
-                progressBar.setVisibility(GONE);
-                nextbtn.setVisibility(VISIBLE);
-                nextbtn.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        token.setCounter((token.getCounter() + 1));
-                        token.setCurrentOTP(OTPGenerator.generate(token));
-                        notifyDataSetChanged();
-                    }
-                });
-                otptext.setText(token.getCurrentOTP());
-            } else if (token.getType() == AppConstants.TokenType.TOTP) {
-                nextbtn.setVisibility(GONE);
-                nextbtn.setClickable(false);
-                nextbtn.setLongClickable(false);
-                progressBar.setVisibility(VISIBLE);
-                v.setClickable(false);
-                otptext.setText(token.getCurrentOTP());
-            } else if (token.getType() == AppConstants.TokenType.PUSH) {
-                if(token.rollout_finished) {
-                    nextbtn.setVisibility(GONE);
-                    nextbtn.setClickable(false);
-                    nextbtn.setLongClickable(false);
+            switch (token.getType()) {
+                case HOTP:
                     progressBar.setVisibility(GONE);
-                    labeltext.setVisibility(GONE);
-                    otptext.setText("[PUSH] " + token.getSerial());
-                } else {
-                    nextbtn.setVisibility(GONE);
-                    nextbtn.setClickable(false);
-                    nextbtn.setLongClickable(false);
-                    progressBar.setVisibility(GONE);
-                    labeltext.setVisibility(GONE);
-                    otptext.setText("[PUSH] " + token.getSerial());
                     nextbtn.setVisibility(VISIBLE);
-                    nextbtn.setText("Retry");
                     nextbtn.setOnClickListener(new View.OnClickListener() {
                         @Override
-                        public void onClick(View view) {
-                            AsyncTask<Void, Integer, Boolean> pushrollout = new PushRolloutTask(token, TokenListAdapter.this.activityInterface);
-
-                            pushrollout.execute();
+                        public void onClick(View v) {
+                            token.setCounter((token.getCounter() + 1));
+                            token.setCurrentOTP(OTPGenerator.generate(token));
+                            notifyDataSetChanged();
                         }
                     });
-                }
+                    otptext.setText(token.getCurrentOTP());
+                    break;
+                case TOTP:
+                    nextbtn.setVisibility(GONE);
+                    nextbtn.setClickable(false);
+                    nextbtn.setLongClickable(false);
+                    progressBar.setVisibility(VISIBLE);
+                    v.setClickable(false);
+                    otptext.setText(token.getCurrentOTP());
+                    break;
+                case PUSH:
+                    if (token.rollout_finished) {
+                        nextbtn.setVisibility(GONE);
+                        nextbtn.setClickable(false);
+                        nextbtn.setLongClickable(false);
+                        progressBar.setVisibility(GONE);
+                        labeltext.setVisibility(GONE);
+                        otptext.setText("[PUSH] " + token.getSerial());
+                    } else {
+                        nextbtn.setVisibility(GONE);
+                        nextbtn.setClickable(false);
+                        nextbtn.setLongClickable(false);
+                        progressBar.setVisibility(GONE);
+                        labeltext.setVisibility(GONE);
+                        otptext.setText("[PUSH] " + token.getSerial());
+                        nextbtn.setVisibility(VISIBLE);
+                        nextbtn.setText("Retry");
+                        nextbtn.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                AsyncTask<Void, Integer, Boolean> pushrollout = new PushRolloutTask(token, TokenListAdapter.this.activityInterface);
+
+                                pushrollout.execute();
+                            }
+                        });
+                    }
+                    break;
             }
         }
         setupOnDrags(v, position);

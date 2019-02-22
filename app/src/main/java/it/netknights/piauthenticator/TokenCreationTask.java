@@ -94,12 +94,6 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
         }
         // TOKEN TYPE
         String type = url.getHost();
-        AppConstants.TokenType tokentype = AppConstants.TokenType.HOTP;
-        if (type.equals(TOTP)) {
-            tokentype = AppConstants.TokenType.TOTP;
-        } else if (type.equals(PUSH)) {
-            tokentype = AppConstants.TokenType.PUSH;
-        }
 
         // LABEL, SERIAL
         String label = uri.getPath().substring(1);
@@ -113,7 +107,7 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
         // --------------------- PUSH ---------------------
         // https://github.com/privacyidea/privacyidea/wiki/concept:-PushToken
         // if its a push token, it is returned early and the push-rollout (+firebase init) is initiated
-        if (tokentype == AppConstants.TokenType.PUSH) {
+        if (type == PUSH) {
 
             // Check for FirebaseInit info
             if (uri.getQueryParameter(PROJECT_ID) != null) {
@@ -164,17 +158,17 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
         }
 
         // CREATE BASE TOKEN (HOTP/TOTP)
-        Token tmp = new Token(secret, serial, label, tokentype, digits);
+        Token tmp = new Token(secret, serial, label, type, digits);
 
         // ADD ADDITIONAL INFORMATION TO IT
-        if (tokentype == AppConstants.TokenType.TOTP) {
+        if (type == TOTP) {
             if (uri.getQueryParameter(PERIOD) != null) {
                 tmp.setPeriod(Integer.parseInt(uri.getQueryParameter(PERIOD)));
             } else {
                 tmp.setPeriod(30);
             }
         }
-        if (tokentype == AppConstants.TokenType.HOTP) {
+        if (type == HOTP) {
             if (uri.getQueryParameter(COUNTER) != null) {
                 tmp.setCounter(Integer.parseInt(uri.getQueryParameter(COUNTER)));
             } else {

@@ -6,10 +6,6 @@ public class AppConstants {
     static final String PACKAGE_NAME = "it.netknights.piauthenticator";
     static String TAG = "it.netknights.piauth";
 
-    enum TokenType {
-        TOTP, HOTP, PUSH
-    }
-
     static final int INTENT_ADD_TOKEN_MANUALLY = 101;
     static final int INTENT_ABOUT = 102;
     static final int PERMISSIONS_REQUEST_CAMERA = 103;
@@ -106,6 +102,5 @@ public class AppConstants {
     static final int STATUS_DO_FIREBASE_INIT = 3001;
     static final int STATUS_DO_PUSH_ROLLOUT = 3002;
     static final int STATUS_DO_2STEP_ROLLOUT = 3003;
-
 
 }

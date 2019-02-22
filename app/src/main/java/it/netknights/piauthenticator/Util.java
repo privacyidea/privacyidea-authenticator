@@ -21,9 +21,7 @@
 
 package it.netknights.piauthenticator;
 
-import android.app.Activity;
 import android.content.Context;
-import android.os.AsyncTask;
 import android.util.Base64;
 import android.util.Log;
 
@@ -48,8 +46,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -75,6 +71,7 @@ import static it.netknights.piauthenticator.AppConstants.PIN;
 import static it.netknights.piauthenticator.AppConstants.PROJECT_ID;
 import static it.netknights.piauthenticator.AppConstants.PROJECT_NUMBER;
 import static it.netknights.piauthenticator.AppConstants.PUBKEYFILE;
+import static it.netknights.piauthenticator.AppConstants.PUSH;
 import static it.netknights.piauthenticator.AppConstants.ROLLOUT_EXPIRATION;
 import static it.netknights.piauthenticator.AppConstants.ROLLOUT_FINISHED;
 import static it.netknights.piauthenticator.AppConstants.ROLLOUT_URL;
@@ -83,12 +80,11 @@ import static it.netknights.piauthenticator.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.AppConstants.TYPE;
-import static it.netknights.piauthenticator.AppConstants.TokenType;
 import static it.netknights.piauthenticator.AppConstants.WITHPIN;
 
 public class Util {
 
-    ActivityInterface activityInterface;
+    private ActivityInterface activityInterface;
 
     Util(ActivityInterface activityInterface) {
         this.activityInterface = activityInterface;
@@ -102,7 +98,7 @@ public class Util {
      * @param context is needed to get the FilesDir
      * @return An ArrayList of Tokens
      */
-    public static ArrayList<Token> loadTokens(Context context) {
+    static ArrayList<Token> loadTokens(Context context) {
         ArrayList<Token> tokens = new ArrayList<>();
 
         try {
@@ -127,7 +123,7 @@ public class Util {
      * @param context Needed to get the FilesDir
      * @param tokens  ArrayList of tokens to save
      */
-    public static void saveTokens(Context context, ArrayList<Token> tokens) {
+    static void saveTokens(Context context, ArrayList<Token> tokens) {
         JSONArray tmp = new JSONArray();
         if (tokens == null) {
             return;
@@ -160,27 +156,11 @@ public class Util {
             serial = o.getString(SERIAL);
         }
         // when loading "old" data the type is still a string so we convert it here
-        String type;
-        AppConstants.TokenType tokentype;
-        try {
-            type = o.getString(TYPE);
-            switch (type) {
-                case "HOTP":
-                    tokentype = TokenType.HOTP;
-                    break;
-                case "TOTP":
-                    tokentype = TokenType.TOTP;
-                    break;
-                default:
-                    tokentype = TokenType.PUSH;
-                    break;
-            }
-        } catch (JSONException e) {
-            tokentype = (TokenType) o.get(TYPE);
-        }
+        String type = o.getString(TYPE);;
+
         String label = o.getString(LABEL);
 
-        if (tokentype == TokenType.PUSH) {
+        if (type.equals(PUSH)) {
             Token t = new Token(serial, label);
             t.rollout_finished = o.getBoolean(ROLLOUT_FINISHED);
             // TODO add exp date / url
@@ -194,7 +174,7 @@ public class Util {
         }
 
         Token tmp = new Token(new Base32().decode(o.getString(SECRET)), serial, label,
-                tokentype, o.getInt(DIGITS));
+                type, o.getInt(DIGITS));
 
         tmp.setAlgorithm(o.getString(ALGORITHM));
         if (o.getString(TYPE).equals(HOTP)) {
@@ -226,7 +206,7 @@ public class Util {
         o.put(LABEL, t.getLabel());
         o.put(TYPE, t.getType());
 
-        if (t.getType() == TokenType.PUSH) {
+        if (t.getType().equals(PUSH)) {
             o.put(ROLLOUT_FINISHED, t.rollout_finished);
             //TODO add exp date / url
             o.put(ROLLOUT_URL, t.rollout_url);
@@ -238,10 +218,10 @@ public class Util {
         o.put(DIGITS, t.getDigits());
         o.put(ALGORITHM, t.getAlgorithm());
 
-        if (t.getType().equals(TokenType.HOTP)) {
+        if (t.getType().equals(HOTP)) {
             o.put(COUNTER, t.getCounter());
         }
-        if (t.getType().equals(TokenType.TOTP)) {
+        if (t.getType().equals(TOTP)) {
             o.put(PERIOD, t.getPeriod());
         }
         if (t.isWithPIN()) {
@@ -260,7 +240,7 @@ public class Util {
         return o;
     }
 
-    public static void storePIPubkey(String key, String serial, Context context) throws GeneralSecurityException, IOException, IllegalArgumentException {
+    static void storePIPubkey(String key, String serial, Context context) throws GeneralSecurityException, IOException, IllegalArgumentException {
         byte[] keybytes = Base64.decode(key.getBytes(), Base64.DEFAULT);
        
         PublicKey pubkey = PKCS1ToSubjectPublicKeyInfo.decodePKCS1PublicKey(keybytes);
@@ -279,7 +259,7 @@ public class Util {
         writeFile(new File(context.getFilesDir() + "/" + serial + "_" + PUBKEYFILE), dataToSave);
     }
 
-    public static PublicKey getPIPubkey(Context context, String serial) {
+    static PublicKey getPIPubkey(Context context, String serial) {
         try {
             byte[] encryptedData = readFile(new File(context.getFilesDir() + "/" + serial + "_" + PUBKEYFILE));
             // decrypt
@@ -300,7 +280,7 @@ public class Util {
         return null;
     }
 
-    public static Map<String, String> convert(String str) {
+    static Map<String, String> convert(String str) {
         str = str.replace(",", "");
         String[] tokens = str.split(" |=");
         Map<String, String> map = new HashMap<>();
@@ -308,7 +288,7 @@ public class Util {
         return map;
     }
 
-    public static boolean verifySignature(String serial, String signature, String payload, Context context) throws InvalidKeyException,
+    static boolean verifySignature(String serial, String signature, String payload, Context context) throws InvalidKeyException,
             NoSuchAlgorithmException, SignatureException {
         PublicKey pubkey = getPIPubkey(context, serial);
         // TODO format
@@ -327,7 +307,7 @@ public class Util {
      * @param ba byte array to convert
      * @return the Hex as String
      */
-    public static String byteArrayToHexString(byte[] ba) {
+    static String byteArrayToHexString(byte[] ba) {
         StringBuilder str = new StringBuilder();
         for (int i = 0; i < ba.length; i++)
             str.append(String.format("%02x", ba[i]));
@@ -340,7 +320,7 @@ public class Util {
      * @param hex: the Hex string to convert
      * @return a byte array
      */
-    public static byte[] hexStringToByteArray(String hex) {
+    static byte[] hexStringToByteArray(String hex) {
         // Adding one byte to get the right conversion
         // Values starting with "0" can be converted
         byte[] bArray = new BigInteger("10" + hex, 16).toByteArray();
@@ -352,13 +332,13 @@ public class Util {
         return ret;
     }
 
-    public static void writeFile(File file, byte[] data) throws IOException {
+    static void writeFile(File file, byte[] data) throws IOException {
         try (OutputStream out = new FileOutputStream(file)) {
             out.write(data);
         }
     }
 
-    public static byte[] readFile(File file) throws IOException {
+    static byte[] readFile(File file) throws IOException {
         try (InputStream in = new FileInputStream(file)) {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             byte[] buffer = new byte[1024];
@@ -383,7 +363,7 @@ public class Util {
         logprint("------ PUBKEYS (IN FILES) ------");
         PublicKey pub;
         for (Token t : tokenlist) {
-            if (t.getType() == TokenType.PUSH) {
+            if (t.getType().equals(PUSH)) {
                 pub = getPIPubkey(activityInterface.getPresentActivity().getBaseContext(), t.getSerial());
                 if (pub != null)
                     logprint(t.getSerial() + " : " + pub.getFormat());
@@ -391,7 +371,7 @@ public class Util {
         }
     }
 
-    public void removePubkeyFor(String serial) {
+    void removePubkeyFor(String serial) {
         File f = new File(activityInterface.getPresentActivity().getFilesDir() + "/" + serial + "_" + PUBKEYFILE);
         boolean res = false;
         if (f.exists()) {
@@ -432,18 +412,13 @@ public class Util {
         logprint("Firebase config stored.");
     }
 
-    /**
-     * Load the Firebase config and start the manual init
-     *
-     * @return true if Firebase could be initialized, false if no config was found
-     */
-    boolean initFirebase() {
+    void initFirebase() {
         logprint("Loading Firebase config...");
         try {
             byte[] data = readFile(new File(activityInterface.getPresentActivity().getFilesDir() + "/" + FB_CONFIG_FILE));
             if (data == null) {
                 logprint("Firebase config not found!");
-                return false;
+                return;
             }
 
             SecretKey key = EncryptionHelper.loadOrGenerateKeys(activityInterface.getPresentActivity(),
@@ -458,7 +433,7 @@ public class Util {
 
             if (projID == null || appID == null || api_key == null || projNumber == null) {
                 logprint("Missing parameter from config!");
-                return false;
+                return;
             }
             logprint("Firebase config loaded.");
             new FirebaseInitTask(projID, appID, api_key, projNumber, activityInterface).execute();
@@ -467,7 +442,6 @@ public class Util {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return true;
     }
 
 }

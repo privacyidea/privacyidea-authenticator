@@ -40,7 +40,7 @@ import static it.netknights.piauthenticator.Util.byteArrayToHexString;
 import static it.netknights.piauthenticator.Util.hexStringToByteArray;
 
 
-public class OTPGenerator {
+class OTPGenerator {
 
     private OTPGenerator() {
     }
@@ -55,7 +55,7 @@ public class OTPGenerator {
      * @param token to generate the OTP value for
      * @return the current OTP value for the input token
      */
-    public static String generate(Token token) {
+    static String generate(Token token) {
         String secretAsHEX = byteArrayToHexString(token.getSecret());
         String digits = String.valueOf(token.getDigits());
         //Log.d(TAG, "generate: for: " + token.getLabel() + " with secret: " + secretAsHEX);
@@ -117,10 +117,10 @@ public class OTPGenerator {
      * @param crypto       the crypto function to use
      * @return a numeric String in base 10 that includes
      */
-    public static int generateHOTP(String key,
-                                   String counter,
-                                   String returnDigits,
-                                   String crypto) {
+    static int generateHOTP(String key,
+                            String counter,
+                            String returnDigits,
+                            String crypto) {
         int codeDigits = Integer.decode(returnDigits);
         String result;
 
@@ -191,7 +191,7 @@ public class OTPGenerator {
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeySpecException
      */
-    public static byte[] generatePBKDFKey(char[] passphraseOrPin, byte[] salt, int iterations, int outputKeyLength) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    static byte[] generatePBKDFKey(char[] passphraseOrPin, byte[] salt, int iterations, int outputKeyLength) throws NoSuchAlgorithmException, InvalidKeySpecException {
         // Generate a outputKeyLength-bit key
         SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
         KeySpec keySpec = new PBEKeySpec(passphraseOrPin, salt, iterations, outputKeyLength);
