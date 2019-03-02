@@ -103,19 +103,19 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
         }
 
         // Get the Firebase fb_token
-        logprint("GETTING FIREBASE TOKEN");
+        logprint("Getting Firebase token...");
         FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(activityInterface.getPresentActivity(), new OnSuccessListener<InstanceIdResult>() {
             @Override
             public void onSuccess(InstanceIdResult instanceIdResult) {
                 fb_token = instanceIdResult.getToken();
             }
         });
-        logprint("TOKEN: " + fb_token);
+        logprint("Token: " + fb_token);
 
         // 2. Send the pubkey and the firebase token to the rollout URL
         publishProgress(PRO_STATUS_STEP_2);
 
-        logprint("SETTING UP CONNECTION");
+        logprint("Setting up connection");
         // Connection setup
         URL url = null;
         try {
@@ -141,7 +141,7 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
         }
         con.setReadTimeout(READ_TIMEOUT);
         con.setConnectTimeout(CONNECT_TIMEOUT);
-        logprint("TRYING TO SENT");
+        logprint("Sending...");
         // Send the pubkey and firebase token
         OutputStream os = null;
         try {
@@ -179,7 +179,7 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
 
         // 3. Save the pubkey from the response
         publishProgress(PRO_STATUS_STEP_3);
-        logprint("GETTING RESPONSE");
+        logprint("Getting response...");
         // Get the response
         int responsecode = 0;
         try {
@@ -187,24 +187,23 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        Log.e("repsonse code: ", responsecode + "");
 
         BufferedReader br = null;
         String line;
-        StringBuffer response = new StringBuffer();
+        StringBuilder response = new StringBuilder();
         try {
             br = new BufferedReader(new InputStreamReader(con.getInputStream()));
             while ((line = br.readLine()) != null) {
                 response.append(line);
             }
-            Log.e("response: ", response.toString());
+            logprint("response: " + response.toString());
             // TODO format response
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         if (responsecode == 200) {
-            if (!response.equals("")) {
+            if (!response.toString().equals("")) {
                 try {
                     JSONObject resp = new JSONObject(response.toString());
                     JSONObject detail = resp.getJSONObject("detail");
@@ -257,15 +256,15 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
 
         switch (values[0]) {
             case PRO_STATUS_STEP_1: {
-                tv_pro_status.setText("(1/3) Preparing registration data");
+                tv_pro_status.setText(activityInterface.getPresentActivity().getString(R.string.PushRolloutStep1Status));
                 break;
             }
             case PRO_STATUS_STEP_2: {
-                tv_pro_status.setText("(2/3) Sending data to server");
+                tv_pro_status.setText(activityInterface.getPresentActivity().getString(R.string.PushRolloutStep2Status));
                 break;
             }
             case PRO_STATUS_STEP_3: {
-                tv_pro_status.setText("(3/3) Processing data from server");
+                tv_pro_status.setText(activityInterface.getPresentActivity().getString(R.string.PushRolloutStep3Status));
                 break;
             }
             case PRO_STATUS_DONE: {

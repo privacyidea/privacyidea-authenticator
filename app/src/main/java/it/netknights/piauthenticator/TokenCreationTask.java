@@ -31,6 +31,7 @@ import static it.netknights.piauthenticator.AppConstants.SECRET;
 import static it.netknights.piauthenticator.AppConstants.STATUS_DO_2STEP_ROLLOUT;
 import static it.netknights.piauthenticator.AppConstants.STATUS_DO_FIREBASE_INIT;
 import static it.netknights.piauthenticator.AppConstants.STATUS_DO_PUSH_ROLLOUT;
+import static it.netknights.piauthenticator.AppConstants.STATUS_TOKEN_CREATION_FINISHED_OK;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.AppConstants.TTL;
@@ -41,11 +42,12 @@ import static it.netknights.piauthenticator.Util.logprint;
 
 public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
 
-    ActivityInterface activityInterface;
-    AsyncTask<Void, Integer, Boolean> pushrollout;
-    AsyncTask<Void, Integer, Boolean> firebaseInit;
-    AsyncTask<Void, Void, Boolean> twoStepRollout;
+    private ActivityInterface activityInterface;
+    private AsyncTask<Void, Integer, Boolean> pushrollout;
+    private AsyncTask<Void, Integer, Boolean> firebaseInit;
+    private AsyncTask<Void, Void, Boolean> twoStepRollout;
     Util util;
+    private Token toAdd;
 
     TokenCreationTask(ActivityInterface activityInterface, Util util) {
         this.activityInterface = activityInterface;
@@ -107,7 +109,7 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
         // --------------------- PUSH ---------------------
         // https://github.com/privacyidea/privacyidea/wiki/concept:-PushToken
         // if its a push token, it is returned early and the push-rollout (+firebase init) is initiated
-        if (type == PUSH) {
+        if (type.equals(PUSH)) {
 
             // Check for FirebaseInit info
             if (uri.getQueryParameter(PROJECT_ID) != null) {
@@ -161,14 +163,14 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
         Token tmp = new Token(secret, serial, label, type, digits);
 
         // ADD ADDITIONAL INFORMATION TO IT
-        if (type == TOTP) {
+        if (type.equals(TOTP)) {
             if (uri.getQueryParameter(PERIOD) != null) {
                 tmp.setPeriod(Integer.parseInt(uri.getQueryParameter(PERIOD)));
             } else {
                 tmp.setPeriod(30);
             }
         }
-        if (type == HOTP) {
+        if (type.equals(HOTP)) {
             if (uri.getQueryParameter(COUNTER) != null) {
                 tmp.setCounter(Integer.parseInt(uri.getQueryParameter(COUNTER)));
             } else {
@@ -226,7 +228,8 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
             cancel(true);
             //return do2StepInit(tmp, phonepartlength, iterations, output_size);
         }
-        activityInterface.addToken(tmp);
+        toAdd = tmp;
+        publishProgress(STATUS_TOKEN_CREATION_FINISHED_OK);
         return true;
     }
 
@@ -253,6 +256,12 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
                 }
                 break;
             }
+            case STATUS_TOKEN_CREATION_FINISHED_OK: {
+                if (toAdd != null) {
+                    activityInterface.addToken(toAdd);
+                }
+                break;
+            }
             default: break;
         }
     }
@@ -261,6 +270,7 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
     protected void onPostExecute(Boolean aBoolean) {
         super.onPostExecute(aBoolean);
         logprint("TOKEN CREATION ENDING");
+        activityInterface.update();
     }
 
     @Override

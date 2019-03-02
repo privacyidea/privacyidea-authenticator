@@ -1,43 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:descendantFocusability="blocksDescendants"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginTop="5dp"
+    android:layout_marginBottom="8dp"
+    android:descendantFocusability="blocksDescendants">
 
     <ProgressBar
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
+        android:layout_below="@+id/textViewLabel"
         android:layout_alignParentStart="true"
-        android:layout_below="@+id/textViewLabel" />
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="0dp" />
 
     <TextView
         android:id="@+id/textViewToken"
-        android:layout_width="wrap_content"
+        android:layout_width="196dp"
         android:layout_height="wrap_content"
+        android:layout_alignEnd="@+id/progressBar"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:text="@string/textview"
-        android:textSize="28sp"
+        android:layout_marginStart="107dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="107dp"
+        android:text="01234567"
+        android:textAlignment="center"
+        android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+        android:textSize="36sp"
         android:textStyle="bold" />
 
     <TextView
         android:id="@+id/textViewLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/textview"
-        android:textAppearance="?android:attr/textAppearanceMedium"
         android:layout_below="@+id/textViewToken"
-        android:layout_alignParentStart="true" />
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="49dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="49dp"
+        android:text="privacyIDEA:PIPU0000015A"
+        android:textAlignment="center"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
 
     <Button
         android:id="@+id/next_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/progressBar"
+        android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="0dp"
         android:backgroundTint="@color/PIBLUE"
         android:text="@string/button_text_next"
         android:textColor="@color/zxing_status_text" />

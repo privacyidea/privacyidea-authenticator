@@ -23,8 +23,8 @@ public class TwoStepRolloutTask extends AsyncTask<Void, Void, Boolean> {
     private ProgressDialog pd;
     private int iterations;
     private int output_size_bit;
-    byte[] phonepartBytes;
-    ActivityInterface activityInterface;
+    private byte[] phonepartBytes;
+    private ActivityInterface activityInterface;
 
     TwoStepRolloutTask(Token t, int phonepartlength, int iterations, int output_size, ActivityInterface activityInterface) {
         this.token = t;

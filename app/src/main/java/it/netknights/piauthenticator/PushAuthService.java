@@ -5,7 +5,23 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v4.app.NotificationManagerCompat;
 
+import java.io.IOException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableEntryException;
+import java.security.cert.CertificateException;
+
+import static it.netknights.piauthenticator.AppConstants.AUTHENTICATION_URL;
+import static it.netknights.piauthenticator.AppConstants.NONCE;
+import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_ID;
+import static it.netknights.piauthenticator.AppConstants.QUESTION;
+import static it.netknights.piauthenticator.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.AppConstants.TITLE;
+import static it.netknights.piauthenticator.Util.getPIPubkey;
 import static it.netknights.piauthenticator.Util.logprint;
 
 public class PushAuthService extends Service {
@@ -19,10 +35,39 @@ public class PushAuthService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
         logprint("AuthService started");
-        String data = intent.getStringExtra(AppConstants.DATA);
-        logprint("data: " + data);
-        AsyncTask<Void, Integer, Boolean> pushAuth = new PushAuthTask(data);
+        if(intent == null){
+            logprint("intent is null, returning");
+            return Service.START_STICKY;
+        }
+        NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID);
+        String serial = intent.getStringExtra(SERIAL);
+        String nonce = intent.getStringExtra(NONCE);
+        String title = intent.getStringExtra(TITLE);
+        String url = intent.getStringExtra(AUTHENTICATION_URL);
+        String signature = intent.getStringExtra(SIGNATURE);
+        String question = intent.getStringExtra(QUESTION);
+        PrivateKey appPrivateKey = null;
+        try {
+            appPrivateKey = SecretKeyWrapper.getPrivateKeyFor(serial);
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableEntryException e) {
+            e.printStackTrace();
+        }
+        if(appPrivateKey == null){
+            logprint("PushAuthService: appPrivateKey is null, Authentication is not started.");
+            return Service.START_STICKY;    // Restart the Service in case of being killed, but don't redeliver the intent
+        }
+        AsyncTask<Void, Integer, Boolean> pushAuth = new PushAuthTask(nonce, url, serial, question, title, signature,
+                getPIPubkey(getBaseContext(), serial), appPrivateKey );
         pushAuth.execute();
-        return Service.START_REDELIVER_INTENT;
+        //return Service.START_REDELIVER_INTENT;
+        return Service.START_STICKY;
     }
 }

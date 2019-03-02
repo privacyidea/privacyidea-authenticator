@@ -1,8 +1,6 @@
 package it.netknights.piauthenticator;
 
 import android.app.AlertDialog;
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.view.View;
 import android.widget.TextView;
@@ -13,7 +11,6 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 
-import static it.netknights.piauthenticator.AppConstants.FB_TOKEN;
 import static it.netknights.piauthenticator.Util.logprint;
 
 public class FirebaseInitTask extends AsyncTask<Void, Integer, Boolean> {
@@ -61,7 +58,7 @@ public class FirebaseInitTask extends AsyncTask<Void, Integer, Boolean> {
             return;
         }
 
-        tv_status.setText("Initializing Firebase...");
+        tv_status.setText(activityInterface.getPresentActivity().getString(R.string.InitFirebaseStatus));
     }
 
     @Override

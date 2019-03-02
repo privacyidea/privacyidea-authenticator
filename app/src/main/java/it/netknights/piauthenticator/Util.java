@@ -40,12 +40,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -103,7 +99,7 @@ public class Util {
 
         try {
             byte[] data = readFile(new File(context.getFilesDir() + "/" + DATAFILE));
-            SecretKey key = EncryptionHelper.loadOrGenerateKeys(context, new File(context.getFilesDir() + "/" + KEYFILE));
+            SecretKey key = EncryptionHelper.getSecretKey(context, new File(context.getFilesDir() + "/" + KEYFILE));
             data = EncryptionHelper.decrypt(key, data);
 
             JSONArray a = new JSONArray(new String(data));
@@ -137,7 +133,7 @@ public class Util {
         }
         try {
             byte[] data = tmp.toString().getBytes();
-            SecretKey key = EncryptionHelper.loadOrGenerateKeys(context, new File(context.getFilesDir() + "/" + KEYFILE));
+            SecretKey key = EncryptionHelper.getSecretKey(context, new File(context.getFilesDir() + "/" + KEYFILE));
             data = EncryptionHelper.encrypt(key, data);
             writeFile(new File(context.getFilesDir() + "/" + DATAFILE), data);
         } catch (Exception e) {
@@ -251,7 +247,7 @@ public class Util {
         PublicKey pubkey = kf.generatePublic(keySpec); */
 
         // encrypt
-        SecretKey encryptionKey = EncryptionHelper.loadOrGenerateKeys(context,
+        SecretKey encryptionKey = EncryptionHelper.getSecretKey(context,
                 new File(context.getFilesDir() + "/" + KEYFILE));
 
         byte[] dataToSave = EncryptionHelper.encrypt(encryptionKey, pubkey.getEncoded());
@@ -263,7 +259,7 @@ public class Util {
         try {
             byte[] encryptedData = readFile(new File(context.getFilesDir() + "/" + serial + "_" + PUBKEYFILE));
             // decrypt
-            SecretKey encryptionKey = EncryptionHelper.loadOrGenerateKeys(context,
+            SecretKey encryptionKey = EncryptionHelper.getSecretKey(context,
                     new File(context.getFilesDir() + "/" + KEYFILE));
             if (encryptedData == null) {
                 return null;
@@ -288,21 +284,8 @@ public class Util {
         return map;
     }
 
-    static boolean verifySignature(String serial, String signature, String payload, Context context) throws InvalidKeyException,
-            NoSuchAlgorithmException, SignatureException {
-        PublicKey pubkey = getPIPubkey(context, serial);
-        // TODO format
-        byte[] message = payload.getBytes();
-        byte[] bSignature = signature.getBytes();
-        Signature sig = Signature.getInstance("RSA");
-
-        sig.initVerify(pubkey);
-        sig.update(message);
-        return sig.verify(bSignature);
-    }
-
     /**
-     * This method converts a byte array to a Hex String
+     * Converts a byte array to a Hex String
      *
      * @param ba byte array to convert
      * @return the Hex as String
@@ -315,7 +298,7 @@ public class Util {
     }
 
     /**
-     * This method converts a Hex string to a byte array
+     * Converts a Hex string to a byte array
      *
      * @param hex: the Hex string to convert
      * @return a byte array
@@ -400,7 +383,7 @@ public class Util {
         byte[] data = o.toString().getBytes();
         SecretKey key = null;
         try {
-            key = EncryptionHelper.loadOrGenerateKeys(activityInterface.getPresentActivity(),
+            key = EncryptionHelper.getSecretKey(activityInterface.getPresentActivity(),
                     new File(activityInterface.getPresentActivity().getFilesDir() + "/" + KEYFILE));
             data = EncryptionHelper.encrypt(key, data);
             writeFile(new File(activityInterface.getPresentActivity().getFilesDir() + "/" + FB_CONFIG_FILE), data);
@@ -421,7 +404,7 @@ public class Util {
                 return;
             }
 
-            SecretKey key = EncryptionHelper.loadOrGenerateKeys(activityInterface.getPresentActivity(),
+            SecretKey key = EncryptionHelper.getSecretKey(activityInterface.getPresentActivity(),
                     new File(activityInterface.getPresentActivity().getFilesDir() + "/" + KEYFILE));
             data = EncryptionHelper.decrypt(key, data);
 

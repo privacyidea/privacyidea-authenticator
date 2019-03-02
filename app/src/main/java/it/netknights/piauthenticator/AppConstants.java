@@ -53,8 +53,11 @@ public class AppConstants {
 
     static final String DIGITS_6_STR = "6";
     static final String DIGITS_8_STR = "8";
-    static final int DIGITS_6 = 6;
-    static final int DIGITS_8 = 8;
+
+    static final int OTP_TEXT_SIZE_DEFAULT = 36;
+    static final int OTP_TEXT_SIZE_PENDING_AUTH = 20;
+    //static final int LABEL_TEXT_SIZE_DEFAULT =
+    //static final int LABEL_TEXT_SIZE_PENDING_AUTH =
 
     // ----- Stuff for push -----
     // Attribute names
@@ -69,12 +72,12 @@ public class AppConstants {
     static final String ENROLLMENT_CRED = "enrollment_credential";
 
     // TODO
-    static final String AUTHENTICATION_ENDPOINT_URL = "url";
-
+    static final String AUTHENTICATION_URL = "url";
+    static final String TITLE = "title";
     static final String NONCE = "nonce";
     static final String SIGNATURE = "signature";
     static final String SERIAL = "serial";
-    static final String NOTIFICATION_TEXT = "question";
+    static final String QUESTION = "question";
     static final String ROLLOUT_FINISHED = "rollout_finished";
     static final String ROLLOUT_EXPIRATION = "rollout_expiration";
     static final String DATA = "data";
@@ -84,6 +87,7 @@ public class AppConstants {
 
     static final String PUBKEYFILE = "pubkey.key";
     static final String NOTIFICATION_CHANNEL_ID = "privacyIDEAPush";
+    static final int NOTIFICATION_ID = 654321;
 
     // Status codes
     static final int PRO_STATUS_STEP_1 = 1001;
@@ -102,5 +106,6 @@ public class AppConstants {
     static final int STATUS_DO_FIREBASE_INIT = 3001;
     static final int STATUS_DO_PUSH_ROLLOUT = 3002;
     static final int STATUS_DO_2STEP_ROLLOUT = 3003;
+    static final int STATUS_TOKEN_CREATION_FINISHED_OK = 3004;
 
 }

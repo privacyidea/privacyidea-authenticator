@@ -29,6 +29,7 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.AsyncTask;
 import android.text.InputType;
+import android.util.TypedValue;
 import android.view.DragEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -42,12 +43,21 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.UnrecoverableEntryException;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 import static it.netknights.piauthenticator.AppConstants.HOTP;
+import static it.netknights.piauthenticator.AppConstants.OTP_TEXT_SIZE_DEFAULT;
+import static it.netknights.piauthenticator.AppConstants.OTP_TEXT_SIZE_PENDING_AUTH;
 import static it.netknights.piauthenticator.AppConstants.PUSH;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.OTPGenerator.hashPIN;
@@ -59,6 +69,11 @@ public class TokenListAdapter extends BaseAdapter {
     private List<Token> tokens;
     private Token currentSelection;
     private ArrayList<ProgressBar> pbs;
+    private ActivityInterface activityInterface;
+
+    TokenListAdapter() {
+        this.pbs = new ArrayList<>();
+    }
 
     ArrayList<ProgressBar> getPbs() {
         return pbs;
@@ -73,12 +88,6 @@ public class TokenListAdapter extends BaseAdapter {
             }
         }
     }
-
-    TokenListAdapter() {
-        this.pbs = new ArrayList<>();
-    }
-
-    private ActivityInterface activityInterface;
 
     void setActivityInterface(ActivityInterface activityInterface) {
         this.activityInterface = activityInterface;
@@ -133,6 +142,7 @@ public class TokenListAdapter extends BaseAdapter {
         final TextView otptext = v.findViewById(R.id.textViewToken);
         final TextView labeltext = v.findViewById(R.id.textViewLabel);
         Button nextbtn = v.findViewById(R.id.next_button);
+        otptext.setTextSize(OTP_TEXT_SIZE_DEFAULT);
         nextbtn.setVisibility(GONE);
         progressBar.setVisibility(GONE);
         otptext.setText(token.getCurrentOTP());
@@ -162,8 +172,6 @@ public class TokenListAdapter extends BaseAdapter {
                             token.setPin(hashedPIN);
                             token.setLocked(false);
                             notifyDataSetChanged();
-                            ArrayList<Token> temp = new ArrayList<>(tokens);
-                            Util.saveTokens(mView.getContext(), temp);
                         }
                     });
                     builder.setNegativeButton(R.string.button_text_cancel, new DialogInterface.OnClickListener() {
@@ -266,20 +274,58 @@ public class TokenListAdapter extends BaseAdapter {
                     otptext.setText(token.getCurrentOTP());
                     break;
                 case PUSH:
-                    if (token.rollout_finished) {
+                    if ((!activityInterface.getPushAuthRequests().isEmpty()) && token.rollout_finished) {
+                        for (PushAuthRequest req : activityInterface.getPushAuthRequests()) {
+                            if (req.serial.equals(token.getSerial())) {
+                                final PushAuthRequest r = req;
+                                nextbtn.setVisibility(VISIBLE);
+                                nextbtn.setClickable(true);
+                                nextbtn.setText("Allow");
+                                nextbtn.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        try {
+                                            PrivateKey appPrivateKey = SecretKeyWrapper.getPrivateKeyFor(r.serial);
+                                            PublicKey piPublicKey = Util.getPIPubkey(activityInterface.getPresentActivity(), r.serial);
+                                            if (appPrivateKey != null && piPublicKey != null) {
+                                                new PushAuthTask(r.nonce, r.url, r.serial, r.question, r.title, r.signature, piPublicKey, appPrivateKey).execute();
+                                                activityInterface.getPushAuthRequests().remove(r);
+                                                notifyDataSetChanged();
+                                            }
+                                        } catch (CertificateException e) {
+                                            e.printStackTrace();
+                                        } catch (NoSuchAlgorithmException e) {
+                                            e.printStackTrace();
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        } catch (KeyStoreException e) {
+                                            e.printStackTrace();
+                                        } catch (UnrecoverableEntryException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                });
+                                nextbtn.setLongClickable(false);
+                                progressBar.setVisibility(GONE);
+                                labeltext.setText(req.question);
+                                otptext.setTextSize(OTP_TEXT_SIZE_PENDING_AUTH);
+                                otptext.setText(req.title);
+                            }
+                        }
+                    } else if (token.rollout_finished) {
                         nextbtn.setVisibility(GONE);
                         nextbtn.setClickable(false);
                         nextbtn.setLongClickable(false);
                         progressBar.setVisibility(GONE);
-                        labeltext.setVisibility(GONE);
-                        otptext.setText("[PUSH] " + token.getSerial());
+                        labeltext.setText(token.getSerial());
+                        otptext.setText("[PUSH]");
                     } else {
                         nextbtn.setVisibility(GONE);
                         nextbtn.setClickable(false);
                         nextbtn.setLongClickable(false);
                         progressBar.setVisibility(GONE);
-                        labeltext.setVisibility(GONE);
-                        otptext.setText("[PUSH] " + token.getSerial());
+                        labeltext.setText(token.getSerial());
+                        otptext.setText("[PUSH]");
                         nextbtn.setVisibility(VISIBLE);
                         nextbtn.setText("Retry");
                         nextbtn.setOnClickListener(new View.OnClickListener() {

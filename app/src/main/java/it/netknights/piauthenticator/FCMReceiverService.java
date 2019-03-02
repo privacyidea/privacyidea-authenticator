@@ -1,12 +1,7 @@
 package it.netknights.piauthenticator;
 
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.content.Context;
 import android.content.Intent;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
@@ -16,43 +11,74 @@ import com.google.firebase.messaging.RemoteMessage;
 
 import java.util.Map;
 
-import static android.support.v4.app.NotificationCompat.PRIORITY_DEFAULT;
-import static android.support.v4.app.NotificationCompat.PRIORITY_HIGH;
-import static android.support.v4.app.NotificationCompat.PRIORITY_MAX;
 import static it.netknights.piauthenticator.AppConstants.*;
 import static it.netknights.piauthenticator.Util.logprint;
 
 public class FCMReceiverService extends FirebaseMessagingService {
 
-    String question, nonce, serial, signature;
+    String question, nonce, serial, signature, title, url;
 
     @Override
     public void onMessageReceived(RemoteMessage message) {
         // get the key-value pairs
         Map<String, String> map = message.getData();
-        logprint("FCM message received: " + message.toString());
-        if (map.containsKey(NOTIFICATION_TEXT)) {
-            question = map.get(NOTIFICATION_TEXT);
-        } else {
-            // TODO default question?
+        logprint("FCM message received: " + message.getData().toString());
+        if (map.containsKey(QUESTION)) {
+            question = map.get(QUESTION);
         }
         if (map.containsKey(NONCE)) {
             nonce = map.get(NONCE);
-        } else {
-            // TODO no nonce in push
         }
         if (map.containsKey(SERIAL)) {
             serial = map.get(SERIAL);
-        } else {
-            // TODO no serial in push
+        }
+        if (map.containsKey(TITLE)) {
+            title = map.get(TITLE);
+        }
+        if (map.containsKey(AUTHENTICATION_URL)) {
+            url = map.get(AUTHENTICATION_URL);
         }
         if (map.containsKey(SIGNATURE)) {
             signature = map.get(SIGNATURE);
-        } else {
-            // TODO reject request?
         }
 
-        sendNotification(message.getData().toString(), question);
+        // Start the service with the data from the push when the button in the notification is pressed
+        Intent service_intent = new Intent(this, PushAuthService.class);
+        service_intent.putExtra(SERIAL, serial)
+                .putExtra(NONCE, nonce)
+                .putExtra(TITLE, title)
+                .putExtra(AUTHENTICATION_URL, url)
+                .putExtra(SIGNATURE, signature)
+                .putExtra(QUESTION, question);
+
+        PendingIntent pService_intent = PendingIntent.getService(this, 0, service_intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        NotificationCompat.Action action = new NotificationCompat.Action.Builder(0, "Allow", pService_intent).build();
+
+        Intent activity_intent = new Intent(this, MainActivity.class);
+        activity_intent.putExtra(SERIAL, serial)
+                .putExtra(NONCE, nonce)
+                .putExtra(TITLE, title)
+                .putExtra(AUTHENTICATION_URL, url)
+                .putExtra(SIGNATURE, signature)
+                .putExtra(QUESTION, question);
+
+        PendingIntent pActivity_intent = PendingIntent.getActivity(this, 0, activity_intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        // TODO indicate verification from within app?
+
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this,
+                NOTIFICATION_CHANNEL_ID)                                // Android 8+ uses notification channels
+                .setSmallIcon(R.drawable.ic_add_white_24dp)
+                .setContentTitle(title)
+                .setContentText(question)
+                .setPriority(NotificationCompat.PRIORITY_MAX)          // 7.1 and lower
+                .addAction(action)                                     // Add the allow Button
+                .setAutoCancel(true)                                   // Remove the notification after tabbing it
+                .setWhen(0)
+                .setContentIntent(pActivity_intent);                   // Intent for opening activity with the request
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        notificationManager.notify(NOTIFICATION_ID, mBuilder.build());
     }
 
     @Override
@@ -61,32 +87,4 @@ public class FCMReceiverService extends FirebaseMessagingService {
         Log.e("NEW TOKEN", s);
     }
 
-    private void sendNotification(String data, String message) {
-        Intent intent = new Intent(this, PushAuthService.class);
-        intent.putExtra(DATA, data);
-        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        // TODO indicate verification from within app?
-
-        NotificationCompat.Action action = new NotificationCompat.Action.Builder(0, "Allow", pendingIntent).build();
-
-        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this,
-                NOTIFICATION_CHANNEL_ID)    // Android 8 uses notification channels
-                .setSmallIcon(R.drawable.ic_edit)
-                .setContentTitle("privacyIDEA Authentication")
-                .setContentText(message)
-                .setPriority(NotificationCompat.PRIORITY_MAX)          // 7.1 and lower
-                .addAction(action)
-                .setStyle(new NotificationCompat.BigTextStyle()
-                        .bigText("BIG TEXT"))
-                .setAutoCancel(true)                  // dont remove the notification after tabbing it
-                .setWhen(0);
-        //.setContentIntent(pendingIntent)
-
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-        if (notificationManager != null) {
-            notificationManager.notify(0, mBuilder.build());
-        }
-
-    }
 }

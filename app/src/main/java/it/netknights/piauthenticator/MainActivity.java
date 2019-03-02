@@ -24,13 +24,10 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -38,12 +35,11 @@ import android.os.Handler;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
-import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -58,8 +54,6 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.FirebaseOptions;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -67,60 +61,53 @@ import com.google.zxing.integration.android.IntentResult;
 
 import org.apache.commons.codec.binary.Base32;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URL;
-import java.security.GeneralSecurityException;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.KeyStoreException;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.Arrays;
 import java.util.Date;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
-import static it.netknights.piauthenticator.AppConstants.API_KEY;
-import static it.netknights.piauthenticator.AppConstants.APP_ID;
-import static it.netknights.piauthenticator.AppConstants.COUNTER;
+import static it.netknights.piauthenticator.AppConstants.AUTHENTICATION_URL;
 import static it.netknights.piauthenticator.AppConstants.DATA;
 import static it.netknights.piauthenticator.AppConstants.DIGITS;
-import static it.netknights.piauthenticator.AppConstants.FB_TOKEN;
-import static it.netknights.piauthenticator.AppConstants.HMACSHA1;
-import static it.netknights.piauthenticator.AppConstants.HMACSHA256;
-import static it.netknights.piauthenticator.AppConstants.HMACSHA512;
-import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
-import static it.netknights.piauthenticator.AppConstants.ISSUER;
 import static it.netknights.piauthenticator.AppConstants.LABEL;
+import static it.netknights.piauthenticator.AppConstants.NONCE;
 import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_CHANNEL_ID;
 import static it.netknights.piauthenticator.AppConstants.PERIOD;
-import static it.netknights.piauthenticator.AppConstants.PERSISTENT;
-import static it.netknights.piauthenticator.AppConstants.PIN;
-import static it.netknights.piauthenticator.AppConstants.PROJECT_ID;
-import static it.netknights.piauthenticator.AppConstants.PROJECT_NUMBER;
 import static it.netknights.piauthenticator.AppConstants.PUSH;
-import static it.netknights.piauthenticator.AppConstants.ROLLOUT_URL;
+import static it.netknights.piauthenticator.AppConstants.QUESTION;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
-import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
+import static it.netknights.piauthenticator.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.AppConstants.TITLE;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
-import static it.netknights.piauthenticator.AppConstants.TTL;
-import static it.netknights.piauthenticator.AppConstants.TWOSTEP_DIFFICULTY;
-import static it.netknights.piauthenticator.AppConstants.TWOSTEP_OUTPUT;
-import static it.netknights.piauthenticator.AppConstants.TWOSTEP_SALT;
 import static it.netknights.piauthenticator.AppConstants.TYPE;
 import static it.netknights.piauthenticator.AppConstants.WITHPIN;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
-import static it.netknights.piauthenticator.Util.byteArrayToHexString;
 import static it.netknights.piauthenticator.Util.logprint;
 
 
 public class MainActivity extends AppCompatActivity implements ActionMode.Callback, ActivityInterface {
     TokenListAdapter tokenlistadapter;
     ArrayList<Token> tokenlist;
+    ArrayList<PushAuthRequest> pushAuthRequests = new ArrayList<>();
     private Handler handler;
     private Runnable timer;
     private Util util;
@@ -134,14 +121,17 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         util.initFirebase();
 
         Intent intent = getIntent();
-        if (intent == null) {
-            logprint("NO INTENT FOUND ON CREATE");
+        if (intent.getExtras() == null) {
+            logprint("No intent found onCreate.");
         } else {
-            String push_data = intent.getStringExtra(DATA);
-            if (push_data != null)
-                logprint(push_data);
-            if (intent.getExtras() != null)
-                logprint(intent.getExtras().toString());
+            // intent contain push auth info
+            String serial = intent.getStringExtra(SERIAL);
+            String nonce = intent.getStringExtra(NONCE);
+            String title = intent.getStringExtra(TITLE);
+            String url = intent.getStringExtra(AUTHENTICATION_URL);
+            String signature = intent.getStringExtra(SIGNATURE);
+            String question = intent.getStringExtra(QUESTION);
+            pushAuthRequests.add(new PushAuthRequest(nonce,url,serial,question,title,signature));
         }
 
         //PRNGFixes.apply();
@@ -158,13 +148,175 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             paintStatusbar();
         }
+
+        /*try {
+            testSign();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (SignatureException e) {
+            e.printStackTrace();
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableEntryException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        }*/
+    }
+
+    void testSign() throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, InvalidKeySpecException, CertificateException, UnrecoverableEntryException, KeyStoreException, IOException, NoSuchProviderException, InvalidAlgorithmParameterException {
+        String toVerify = "6DNMPF4MK2OWJOI5MTTDFOMTIR6TIHRU|http://test/ttype/push|PIPU0000015A|Do you want to login to service ABC?" +
+                "|PI Authentication";
+
+        String signature = "C3RE7ULFOVH6DJO7RJD2AX7HHMIQFUNH3EIYVMTOTOWK6K64TXNV2VC7GZTHH5Q5BKAMZNQH37P75TCQL3QVOYTHACNMHPTIXWVPOKGRCKIPJBPQTPNG4MD2Y7S4PT6OKL3MP4JHE7AN2LIX2WAFCAC4SV3G55EVEWOS7ZJC33FLBKCSSUBTQOT3EKJIXSYBWJXZM6NS7E6MAEUJYEA4M4IXNG2SOZ5" +
+                "KFPSVX5ZELYNIRJLJKIS6LYR7GU5AWKBXT7KG73WSYSMBPMP74OA7I2HFKNEIFDPFNADFEHCNUFSYHJ6ZH4VEJ4K3X2TIF2P4AULLF6CON7GUZJ7FVFARV3HGT73SDJCQOKWKBO3VVCFUF42AAZNLIPW4JON6FB5LA3C4SNIVEM3VPKPRMT4ALWEKISV67CPI5FFHXI6AHROFA53BUOHKD5PUIEQGGEQAJ" +
+                "RRBKLIR3BP3RFF5RECCEGVXQDUHO5IO4PPB4SFVXPTZCIHSEHSXT5I5WMC2KXXWOY276GOID7N4U2DCBMAG7LXNVCTMGOSEC7GPCCGBMNQPEAQ2EE4SWTAV77UYGTS6TFM5TTI2PEEKQCRSH32MCNGADWGGFZVT7OIXD3KG34P4L6S5P2OCNIAVKYJZXMVK22GMJJEQU4PT5K3BJ53LSK5BV6I3KPUXZBNIF4TN35WCXCITP" +
+                "7THBPZ7BAUV5JQOZAN7HVUZRIATQGADQTM3MHG7O55X6G372GEIFX777EQAOSTUSITBI2ZJ3CSONE736FUEO6BNKD6TKBTJG4PAB2RA6DTBJMPELOEQ4GKHCVL3H7KY7DDQ====";
+
+        String pubkey_str = "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8A\n" +
+                "MIICCgKCAgEA0x6SH2HNWjJ76jEkxTZuPNauqoUOBEd8LEeU9/tnutFIluXttZ4lLV\n" +
+                "4+VIaMgI0Kb9KGwL0xw0cJO1uwFjNSWsca6iyVz2Ek6Fy58jEeIvW49jzmzO2b0ePm\n" +
+                "DI/k29BZX7LtLAz9Dqc2GK15xSt1TBZpiPOm26I8tBXgsIBudvJTPbPGnOrJw4F8bY\n" +
+                "vG4oiFRtYUX3Ew4hhYSERQ230dUax/jiHgjOeALwY4mIgVroqE6UVubZCYbgLst+Iv\n" +
+                "hnmBNOsup9OMbUYBLOQCOvkYJ99LM1K25Jpa79UX3bUgEnedf2jxTIn7VbmXMtQlO4\n" +
+                "Aushu4rxFn1WlWC8gfM5cgf3Ia/hqNwEkWO9SwkvuKP/EsWGKos+ibF2HjWnq0HUkq\n" +
+                "WlnAYyUzIHaxDzFfp7/XeHkdPsqC+7mzVkGcw5kxkSgB0YUY8P4OGxKZCkZRuuc3pe\n" +
+                "SVuXIHYTyKOOZBiMoWOW2Xpyl5A6MDVnHgkuhKmdaYhaIsQNFvBetCJtFhrqwIfo/N\n" +
+                "jIVxBn6kMXAgX8UWHqT8W3TgVlG8cHzPx9ggI5hsMH8OdlWp+Xkw7Z6K87ZsW0XSYi\n" +
+                "yGaA0fYjOpJje4VQeacXKSHi0LL0GLc7iAaYY6f5MWGOjZ/6BGqRKN1GIKHmrkqpv4\n" +
+                "h83xHr9cmVqmk3rZIa7ZeBQ2u9WlA69zxV0CAwEAAQ==";
+
+        String privkey_str = "MIIJJwIBAAKCAgEA0x6SH2HNWjJ76jEkxTZuPNauqoUOBEd8LEeU9/tnutFIluXt\n" +
+                "tZ4lLV4+VIaMgI0Kb9KGwL0xw0cJO1uwFjNSWsca6iyVz2Ek6Fy58jEeIvW49jzm\n" +
+                "zO2b0ePmDI/k29BZX7LtLAz9Dqc2GK15xSt1TBZpiPOm26I8tBXgsIBudvJTPbPG\n" +
+                "nOrJw4F8bYvG4oiFRtYUX3Ew4hhYSERQ230dUax/jiHgjOeALwY4mIgVroqE6UVu\n" +
+                "bZCYbgLst+IvhnmBNOsup9OMbUYBLOQCOvkYJ99LM1K25Jpa79UX3bUgEnedf2jx\n" +
+                "TIn7VbmXMtQlO4Aushu4rxFn1WlWC8gfM5cgf3Ia/hqNwEkWO9SwkvuKP/EsWGKo\n" +
+                "s+ibF2HjWnq0HUkqWlnAYyUzIHaxDzFfp7/XeHkdPsqC+7mzVkGcw5kxkSgB0YUY\n" +
+                "8P4OGxKZCkZRuuc3peSVuXIHYTyKOOZBiMoWOW2Xpyl5A6MDVnHgkuhKmdaYhaIs\n" +
+                "QNFvBetCJtFhrqwIfo/NjIVxBn6kMXAgX8UWHqT8W3TgVlG8cHzPx9ggI5hsMH8O\n" +
+                "dlWp+Xkw7Z6K87ZsW0XSYiyGaA0fYjOpJje4VQeacXKSHi0LL0GLc7iAaYY6f5MW\n" +
+                "GOjZ/6BGqRKN1GIKHmrkqpv4h83xHr9cmVqmk3rZIa7ZeBQ2u9WlA69zxV0CAwEA\n" +
+                "AQKCAgB79Wc2peY9H4dCarh8UwlHD4Ze+ODSAmcWWLFPKX4uYtOMRlTcXo7VpJBU\n" +
+                "cOvuTuHh5mrYoD2nuv3grGUno9qnEmDrPmJ38UIKbOeBHPXk8QI5EmkxyhHDm1xn\n" +
+                "49Use5j+Z8B6LOYoxGUu+CyXaHzmwAIXN3ixXQDnfDEBcWdqz72wbO4hFHqDIHQ+\n" +
+                "neOY/y/B99DeeUeKeWDcjcAsH7onSnFasul10jehZLW2WbDhWtPPY8UC7/OQJId5\n" +
+                "MIVXH+CNgclTIRNC1ee6w+XLWpakUqeE6vwYHclnKGdq9f5u2WzQcn27wwifvOja\n" +
+                "H1X9KbZBPaWipUWiOMcdA9POJt4c5K2MJEJjsegAXa/Xir5uE/7XR/ikriFYh7sb\n" +
+                "k5ZuhJzjM6mR94N7DMTOjodOVAsfo8ToJn8cdanEon4rPxQ52ZB4nJkkcHT6LrmF\n" +
+                "PZHfI5YsFWFCgs57xn1AAt0L4CupzehPJdL4k0/xuCf8fW3fGiNVcY/oxpaCEz4L\n" +
+                "RG6SYXRmEXNv8V5KlZmJb1TbiuB0QiVJZ79jPXgDIJi5dc9XkbwMDuv8iDZkakK3\n" +
+                "tbLfDE3wGVFDt3f9Fqy0qNYPtIZpYW244amkH+o6AIGFGs8adJxvXOmjYiz77EK9\n" +
+                "13pyReO2qQ+FgP0XlQ+7KEjidDNgy2FO/YcQ54p52YF8LZuyAQKCAQEA/AfPJNSX\n" +
+                "vCPPLOSNWp+ajEGs57f3HZlPmrGahobMv3CRd7NXvXMljqY4FfpCPgr31GB6wPZi\n" +
+                "xXiNYtKbK0v9zkLIudnKO/rNmYOUW+NIos3l5eJh8ve4aujGqyzOGB/FV5VSdXr3\n" +
+                "9tiRinEkMLtCUbE8hGhyxtUrmGLYYoU26qUWf05SOPW/k3QQoePH9yp0CnmwVnO3\n" +
+                "u0p+iHUIwp1+m9GKu6vvUTi21WsF2ZXq4MLdz5NauqTUY3YJTfJrauJ22tyXfrZo\n" +
+                "8Ez8Q/RaBTAi0iul9uF+DZBBtLC9eksmapOp+XvqTp6duJHJCi1HkjniXiGdG1Dv\n" +
+                "lCdJLDYkMgN1SQKCAQEA1nHOuL14P82UUlIAV6SL8A+H/R99M0hqXZOoOawTk/mZ\n" +
+                "gukimmGnIfMHF2sqWsbxYENW2vwGj33GxCjor+Vo5M0SEvqYDt2wp66bw1GfJpK7\n" +
+                "xEesaY18nHRgdCevUva02OVKfy59Gdrm6Zsmgug/Fwk+i6/UtEdoJmClmE8rimrp\n" +
+                "/qhOYocDTOCDhwlSFbDqIkVHgZKMFlEn+KPOon3D9H1/DP3BG7wBz3l2/Pu1fmW1\n" +
+                "Z1W4uVWSSbCCljwMX3nOlOdnGkSfxz0fOhSrBayHZasw8HMxSoVB2bY2W4gfioed\n" +
+                "jVzyAi8RByqkovS0DQrxM0TqBqqbIyooBHl6zJTTdQKCAQAKtMo35lALzfmfDpZy\n" +
+                "oxUNoDyYG1iECV84UxMdY9yOxVlonFW91oZh6O25AUiPGigs/Ww5hj3r5ZMb/5ZX\n" +
+                "4IKHoI6mVnog0iapvs0umhkb0WNSwKsohx1ubTUDUIPwwmi/r7gxBWhDNC/6kZPX\n" +
+                "/hxzG/RWK5m0mJmhf5FxnfcXQKwT/F/By663tNaACg0UktkbGNBE2+WSLzfw1Afr\n" +
+                "PIWEWQJrtoIUETSzHDjDZXr00VJa3webpiTflMQQa5vkjno+EeDdoSIUEzEkMd0h\n" +
+                "G0pfYztJoYqZSOeBpYBnEYowPNWbo4fwjwxkKs0/gWzo6UyUcxkZb/a9dG3HUwV2\n" +
+                "mm8BAoIBADxYJj3iQ1Zg+V346VPAYAibtj7Kf6bQt+3BQVOJUrEPSd2G0U/0Lt3k\n" +
+                "z5gNdgu5c+8MxAI3bXkvgaFtiZ0Fx3CrLGzey69TPwTQo9BgxZJLND9Vk/TX9brp\n" +
+                "HMNS74k/F0D5tO75HAcMjHIsULgBts86sLkKL6bTeUFjbPXhQXVgBJy+q+AZ8hnO\n" +
+                "C/UR8GFeOWSPbkHOBVG6YK8dGWasUVoZfokfVxoA29mQaqViB36cDGIZwzOUGuhV\n" +
+                "nUm9eBXd5v4L5/2CVhvw3Tqw2jdsh2VauRjQsYww14j2N3GmaonHA9Tl1Mw8hmQn\n" +
+                "4dBhX9FTxPAScnCRzbolgMFRlfa/4okCggEAVD6Iu9rDCAYKlw1mQKCtb7rJ7YOk\n" +
+                "g9+sTIaRhCr562Jde7HO+XC3lnTBQASI/mS7P3+IcrG0FYT9CHvBRHTgbIqaWFSU\n" +
+                "bO9c/wh1joRjWbUzy+WCsW9cRdyoI0p8ONlyruG/OijXapFqNGPLQ0oSTu7xm73b\n" +
+                "l0FC52Xe2dDNUkQtXYAlpq5jjI7quq7mB9Sr1THbnXpmkRktoTqoDK9slt39xVpR\n" +
+                "N6UJSk7/nwSbW7KjfkjG1dIvjOGTSqVX6yU/Irztp6Wlb+0k1LQg0EflW5eEDyxL\n" +
+                "ybW0bI2zhQ+gFfJR1RSeRxapZSpOhIxK5KXB4l8Qjzp/Ha2MQXX3CzbXHw==";
+
+
+        logprint("Test siging/verifying...");
+        logprint("signature to verify (b32): " + signature);
+        logprint("string to verify: " + toVerify);
+        // Test with pi data
+        byte[] keybytes = Base64.decode(pubkey_str.getBytes(), Base64.DEFAULT);
+
+        //PublicKey pubkey = PKCS1ToSubjectPublicKeyInfo.decodePKCS1PublicKey(keybytes);
+
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keybytes);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        PublicKey pubkey = kf.generatePublic(keySpec);
+
+        byte[] message = toVerify.getBytes(StandardCharsets.UTF_8);
+        byte[] bSignature = new Base32().decode(signature);
+
+        Signature sig = Signature.getInstance("SHA256withRSA");
+
+        sig.initVerify(pubkey);
+        sig.update(message);
+        boolean bSigned = sig.verify(bSignature);
+        if (bSigned) {
+            logprint("true");
+        } else
+            logprint("false");
+
+
+        byte[] privateKeyBytes = Base64.decode(privkey_str, Base64.DEFAULT);
+        PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));
+
+        sig.initSign(privateKey);
+        sig.update(message);
+        String mySignature = new Base32().encodeAsString(sig.sign());
+
+        logprint("my signature: " + mySignature);
+        logprint("bytes der message: " + Arrays.toString(message));
+        logprint("bytes des private keys:" + Arrays.toString(privateKey.getEncoded()));
+        logprint("bytes des public keys:" + Arrays.toString(keybytes));
+        sig.initVerify(pubkey);
+        sig.update(message);
+        boolean bMySigned = sig.verify(new Base32().decode(mySignature));
+        if (bMySigned) {
+            logprint("my true");
+        } else
+            logprint("my false");
+        /*
+        // test sign
+        PublicKey publicKey = SecretKeyWrapper.generateKeyPair("test1", this);
+        PrivateKey privateKey = SecretKeyWrapper.getPrivateKeyFor("test1");
+
+        Signature s = Signature.getInstance("SHA256withRSA");
+        s.initSign(privateKey);
+        s.update(message);
+        String sig2_b32 = new Base32().encodeAsString(s.sign());
+        logprint("signature b32: " + sig2_b32);
+
+        // test verify
+        s.initVerify(publicKey);
+        s.update(message);
+        boolean isValid = s.verify(new Base32().decode(sig2_b32));
+        if (isValid)
+            logprint("is valid");
+        else
+            logprint("is NOT valid"); */
     }
 
     private void checkForExpiredTokens() {
         ArrayList<Token> upForDeletion = new ArrayList<>();
         Date now = new Date();
         for (Token t : tokenlist) {
-            if (t.getType() == PUSH) {
+            if (t.getType().equals(PUSH)) {
                 if (!t.rollout_finished && t.rollout_expiration.before(now)) {
                     upForDeletion.add(t);
                 }
@@ -172,9 +324,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
 
         if (!upForDeletion.isEmpty()) {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             for (Token t : upForDeletion) {
-                sb.append(t.getSerial() + "\n");
+                sb.append(t.getSerial()).append("\n");
                 removeToken(t);
             }
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
@@ -252,10 +404,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
      * @param currToken the token to delete
      */
     void removeToken(Token currToken) {
-        if (currToken.getType() == PUSH) {
+        if (currToken.getType().equals(PUSH)) {
             util.removePubkeyFor(currToken.getSerial());
             try {
-                SecretKeyWrapper.removePrivKeyFor(currToken.getSerial());
+                SecretKeyWrapper.removePrivateKeyFor(currToken.getSerial());
             } catch (CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException e) {
                 e.printStackTrace();
             }
@@ -641,6 +793,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     protected void clearTokenlist() {
         if (tokenlist.size() > 0) {
             tokenlist.clear();
+            tokenlistadapter.notifyDataSetChanged();
             saveTokenlist();
         }
     }
@@ -682,14 +835,34 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     public void addToken(Token t) {
         if (t == null) return;
+        if (t.getType().equals(PUSH)) {
+            for (Token token : tokenlist) {
+                if(token.getSerial().equals(t.getSerial())){
+                    logprint("duplicate token: "+token.getSerial()+". Not adding it.");
+                    return;
+                }
+            }
+        }
         this.tokenlist.add(t);
-        saveTokenlist();
         this.tokenlistadapter.notifyDataSetChanged();
+        saveTokenlist();
+    }
+
+    @Override
+    public void update() {
+        tokenlistadapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public ArrayList<PushAuthRequest> getPushAuthRequests() {
+        return pushAuthRequests;
     }
 }
 
 interface ActivityInterface {
-    public Activity getPresentActivity();
+    Activity getPresentActivity();
+    ArrayList<PushAuthRequest> getPushAuthRequests();
+    void update();
 
-    public void addToken(Token t);
+    void addToken(Token t);
 }

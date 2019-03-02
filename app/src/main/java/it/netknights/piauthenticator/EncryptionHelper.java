@@ -91,7 +91,7 @@ public class EncryptionHelper {
      * The symmetric secret key is stored securely on disk by wrapping
      * it with a public/private key pair, possibly backed by hardware.
      */
-    static SecretKey loadOrGenerateKeys(Context context, File keyFile)
+    static SecretKey getSecretKey(Context context, File keyFile)
             throws GeneralSecurityException, IOException {
         final SecretKeyWrapper wrapper = new SecretKeyWrapper(context, "settings");
         // Generate secret key if none exists
