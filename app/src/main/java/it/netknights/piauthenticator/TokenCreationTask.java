@@ -1,3 +1,23 @@
+/*
+  privacyIDEA Authenticator
+
+  Authors: Nils Behlen <nils.behlen@netknights.it>
+
+  Copyright (c) 2017-2019 NetKnights GmbH
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+
 package it.netknights.piauthenticator;
 
 import android.net.Uri;
@@ -8,6 +28,8 @@ import org.apache.commons.codec.binary.Base32;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Calendar;
+
+import it.netknights.piauthenticator.Interfaces.PresenterTaskInterface;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
 import static it.netknights.piauthenticator.AppConstants.API_KEY;
@@ -31,6 +53,7 @@ import static it.netknights.piauthenticator.AppConstants.SECRET;
 import static it.netknights.piauthenticator.AppConstants.STATUS_DO_2STEP_ROLLOUT;
 import static it.netknights.piauthenticator.AppConstants.STATUS_DO_FIREBASE_INIT;
 import static it.netknights.piauthenticator.AppConstants.STATUS_DO_PUSH_ROLLOUT;
+import static it.netknights.piauthenticator.AppConstants.STATUS_STANDARD_ROLLOUT_DONE;
 import static it.netknights.piauthenticator.AppConstants.STATUS_TOKEN_CREATION_FINISHED_OK;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
@@ -38,20 +61,18 @@ import static it.netknights.piauthenticator.AppConstants.TTL;
 import static it.netknights.piauthenticator.AppConstants.TWOSTEP_DIFFICULTY;
 import static it.netknights.piauthenticator.AppConstants.TWOSTEP_OUTPUT;
 import static it.netknights.piauthenticator.AppConstants.TWOSTEP_SALT;
+import static it.netknights.piauthenticator.Util.loadTokens;
 import static it.netknights.piauthenticator.Util.logprint;
 
 public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
 
-    private ActivityInterface activityInterface;
-    private AsyncTask<Void, Integer, Boolean> pushrollout;
-    private AsyncTask<Void, Integer, Boolean> firebaseInit;
-    private AsyncTask<Void, Void, Boolean> twoStepRollout;
-    Util util;
-    private Token toAdd;
+    private PresenterTaskInterface presenterTaskInterface;
+    private Token tmp;
+    private FirebaseInitConfig firebaseInitConfig;
+    int phonepartlength, iterations, output_size;
 
-    TokenCreationTask(ActivityInterface activityInterface, Util util) {
-        this.activityInterface = activityInterface;
-        this.util = util;
+    public TokenCreationTask(PresenterTaskInterface presenterTaskInterface) {
+        this.presenterTaskInterface = presenterTaskInterface;
     }
 
     @Override
@@ -121,8 +142,7 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
                 logprint("appID: " + appID);
                 logprint("API Key: " + api_key);
                 logprint("Proj Number: " + projNumber);
-                util.storeFirebaseConfig(projID, appID, api_key, projNumber);
-                firebaseInit = new FirebaseInitTask(projID, appID, api_key, projNumber, activityInterface);
+                firebaseInitConfig = new FirebaseInitConfig(projID, appID, api_key, projNumber);
                 publishProgress(STATUS_DO_FIREBASE_INIT);
             }
 
@@ -139,11 +159,9 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
             now.add(Calendar.MINUTE, ttl);
             token.rollout_expiration = now.getTime();
 
-            if(uri.getQueryParameter(ENROLLMENT_CRED)!= null){
+            if (uri.getQueryParameter(ENROLLMENT_CRED) != null) {
                 token.enrollment_credential = uri.getQueryParameter(ENROLLMENT_CRED);
             }
-
-            pushrollout = new PushRolloutTask(token, activityInterface);
 
             publishProgress(STATUS_DO_PUSH_ROLLOUT);
             cancel(true);
@@ -160,7 +178,7 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
         }
 
         // CREATE BASE TOKEN (HOTP/TOTP)
-        Token tmp = new Token(secret, serial, label, type, digits);
+        tmp = new Token(secret, serial, label, type, digits);
 
         // ADD ADDITIONAL INFORMATION TO IT
         if (type.equals(TOTP)) {
@@ -185,7 +203,7 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
             tmp.setLocked(true);
         }
         if (uri.getBooleanQueryParameter(PERSISTENT, false)) {
-            tmp.setUndeletable(true);
+            tmp.setPersistent(true);
         }
         // tap to show is currently not used
         if (uri.getBooleanQueryParameter(TAPTOSHOW, false)) {
@@ -198,16 +216,16 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
                 uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null ||
                 uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
 
-            int phonepartlength = 10; // default value
+            phonepartlength = 10; // default value
             if (uri.getQueryParameter(TWOSTEP_SALT) != null) {
                 phonepartlength = Integer.parseInt(uri.getQueryParameter(TWOSTEP_SALT));
             }
-            int iterations = 10000;
+            iterations = 10000;
             if (uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null) {
                 iterations = Integer.parseInt(uri.getQueryParameter(TWOSTEP_DIFFICULTY));
             }
             // comes in bytes, needs to be converted to bit as parameter for PBKDF2
-            int output_size = 160;
+            output_size = 160;
 
             if (uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
                 output_size = Integer.parseInt(uri.getQueryParameter(TWOSTEP_OUTPUT)) * 8;
@@ -223,13 +241,11 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
                     output_size = 512;
                 }
             }
-            twoStepRollout = new TwoStepRolloutTask(tmp, phonepartlength, iterations, output_size, activityInterface);
             publishProgress(STATUS_DO_2STEP_ROLLOUT);
             cancel(true);
-            //return do2StepInit(tmp, phonepartlength, iterations, output_size);
         }
-        toAdd = tmp;
-        publishProgress(STATUS_TOKEN_CREATION_FINISHED_OK);
+        // rollout finished for "normal" TOTP/HOTP token
+        publishProgress(STATUS_STANDARD_ROLLOUT_DONE);
         return true;
     }
 
@@ -238,44 +254,41 @@ public class TokenCreationTask extends AsyncTask<String, Integer, Boolean> {
         super.onProgressUpdate(values);
 
         switch (values[0]) {
-            case STATUS_DO_2STEP_ROLLOUT: {
-                if (twoStepRollout != null) {
-                    twoStepRollout.execute();
+            case STATUS_DO_2STEP_ROLLOUT:
+                if (tmp != null)
+                    presenterTaskInterface.doTwoStepRollout(tmp, phonepartlength, iterations, output_size);
+                break;
+
+            case STATUS_DO_FIREBASE_INIT:
+                if (firebaseInitConfig != null) {
+                    presenterTaskInterface.doFirebaseInit(firebaseInitConfig);
                 }
                 break;
-            }
-            case STATUS_DO_FIREBASE_INIT: {
-                if (firebaseInit != null) {
-                    firebaseInit.execute();
+
+            case STATUS_DO_PUSH_ROLLOUT:
+                if (tmp != null) {
+                    presenterTaskInterface.doPushRollout(tmp);
                 }
                 break;
-            }
-            case STATUS_DO_PUSH_ROLLOUT: {
-                if (pushrollout != null) {
-                    pushrollout.execute();
-                }
+
+            case STATUS_STANDARD_ROLLOUT_DONE:
+                if (tmp != null)
+                    presenterTaskInterface.updateTaskStatus(STATUS_STANDARD_ROLLOUT_DONE, tmp);
                 break;
-            }
-            case STATUS_TOKEN_CREATION_FINISHED_OK: {
-                if (toAdd != null) {
-                    activityInterface.addToken(toAdd);
-                }
+            default:
                 break;
-            }
-            default: break;
         }
     }
 
     @Override
     protected void onPostExecute(Boolean aBoolean) {
         super.onPostExecute(aBoolean);
-        logprint("TOKEN CREATION ENDING");
-        activityInterface.update();
+        logprint("TokenCreation ending");
     }
 
     @Override
     protected void onCancelled() {
         super.onCancelled();
-        logprint("TOKEN CREATION ENDING");
+        logprint("TokenCreation cancelled");
     }
 }

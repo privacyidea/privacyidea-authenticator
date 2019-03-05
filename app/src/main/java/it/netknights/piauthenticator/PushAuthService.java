@@ -1,3 +1,23 @@
+/*
+  privacyIDEA Authenticator
+
+  Authors: Nils Behlen <nils.behlen@netknights.it>
+
+  Copyright (c) 2017-2019 NetKnights GmbH
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+
 package it.netknights.piauthenticator;
 
 import android.app.Service;
@@ -35,7 +55,7 @@ public class PushAuthService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
         logprint("AuthService started");
-        if(intent == null){
+        if (intent == null) {
             logprint("intent is null, returning");
             return Service.START_STICKY;
         }
@@ -60,12 +80,13 @@ public class PushAuthService extends Service {
         } catch (UnrecoverableEntryException e) {
             e.printStackTrace();
         }
-        if(appPrivateKey == null){
+        if (appPrivateKey == null) {
             logprint("PushAuthService: appPrivateKey is null, Authentication is not started.");
             return Service.START_STICKY;    // Restart the Service in case of being killed, but don't redeliver the intent
         }
-        AsyncTask<Void, Integer, Boolean> pushAuth = new PushAuthTask(nonce, url, serial, question, title, signature,
-                getPIPubkey(getBaseContext(), serial), appPrivateKey );
+        AsyncTask<Void, Integer, Boolean> pushAuth = new PushAuthTask(
+                new PushAuthRequest(nonce, url, serial, question, title, signature),
+                getPIPubkey(getBaseContext(), serial), appPrivateKey);
         pushAuth.execute();
         //return Service.START_REDELIVER_INTENT;
         return Service.START_STICKY;

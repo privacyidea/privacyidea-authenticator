@@ -22,14 +22,13 @@
 package it.netknights.piauthenticator;
 
 import android.animation.ObjectAnimator;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.DialogInterface;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.os.AsyncTask;
 import android.text.InputType;
-import android.util.TypedValue;
 import android.view.DragEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -43,15 +42,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.IOException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.UnrecoverableEntryException;
-import java.security.cert.CertificateException;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
@@ -59,38 +51,24 @@ import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.OTP_TEXT_SIZE_DEFAULT;
 import static it.netknights.piauthenticator.AppConstants.OTP_TEXT_SIZE_PENDING_AUTH;
 import static it.netknights.piauthenticator.AppConstants.PUSH;
+import static it.netknights.piauthenticator.AppConstants.QUESTION;
+import static it.netknights.piauthenticator.AppConstants.TITLE;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
-import static it.netknights.piauthenticator.OTPGenerator.hashPIN;
+import static it.netknights.piauthenticator.Interfaces.*;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
+import static it.netknights.piauthenticator.Util.logprint;
 
 
-public class TokenListAdapter extends BaseAdapter {
+public class TokenListAdapter extends BaseAdapter implements TokenListViewInterface {
+    private PresenterInterface presenterInterface;
+    private ArrayList<ProgressBar> progressBars;
 
-    private List<Token> tokens;
-    private Token currentSelection;
-    private ArrayList<ProgressBar> pbs;
-    private ActivityInterface activityInterface;
+    void setPresenterInterface(PresenterInterface presenterInterface) {
+        this.presenterInterface = presenterInterface;
+    }
 
     TokenListAdapter() {
-        this.pbs = new ArrayList<>();
-    }
-
-    ArrayList<ProgressBar> getPbs() {
-        return pbs;
-    }
-
-    void updatePBs(int progress) {
-        for (ProgressBar pb : pbs) {
-            if (pb.getMax() == 30 * 100 && progress >= 30) {
-                setProgressAnimate(pb, progress - 30);
-            } else {
-                setProgressAnimate(pb, progress);
-            }
-        }
-    }
-
-    void setActivityInterface(ActivityInterface activityInterface) {
-        this.activityInterface = activityInterface;
+        this.progressBars = new ArrayList<>();
     }
 
     private void setProgressAnimate(ProgressBar pb, int progressTo) {
@@ -98,24 +76,6 @@ public class TokenListAdapter extends BaseAdapter {
         animation.setDuration(1000);
         animation.setInterpolator(new LinearInterpolator());
         animation.start();
-    }
-
-    void refreshOTPs() {
-        for (int i = 0; i < tokens.size(); i++) {
-            if (!tokens.get(i).getType().equals(PUSH)) {
-                tokens.get(i).setCurrentOTP(OTPGenerator.generate(tokens.get(i)));
-            }
-        }
-        this.notifyDataSetChanged();
-    }
-
-    void refreshAllTOTP() {
-        for (int i = 0; i < tokens.size(); i++) {
-            if (tokens.get(i).getType().equals(TOTP)) {
-                tokens.get(i).setCurrentOTP(OTPGenerator.generate(tokens.get(i)));
-            }
-        }
-        this.notifyDataSetChanged();
     }
 
     @Override
@@ -126,9 +86,10 @@ public class TokenListAdapter extends BaseAdapter {
         }
         v.setTag(position);
         final View mView = v;
-
-
+        final TextView otptext = v.findViewById(R.id.textViewToken);
+        final TextView labeltext = v.findViewById(R.id.textViewLabel);
         final Token token = getItem(position);
+
         ProgressBar progressBar = v.findViewById(R.id.progressBar);
         progressBar.setMax(30 * 100);
         if (token.getType().equals(TOTP)) {
@@ -138,14 +99,16 @@ public class TokenListAdapter extends BaseAdapter {
         }
         progressBar.getProgressDrawable().setColorFilter(
                 Color.rgb(0x83, 0xc9, 0x27), android.graphics.PorterDuff.Mode.SRC_IN);
-        pbs.add(position, progressBar);
-        final TextView otptext = v.findViewById(R.id.textViewToken);
-        final TextView labeltext = v.findViewById(R.id.textViewLabel);
+        progressBars.add(position, progressBar);
+
         Button nextbtn = v.findViewById(R.id.next_button);
         otptext.setTextSize(OTP_TEXT_SIZE_DEFAULT);
         nextbtn.setVisibility(GONE);
         progressBar.setVisibility(GONE);
         otptext.setText(token.getCurrentOTP());
+        if(token.getCurrentOTP().equals("")){
+            logprint("current otp empty");
+        }
         labeltext.setText(token.getLabel());
 
         if (token.isWithPIN() && token.getPin().equals("")) {
@@ -167,11 +130,7 @@ public class TokenListAdapter extends BaseAdapter {
                                 Toast.makeText(mView.getContext(), R.string.toast_pin_set_isEmpty, Toast.LENGTH_SHORT).show();
                                 return;
                             }
-                            int temp_pin = Integer.parseInt(text);
-                            String hashedPIN = hashPIN(temp_pin, token);
-                            token.setPin(hashedPIN);
-                            token.setLocked(false);
-                            notifyDataSetChanged();
+                            presenterInterface.setPIN(text, token);
                         }
                     });
                     builder.setNegativeButton(R.string.button_text_cancel, new DialogInterface.OnClickListener() {
@@ -211,15 +170,13 @@ public class TokenListAdapter extends BaseAdapter {
                                 Toast.makeText(mView.getContext(), R.string.toast_empty_pin_input, Toast.LENGTH_SHORT).show();
                                 return;
                             }
-                            int temp_input = Integer.parseInt(text);
-                            String hashedPIN = hashPIN(temp_input, token);
-                            if (hashedPIN.equals(token.getPin())) {
+                            if (presenterInterface.checkPIN(text, token)) {
                                 token.setLocked(false);
                                 token.setTapped(true);
                             } else {
                                 Toast.makeText(mView.getContext(), R.string.toast_pin_not_correct, Toast.LENGTH_SHORT).show();
                             }
-                            notifyDataSetChanged();
+                            notifyChange();
                         }
                     });
                     builder.setNegativeButton(R.string.button_text_cancel, new DialogInterface.OnClickListener() {
@@ -242,7 +199,7 @@ public class TokenListAdapter extends BaseAdapter {
                 @Override
                 public void onClick(View v) {
                     token.setTapped(true);
-                    notifyDataSetChanged();
+                    notifyChange();
                 }
             });
         }/*else if (!token.isLocked() && token.isWithTapToShow() && token.isTapped()){
@@ -258,9 +215,7 @@ public class TokenListAdapter extends BaseAdapter {
                     nextbtn.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            token.setCounter((token.getCounter() + 1));
-                            token.setCurrentOTP(OTPGenerator.generate(token));
-                            notifyDataSetChanged();
+                            presenterInterface.increaseHOTPCounter(token);
                         }
                     });
                     otptext.setText(token.getCurrentOTP());
@@ -274,44 +229,22 @@ public class TokenListAdapter extends BaseAdapter {
                     otptext.setText(token.getCurrentOTP());
                     break;
                 case PUSH:
-                    if ((!activityInterface.getPushAuthRequests().isEmpty()) && token.rollout_finished) {
-                        for (PushAuthRequest req : activityInterface.getPushAuthRequests()) {
-                            if (req.serial.equals(token.getSerial())) {
-                                final PushAuthRequest r = req;
-                                nextbtn.setVisibility(VISIBLE);
-                                nextbtn.setClickable(true);
-                                nextbtn.setText("Allow");
-                                nextbtn.setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View view) {
-                                        try {
-                                            PrivateKey appPrivateKey = SecretKeyWrapper.getPrivateKeyFor(r.serial);
-                                            PublicKey piPublicKey = Util.getPIPubkey(activityInterface.getPresentActivity(), r.serial);
-                                            if (appPrivateKey != null && piPublicKey != null) {
-                                                new PushAuthTask(r.nonce, r.url, r.serial, r.question, r.title, r.signature, piPublicKey, appPrivateKey).execute();
-                                                activityInterface.getPushAuthRequests().remove(r);
-                                                notifyDataSetChanged();
-                                            }
-                                        } catch (CertificateException e) {
-                                            e.printStackTrace();
-                                        } catch (NoSuchAlgorithmException e) {
-                                            e.printStackTrace();
-                                        } catch (IOException e) {
-                                            e.printStackTrace();
-                                        } catch (KeyStoreException e) {
-                                            e.printStackTrace();
-                                        } catch (UnrecoverableEntryException e) {
-                                            e.printStackTrace();
-                                        }
-                                    }
-                                });
-                                nextbtn.setLongClickable(false);
-                                progressBar.setVisibility(GONE);
-                                labeltext.setText(req.question);
-                                otptext.setTextSize(OTP_TEXT_SIZE_PENDING_AUTH);
-                                otptext.setText(req.title);
+                    Map<String, String> map = presenterInterface.getPushAuthRequestInfo(position);
+                    if (map != null && token.rollout_finished) {
+                        nextbtn.setLongClickable(false);
+                        progressBar.setVisibility(GONE);
+                        labeltext.setText(map.get(QUESTION));
+                        otptext.setTextSize(OTP_TEXT_SIZE_PENDING_AUTH);
+                        otptext.setText(map.get(TITLE));
+                        nextbtn.setVisibility(VISIBLE);
+                        nextbtn.setClickable(true);
+                        nextbtn.setText(v.getContext().getString(R.string.Allow));
+                        nextbtn.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                presenterInterface.startPushAuthForPosition(position);
                             }
-                        }
+                        });
                     } else if (token.rollout_finished) {
                         nextbtn.setVisibility(GONE);
                         nextbtn.setClickable(false);
@@ -327,13 +260,11 @@ public class TokenListAdapter extends BaseAdapter {
                         labeltext.setText(token.getSerial());
                         otptext.setText("[PUSH]");
                         nextbtn.setVisibility(VISIBLE);
-                        nextbtn.setText("Retry");
+                        nextbtn.setText(v.getContext().getString(R.string.Retry));
                         nextbtn.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
-                                AsyncTask<Void, Integer, Boolean> pushrollout = new PushRolloutTask(token, TokenListAdapter.this.activityInterface);
-
-                                pushrollout.execute();
+                                presenterInterface.startPushRolloutForPosition(position);
                             }
                         });
                     }
@@ -362,14 +293,13 @@ public class TokenListAdapter extends BaseAdapter {
                     case DragEvent.ACTION_DROP: {
                         int from = Integer.parseInt("" + event.getClipDescription().getLabel());
                         int to = (Integer) (v.getTag());
-                        Token toSwap = getTokens().remove(from);
-                        getTokens().add(to, toSwap);
-                        notifyDataSetChanged();
+                        Token toSwap = presenterInterface.removeTokenAtPosition(from);
+                        presenterInterface.addTokenAt(to, toSwap);
+                        notifyChange();
                         return true;
                     }
                     case DragEvent.ACTION_DRAG_ENDED: {
-                        //Log.d(TAG, "action drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
-                        notifyDataSetChanged();
+                        notifyChange();
                         return true;
                     }
                     default:
@@ -380,40 +310,30 @@ public class TokenListAdapter extends BaseAdapter {
         });
 
         v.setOnTouchListener(new View.OnTouchListener() {
-
+            @SuppressLint("ClickableViewAccessibility")
             @Override
             public boolean onTouch(View v, MotionEvent arg1) {
-                if (getCurrentSelection() != getTokens().get(position)) {
+                if (presenterInterface.getCurrentSelection()
+                        != presenterInterface.getTokenAtPosition(position)) {
                     return false;
                 }
                 ClipData data = ClipData.newPlainText(v.getTag() + "", "");
                 View.DragShadowBuilder shadow = new View.DragShadowBuilder(v);
                 v.startDrag(data, shadow, null, 0);
-                //Log.d(TAG, "Shadow drag finished, last token type " + tokens.get(tokens.size() - 1).getType());
                 return false;
             }
         });
 
     }
 
-    void setTokens(List<Token> tokens) {
-        this.tokens = tokens;
-    }
-
-    private List<Token> getTokens() {
-        return tokens;
-    }
-
     @Override
     public int getCount() {
-        if (getTokens() != null) {
-            return getTokens().size();
-        } else return 0;
+        return presenterInterface.getTokenCount();
     }
 
     @Override
     public Token getItem(int position) {
-        return getTokens().get(position);
+        return presenterInterface.getTokenAtPosition(position);
     }
 
     @Override
@@ -426,11 +346,27 @@ public class TokenListAdapter extends BaseAdapter {
         return true;
     }
 
-    Token getCurrentSelection() {
-        return currentSelection;
+    @Override
+    public void updateProgressbars(int progress) {
+        for (ProgressBar pb : progressBars) {
+            if (pb.getMax() == 30 * 100 && progress >= 30) {
+                setProgressAnimate(pb, progress - 30);
+            } else {
+                setProgressAnimate(pb, progress);
+            }
+        }
     }
 
-    void setCurrentSelection(Token currentSelection) {
-        this.currentSelection = currentSelection;
+    @Override
+    public void notifyChange() {
+        notifyDataSetChanged();
+    }
+
+    @Override
+    public void removeProgressbar(int position) {
+        if (progressBars.size() >= position && position >= 0
+                && progressBars.isEmpty()) {
+            progressBars.remove(position);
+        }
     }
 }

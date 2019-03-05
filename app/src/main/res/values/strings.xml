@@ -83,5 +83,7 @@
     <string name="PushRolloutStep2Status">(2/3) Sending data to server</string>
     <string name="PushRolloutStep3Status">(3/3) Processing data from server</string>
     <string name="InitFirebaseStatus">Initializing Firebase...</string>
+    <string name="Retry">Retry</string>
+    <string name="Allow">Allow</string>
 
 </resources>

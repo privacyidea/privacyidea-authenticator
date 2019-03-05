@@ -4,6 +4,11 @@
  *
  * Copyright (C) 2013 The Android Open Source Project
  *
+ * privacyIDEA Authenticator
+ *
+ * Authors: Nils Behlen <nils.behlen@netknights.it>
+ * Copyright (c) 2017-2019 NetKnights GmbH
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,7 +22,6 @@
  * limitations under the License.
  *
  */
-
 
 package it.netknights.piauthenticator;
 
@@ -51,6 +55,8 @@ import java.util.Map;
 
 import javax.crypto.SecretKey;
 
+import it.netknights.piauthenticator.Interfaces.PresenterUtilInterface;
+
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
 import static it.netknights.piauthenticator.AppConstants.API_KEY;
 import static it.netknights.piauthenticator.AppConstants.APP_ID;
@@ -80,12 +86,11 @@ import static it.netknights.piauthenticator.AppConstants.WITHPIN;
 
 public class Util {
 
-    private ActivityInterface activityInterface;
+    private PresenterUtilInterface presenterUtilInterface;
 
-    Util(ActivityInterface activityInterface) {
-        this.activityInterface = activityInterface;
+    Util(PresenterUtilInterface presenterUtilInterface) {
+        this.presenterUtilInterface = presenterUtilInterface;
     }
-
 
     /**
      * This Method loads the encrypted saved tokens, in the progress the Secret Key is unwrapped
@@ -152,7 +157,8 @@ public class Util {
             serial = o.getString(SERIAL);
         }
         // when loading "old" data the type is still a string so we convert it here
-        String type = o.getString(TYPE);;
+        String type = o.getString(TYPE);
+        ;
 
         String label = o.getString(LABEL);
 
@@ -188,7 +194,7 @@ public class Util {
             tmp.setWithTapToShow(true);
         }
         if (o.optBoolean(PERSISTENT)) {
-            tmp.setUndeletable(true);
+            tmp.setPersistent(true);
         }
 
         return tmp;
@@ -229,7 +235,7 @@ public class Util {
         if (t.isWithTapToShow()) {
             o.put(TAPTOSHOW, true);
         }
-        if (t.isUndeletable()) {
+        if (t.isPersistent()) {
             o.put(PERSISTENT, true);
         }
         logprint("SAVE TOKEN AS: " + o.toString());
@@ -238,7 +244,7 @@ public class Util {
 
     static void storePIPubkey(String key, String serial, Context context) throws GeneralSecurityException, IOException, IllegalArgumentException {
         byte[] keybytes = Base64.decode(key.getBytes(), Base64.DEFAULT);
-       
+
         PublicKey pubkey = PKCS1ToSubjectPublicKeyInfo.decodePKCS1PublicKey(keybytes);
 
         // this code is expecting pkcs8
@@ -347,7 +353,7 @@ public class Util {
         PublicKey pub;
         for (Token t : tokenlist) {
             if (t.getType().equals(PUSH)) {
-                pub = getPIPubkey(activityInterface.getPresentActivity().getBaseContext(), t.getSerial());
+                pub = getPIPubkey(presenterUtilInterface.getContext(), t.getSerial());
                 if (pub != null)
                     logprint(t.getSerial() + " : " + pub.getFormat());
             }
@@ -355,7 +361,7 @@ public class Util {
     }
 
     void removePubkeyFor(String serial) {
-        File f = new File(activityInterface.getPresentActivity().getFilesDir() + "/" + serial + "_" + PUBKEYFILE);
+        File f = new File(presenterUtilInterface.getContext().getFilesDir() + "/" + serial + "_" + PUBKEYFILE);
         boolean res = false;
         if (f.exists()) {
             res = f.delete();
@@ -369,24 +375,24 @@ public class Util {
         }
     }
 
-    void storeFirebaseConfig(String projID, String appID, String api_key, String projNumber) {
+    void storeFirebaseConfig(FirebaseInitConfig firebaseInitConfig) {
         logprint("Storing Firebase config...");
         JSONObject o = new JSONObject();
         try {
-            o.put(PROJECT_ID, projID);
-            o.put(APP_ID, appID);
-            o.put(API_KEY, api_key);
-            o.put(PROJECT_NUMBER, projNumber);
+            o.put(PROJECT_ID, firebaseInitConfig.projID);
+            o.put(APP_ID, firebaseInitConfig.appID);
+            o.put(API_KEY, firebaseInitConfig.api_key);
+            o.put(PROJECT_NUMBER, firebaseInitConfig.projNumber);
         } catch (JSONException e) {
             e.printStackTrace();
         }
         byte[] data = o.toString().getBytes();
         SecretKey key = null;
         try {
-            key = EncryptionHelper.getSecretKey(activityInterface.getPresentActivity(),
-                    new File(activityInterface.getPresentActivity().getFilesDir() + "/" + KEYFILE));
+            key = EncryptionHelper.getSecretKey(presenterUtilInterface.getContext(),
+                    new File(presenterUtilInterface.getContext().getFilesDir() + "/" + KEYFILE));
             data = EncryptionHelper.encrypt(key, data);
-            writeFile(new File(activityInterface.getPresentActivity().getFilesDir() + "/" + FB_CONFIG_FILE), data);
+            writeFile(new File(presenterUtilInterface.getContext().getFilesDir() + "/" + FB_CONFIG_FILE), data);
         } catch (GeneralSecurityException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -395,17 +401,20 @@ public class Util {
         logprint("Firebase config stored.");
     }
 
-    void initFirebase() {
+    /**
+     * @return FirebaseInitConfig object or null if there is no config / error
+     */
+    FirebaseInitConfig loadFirebaseConfig() {
         logprint("Loading Firebase config...");
         try {
-            byte[] data = readFile(new File(activityInterface.getPresentActivity().getFilesDir() + "/" + FB_CONFIG_FILE));
+            byte[] data = readFile(new File(presenterUtilInterface.getContext().getFilesDir() + "/" + FB_CONFIG_FILE));
             if (data == null) {
                 logprint("Firebase config not found!");
-                return;
+                return null;
             }
 
-            SecretKey key = EncryptionHelper.getSecretKey(activityInterface.getPresentActivity(),
-                    new File(activityInterface.getPresentActivity().getFilesDir() + "/" + KEYFILE));
+            SecretKey key = EncryptionHelper.getSecretKey(presenterUtilInterface.getContext(),
+                    new File(presenterUtilInterface.getContext().getFilesDir() + "/" + KEYFILE));
             data = EncryptionHelper.decrypt(key, data);
 
             JSONObject o = new JSONObject(new String(data));
@@ -416,15 +425,16 @@ public class Util {
 
             if (projID == null || appID == null || api_key == null || projNumber == null) {
                 logprint("Missing parameter from config!");
-                return;
+                return null;
             }
             logprint("Firebase config loaded.");
-            new FirebaseInitTask(projID, appID, api_key, projNumber, activityInterface).execute();
-
+            return new FirebaseInitConfig(projID, appID, api_key, projNumber);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return null;
     }
+
 
 }

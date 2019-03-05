@@ -1,16 +1,27 @@
+/*
+  privacyIDEA Authenticator
+
+  Authors: Nils Behlen <nils.behlen@netknights.it>
+
+  Copyright (c) 2017-2019 NetKnights GmbH
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+
 package it.netknights.piauthenticator;
 
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.util.Base64;
-import android.util.Log;
-import android.view.View;
-import android.widget.TextView;
-
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.InstanceIdResult;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -21,29 +32,21 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PublicKey;
-import java.security.UnrecoverableEntryException;
-import java.security.cert.CertificateException;
 import java.util.Date;
 
+import it.netknights.piauthenticator.Interfaces.PresenterTaskInterface;
+
 import static it.netknights.piauthenticator.AppConstants.CONNECT_TIMEOUT;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_BAD_BASE64;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_DONE;
+import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_JSON;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_URL;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_1;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_2;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_3;
@@ -53,16 +56,16 @@ import static it.netknights.piauthenticator.Util.logprint;
 
 public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
 
-    private String serial, rollout_url, fb_token;
+    private String serial;
+    private String rollout_url;
     private Token token;
-    private AlertDialog rollout_status_dialog;
-    private ActivityInterface activityInterface;
+    private PresenterTaskInterface presenterTaskInterface;
 
-    PushRolloutTask(Token t, ActivityInterface activityInterface) {
+    PushRolloutTask(Token t, PresenterTaskInterface presenterTaskInterface) {
         this.token = t;
         this.serial = t.getSerial();
         this.rollout_url = t.rollout_url;
-        this.activityInterface = activityInterface;
+        this.presenterTaskInterface = presenterTaskInterface;
     }
 
     @Override
@@ -70,11 +73,6 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
         super.onPreExecute();
         logprint("Starting push rollout...");
         logprint("rollout url: " + rollout_url);
-        View view_pro_progress = activityInterface.getPresentActivity().getLayoutInflater().inflate(R.layout.pushrollout_loading, null);
-        AlertDialog.Builder dialog_builder = new AlertDialog.Builder(activityInterface.getPresentActivity());
-        dialog_builder.setView(view_pro_progress);
-        dialog_builder.setCancelable(false);
-        rollout_status_dialog = dialog_builder.show();
     }
 
     @Override
@@ -83,33 +81,15 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
         // Verify the tokens register ttl
         Date now = new Date();
         if (now.after(token.rollout_expiration)) {
-            // TODO callback -> time expired
             publishProgress(PRO_STATUS_REGISTRATION_TIME_EXPIRED);
             return false;
         }
 
         // 1. Generate a new keypair (RSA 4096bit), the private key is stored with the serial as alias
-        PublicKey pubkey = null;
-        try {
-            pubkey = SecretKeyWrapper.generateKeyPair(serial, activityInterface.getPresentActivity().getBaseContext());
-        } catch (KeyStoreException | UnrecoverableEntryException | InvalidAlgorithmParameterException | NoSuchProviderException
-                | IOException | NoSuchAlgorithmException |
-                CertificateException e) {
-            e.printStackTrace();
-        }
-        if (pubkey == null) {
-            // error -> return?
-            logprint("PUBKEY IS NULL!!!");
-        }
+        PublicKey pubkey = presenterTaskInterface.generatePublicKeyFor(serial);
 
-        // Get the Firebase fb_token
-        logprint("Getting Firebase token...");
-        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(activityInterface.getPresentActivity(), new OnSuccessListener<InstanceIdResult>() {
-            @Override
-            public void onSuccess(InstanceIdResult instanceIdResult) {
-                fb_token = instanceIdResult.getToken();
-            }
-        });
+        // Get the Firebase token
+        String fb_token = presenterTaskInterface.getFirebaseToken();
         logprint("Token: " + fb_token);
 
         // 2. Send the pubkey and the firebase token to the rollout URL
@@ -159,10 +139,10 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
         if (pubkey != null) {
             key = Base64.encodeToString(pubkey.getEncoded(), Base64.DEFAULT);
         }
-            /*logprint("URL: " + rollout_url);
-            logprint("Serial: " + serial);
-            logprint("Token: " + fb_token);
-            logprint("Pubkey format: " + pubkey.getFormat()); */
+        logprint("URL: " + rollout_url);
+        logprint("Serial: " + serial);
+        logprint("Token: " + fb_token);
+        logprint("Pubkey format: " + pubkey.getFormat());
         logprint("pubkey: " + key);
         try {
             writer.write("enrollment_credential=" + token.enrollment_credential);
@@ -197,7 +177,6 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
                 response.append(line);
             }
             logprint("response: " + response.toString());
-            // TODO format response
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -209,130 +188,30 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
                     JSONObject detail = resp.getJSONObject("detail");
                     String in_key = detail.getString("public_key");
                     logprint("in_key:" + in_key);
-                    Util.storePIPubkey(in_key, serial, activityInterface.getPresentActivity().getBaseContext());
-                    token.rollout_finished = true;
                     publishProgress(PRO_STATUS_DONE);
-
-                } catch (GeneralSecurityException e) {
-                    // TODO response is not a key -> callback error
-                    // this means the "key" field was empty or the DECODED data is not a key
-                    publishProgress(PRO_STATUS_RESPONSE_NO_KEY);
-                    token.rollout_finished = false;
-                    e.printStackTrace();
+                    presenterTaskInterface.receivePublicKey(in_key, token);
                 } catch (JSONException e) {
-                    logprint("MALFORMED JSON");
-                    // TODO malformed response
+                    logprint("Malformed JSON in response");
+                    publishProgress(PRO_STATUS_MALFORMED_JSON);
                     e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (IllegalArgumentException e) {
-                    logprint("BAD BASE64");
-                    e.printStackTrace();
-                    publishProgress(PRO_STATUS_BAD_BASE64);
                 }
             }
         }
         // TODO other response codes
         con.disconnect();
-
         return true;
     }
 
     @Override
     protected void onProgressUpdate(Integer... values) {
         super.onProgressUpdate(values);
-        TextView tv_pro_status;
-
-        if (rollout_status_dialog == null) {
-            logprint("cannot find status dialog");
-            return;
-        } else {
-            tv_pro_status = rollout_status_dialog.findViewById(R.id.tv_status);
-        }
-        if (tv_pro_status == null) {
-            logprint("cannot find status text view");
-            return;
-        }
-
-        switch (values[0]) {
-            case PRO_STATUS_STEP_1: {
-                tv_pro_status.setText(activityInterface.getPresentActivity().getString(R.string.PushRolloutStep1Status));
-                break;
-            }
-            case PRO_STATUS_STEP_2: {
-                tv_pro_status.setText(activityInterface.getPresentActivity().getString(R.string.PushRolloutStep2Status));
-                break;
-            }
-            case PRO_STATUS_STEP_3: {
-                tv_pro_status.setText(activityInterface.getPresentActivity().getString(R.string.PushRolloutStep3Status));
-                break;
-            }
-            case PRO_STATUS_DONE: {
-                rollout_status_dialog.cancel();
-                MainActivity main = (MainActivity) activityInterface.getPresentActivity();
-                main.tokenlistadapter.notifyDataSetChanged();
-                main.saveTokenlist();
-                logprint("ROLLOUT FINISHED - CLOSING DIALOG");
-                break;
-            }
-            case PRO_STATUS_RESPONSE_NO_KEY: {
-                logprint("ROLLOUT RESPONSE DID NOT CONTAIN A VALID KEY");
-                rollout_status_dialog.cancel();
-                showFailureDialog("Reponse did not contain key");
-                break;
-            }
-            case PRO_STATUS_REGISTRATION_TIME_EXPIRED: {
-                logprint("REGISTRATION TIME EXPIRED");
-                rollout_status_dialog.cancel();
-                showFailureDialog("Registration time expired! \nToken will be removed.");
-                MainActivity main = (MainActivity) activityInterface.getPresentActivity();
-                main.removeToken(token);
-                break;
-            }
-            case PRO_STATUS_MALFORMED_URL: {
-                logprint("URL MALFORMED");
-                rollout_status_dialog.cancel();
-                showFailureDialog("Rollout URL is invalid:\n" + rollout_url + "\nToken will be removed.");
-                MainActivity main = (MainActivity) activityInterface.getPresentActivity();
-                main.removeToken(token);
-                break;
-            }
-            case PRO_STATUS_BAD_BASE64: {
-                logprint("KEY NOT IN BASE64 FORMAT");
-                rollout_status_dialog.cancel();
-                showFailureDialog("The key from the server was not in the correct format!");
-                break;
-            }
-            case PRO_STATUS_UNKNOWN_HOST: {
-                logprint("UNKNOWN HOST");
-                rollout_status_dialog.cancel();
-                showFailureDialog("The rollout URL:\n"
-                        + rollout_url
-                        + "\ncannot be resolved!");
-                break;
-            }
-            default:
-                break;
-        }
-    }
-
-    private void showFailureDialog(String message) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(activityInterface.getPresentActivity());
-        builder.setTitle("Rollout failed");
-        builder.setMessage(message);
-        builder.setCancelable(false);
-        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
-            }
-        });
-        builder.show();
+        // Pass the statusCode to the presenter. This must be done via this method
+        // because onProgressUpdate runs on the main thread.
+        presenterTaskInterface.updateTaskStatus(values[0], token);
     }
 
     @Override
     protected void onPostExecute(Boolean aBoolean) {
         super.onPostExecute(aBoolean);
-        activityInterface.addToken(token);
     }
 }

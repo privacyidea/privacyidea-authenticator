@@ -1,8 +1,26 @@
+/*
+  privacyIDEA Authenticator
+
+  Authors: Nils Behlen <nils.behlen@netknights.it>
+
+  Copyright (c) 2017-2019 NetKnights GmbH
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+
 package it.netknights.piauthenticator;
 
-import android.content.Context;
 import android.os.AsyncTask;
-import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -13,29 +31,21 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
-import java.security.UnrecoverableEntryException;
-import java.security.cert.CertificateException;
 
 import static it.netknights.piauthenticator.AppConstants.CONNECT_TIMEOUT;
 import static it.netknights.piauthenticator.AppConstants.PA_INVALID_SIGNATURE;
 import static it.netknights.piauthenticator.AppConstants.PA_SIGNING_FAILURE;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_BAD_BASE64;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_DONE;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_URL;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
 import static it.netknights.piauthenticator.AppConstants.READ_TIMEOUT;
 import static it.netknights.piauthenticator.Util.logprint;
 
@@ -45,14 +55,14 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> {
     private PublicKey piPublicKey;
     private PrivateKey appPrivateKey;
 
-    PushAuthTask(String nonce, String url, String serial, String question, String title, String signature,
+    PushAuthTask(PushAuthRequest pushAuthRequest,
                  PublicKey piPublicKey, PrivateKey appPrivateKey) {
-        this.nonce = nonce;
-        this.endpoint_url = url;
-        this.serial = serial;
-        this.question = question;
-        this.title = title;
-        this.signature = signature;
+        this.nonce = pushAuthRequest.nonce;
+        this.endpoint_url = pushAuthRequest.url;
+        this.serial = pushAuthRequest.serial;
+        this.question = pushAuthRequest.question;
+        this.title = pushAuthRequest.title;
+        this.signature = pushAuthRequest.signature;
         this.appPrivateKey = appPrivateKey;
         this.piPublicKey = piPublicKey;
     }
@@ -61,7 +71,7 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> {
     protected void onPreExecute() {
         super.onPreExecute();
         logprint("Push authentication starting...");
-        logprint("authentication url:" + endpoint_url);
+        logprint("Authentication url:" + endpoint_url);
     }
 
     @Override
@@ -192,7 +202,7 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> {
                     JSONObject jso = new JSONObject(response.toString());
                     JSONObject result = jso.getJSONObject("result");
                     boolean success = result.getBoolean("value");
-                    if(success)
+                    if (success)
                         logprint("authentication successful");
                 } catch (JSONException e) {
                     e.printStackTrace();

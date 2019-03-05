@@ -1,64 +1,61 @@
+/*
+  privacyIDEA Authenticator
+
+  Authors: Nils Behlen <nils.behlen@netknights.it>
+
+  Copyright (c) 2017-2019 NetKnights GmbH
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+
 package it.netknights.piauthenticator;
 
-import android.app.AlertDialog;
 import android.os.AsyncTask;
-import android.view.View;
-import android.widget.TextView;
 
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
-import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.InstanceIdResult;
 
+import it.netknights.piauthenticator.Interfaces.PresenterTaskInterface;
+
+import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE;
+import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE_DONE;
 import static it.netknights.piauthenticator.Util.logprint;
 
 public class FirebaseInitTask extends AsyncTask<Void, Integer, Boolean> {
 
     private String appID, api_key, database_url, storage_bucket, projID, gcmSenderID;
-    private ActivityInterface activityInterface;
-    private AlertDialog status_dialog;
+    private PresenterTaskInterface presenterTaskInterface;
 
     /**
      * Initialize the task with the parameters extracted from the google-services.json
      *
-     * @param projID     from project_info/project_id
-     * @param appID      from client/client_info_mobilesdk_app_id
-     * @param api_key    from client/api_key/current_key
-     * @param projNumber from project_info/project_number, this is also the GcmSenderID
+     * @param firebaseInitConfig     config info
+     * @param presenterTaskInterface for callbacks
      */
-    FirebaseInitTask(String projID, String appID, String api_key, String projNumber, ActivityInterface activityInterface) {
-        this.projID = projID;
-        this.appID = appID;
-        this.api_key = api_key;
-        this.gcmSenderID = projNumber;
+    FirebaseInitTask(FirebaseInitConfig firebaseInitConfig, PresenterTaskInterface presenterTaskInterface) {
+        this.projID = firebaseInitConfig.projID;
+        this.appID = firebaseInitConfig.appID;
+        this.api_key = firebaseInitConfig.api_key;
+        this.gcmSenderID = firebaseInitConfig.projNumber;
         this.database_url = "https://" + projID + ".firebaseio.com";
         this.storage_bucket = projID + ".appspot.com";
-        this.activityInterface = activityInterface;
+        this.presenterTaskInterface = presenterTaskInterface;
     }
 
     @Override
     protected void onPreExecute() {
         super.onPreExecute();
-        View view_pro_progress = activityInterface.getPresentActivity().getLayoutInflater().inflate(R.layout.pushrollout_loading, null);
-        AlertDialog.Builder dialog_builder = new AlertDialog.Builder(activityInterface.getPresentActivity());
-        dialog_builder.setView(view_pro_progress);
-        dialog_builder.setCancelable(false);
-        status_dialog = dialog_builder.show();
-        TextView tv_status;
-
-        if (status_dialog == null) {
-            logprint("cannot find status dialog");
-            return;
-        } else {
-            tv_status = status_dialog.findViewById(R.id.tv_status);
-        }
-        if (tv_status == null) {
-            logprint("cannot find status text view");
-            return;
-        }
-
-        tv_status.setText(activityInterface.getPresentActivity().getString(R.string.InitFirebaseStatus));
+        presenterTaskInterface.updateTaskStatus(STATUS_INIT_FIREBASE, null);
     }
 
     @Override
@@ -66,8 +63,8 @@ public class FirebaseInitTask extends AsyncTask<Void, Integer, Boolean> {
         logprint("Initializing Firebase...");
 
         // Check if Firebase is already initalized
-        if (!FirebaseApp.getApps(activityInterface.getPresentActivity()).isEmpty()) {
-            logprint("Firebase already initialized for: " + FirebaseApp.getApps(activityInterface.getPresentActivity()).toString());
+        if (!FirebaseApp.getApps(presenterTaskInterface.getContext()).isEmpty()) {
+            logprint("Firebase already initialized for: " + FirebaseApp.getApps(presenterTaskInterface.getContext()).toString());
             return false;
         }
 
@@ -79,22 +76,31 @@ public class FirebaseInitTask extends AsyncTask<Void, Integer, Boolean> {
                 .setStorageBucket(storage_bucket)
                 .setProjectId(projID)
                 .setGcmSenderId(gcmSenderID);
-        FirebaseApp.initializeApp(activityInterface.getPresentActivity(), builder.build());
+        FirebaseApp.initializeApp(presenterTaskInterface.getContext(), builder.build());
 
         logprint("Firebase initialized!");
-        logprint("Getting Firebase token...");
-        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(activityInterface.getPresentActivity(), new OnSuccessListener<InstanceIdResult>() {
-            @Override
-            public void onSuccess(InstanceIdResult instanceIdResult) {
-                logprint("Firebase Token: " + instanceIdResult.getToken());
-            }
-        });
+
         return true;
     }
 
     @Override
     protected void onPostExecute(Boolean aBoolean) {
         super.onPostExecute(aBoolean);
-        status_dialog.cancel();
+        presenterTaskInterface.updateTaskStatus(STATUS_INIT_FIREBASE_DONE, null);
     }
+}
+
+class FirebaseInitConfig {
+    String projID;
+    String appID;
+    String api_key;
+    String projNumber;
+
+    FirebaseInitConfig(String projID, String appID, String api_key, String projNumber) {
+        this.projID = projID;
+        this.appID = appID;
+        this.api_key = api_key;
+        this.projNumber = projNumber;
+    }
+
 }
