@@ -71,13 +71,6 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         this.progressBars = new ArrayList<>();
     }
 
-    private void setProgressAnimate(ProgressBar pb, int progressTo) {
-        ObjectAnimator animation = ObjectAnimator.ofInt(pb, AppConstants.PROPERTY_PROGRESS, pb.getProgress(), progressTo * 100);
-        animation.setDuration(1000);
-        animation.setInterpolator(new LinearInterpolator());
-        animation.start();
-    }
-
     @Override
     public View getView(final int position, View v, ViewGroup parent) {
         if (v == null) {
@@ -106,7 +99,7 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         nextbtn.setVisibility(GONE);
         progressBar.setVisibility(GONE);
         otptext.setText(token.getCurrentOTP());
-        if(token.getCurrentOTP().equals("")){
+        if(token.getCurrentOTP() == null){
             logprint("current otp empty");
         }
         labeltext.setText(token.getLabel());
@@ -229,7 +222,7 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
                     otptext.setText(token.getCurrentOTP());
                     break;
                 case PUSH:
-                    Map<String, String> map = presenterInterface.getPushAuthRequestInfo(position);
+                    Map<String, String> map = presenterInterface.getPushAuthRequestInfo(token);
                     if (map != null && token.rollout_finished) {
                         nextbtn.setLongClickable(false);
                         progressBar.setVisibility(GONE);
@@ -355,6 +348,13 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
                 setProgressAnimate(pb, progress);
             }
         }
+    }
+
+    private void setProgressAnimate(ProgressBar pb, int progressTo) {
+        ObjectAnimator animation = ObjectAnimator.ofInt(pb, AppConstants.PROPERTY_PROGRESS, pb.getProgress(), progressTo * 100);
+        animation.setDuration(2000);
+        animation.setInterpolator(new LinearInterpolator());
+        animation.start();
     }
 
     @Override

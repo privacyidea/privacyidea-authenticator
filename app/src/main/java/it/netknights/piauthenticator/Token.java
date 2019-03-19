@@ -24,6 +24,7 @@ package it.netknights.piauthenticator;
 import java.util.Date;
 
 import static it.netknights.piauthenticator.AppConstants.PUSH;
+import static it.netknights.piauthenticator.AppConstants.TOTP;
 
 public class Token {
 
@@ -54,7 +55,7 @@ public class Token {
         this.label = label;
         this.type = type;
         this.digits = digits;
-        this.period = 0;
+        this.period = this.type.equals(TOTP)? 30 : 0;
         this.counter = 0;
     }
 
@@ -102,6 +103,11 @@ public class Token {
     }
 
     void setWithPIN(boolean withPIN) {
+        if(withPIN) {
+            this.isLocked = true;
+        } else {
+            this.isLocked = false;
+        }
         this.withPIN = withPIN;
     }
 

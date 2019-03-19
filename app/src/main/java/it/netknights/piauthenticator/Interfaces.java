@@ -20,9 +20,6 @@
 
 package it.netknights.piauthenticator;
 
-import android.content.Context;
-import android.content.Intent;
-
 import java.security.PublicKey;
 import java.util.Map;
 
@@ -37,8 +34,6 @@ class Interfaces {
     }
 
     interface MainActivityInterface {
-        Context getContext();
-
         void makeAlertDialog(String title, String message);
 
         void makeToast(String message);
@@ -47,17 +42,29 @@ class Interfaces {
 
         void setStatusDialogText(String text);
 
+        void setStatusDialogText(int id);
+
         void cancelStatusDialog();
 
         String getFirebaseToken();
+
+        String fireBaseInit(FirebaseInitConfig firebaseInitConfig);
+
+        PublicKey generateKeyPairFor(String serial);
+
+        void startTimer();
+
+        void stopTimer();
+
+        void resumeTimer();
     }
 
     interface PresenterInterface {
         void init();
 
-        void scanQRfinished(String result);
+        void scanQRfinished(ScanResult result);
 
-        void addTokenFromBundle(Intent data);
+        void addTokenFromIntent(String type, byte[] secret, String serial, int digits, String algorithm, String period, boolean withPIN);
 
         void addPushAuthRequest(String nonce, String url, String serial, String question, String title, String signature);
 
@@ -97,9 +104,11 @@ class Interfaces {
 
         void addTokenAt(int position, Token token);
 
+        void addToken(Token token);
+
         Token removeTokenAtPosition(int position);
 
-        Map<String, String> getPushAuthRequestInfo(int position);
+        Map<String, String> getPushAuthRequestInfo(Token token);
 
         void startPushAuthForPosition(int position);
 
@@ -111,20 +120,13 @@ class Interfaces {
 
         void setPIN(String input, Token token);
 
+        void timerProgress(int progress);
     }
 
     interface PresenterTaskInterface {
         void updateTaskStatus(int statusCode, Token token);
 
         void makeAlertDialog(String title, String message);
-
-        Context getContext();
-
-        void doTwoStepRollout(Token token, int phonepartlength, int iterations, int output_size);
-
-        void doFirebaseInit(FirebaseInitConfig firebaseInitConfig);
-
-        void doPushRollout(Token token);
 
         String getFirebaseToken();
 
@@ -134,6 +136,6 @@ class Interfaces {
     }
 
     interface PresenterUtilInterface {
-        Context getContext();
+        SecretKeyWrapper getWrapper();
     }
 }

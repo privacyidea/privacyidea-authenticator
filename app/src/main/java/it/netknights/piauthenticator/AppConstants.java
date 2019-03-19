@@ -100,7 +100,7 @@ public class AppConstants {
     static final String QUESTION = "question";
     static final String ROLLOUT_FINISHED = "rollout_finished";
     static final String ROLLOUT_EXPIRATION = "rollout_expiration";
-    static final String DATA = "data";
+    static final String PUSH_VERSION = "v";
 
     // Constants
     static final int READ_TIMEOUT = 10000;

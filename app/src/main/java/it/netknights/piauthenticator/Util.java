@@ -25,7 +25,6 @@
 
 package it.netknights.piauthenticator;
 
-import android.content.Context;
 import android.util.Base64;
 import android.util.Log;
 
@@ -44,16 +43,25 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import it.netknights.piauthenticator.Interfaces.PresenterUtilInterface;
 
@@ -61,10 +69,12 @@ import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
 import static it.netknights.piauthenticator.AppConstants.API_KEY;
 import static it.netknights.piauthenticator.AppConstants.APP_ID;
 import static it.netknights.piauthenticator.AppConstants.COUNTER;
+import static it.netknights.piauthenticator.AppConstants.CRYPT_ALGORITHM;
 import static it.netknights.piauthenticator.AppConstants.DATAFILE;
 import static it.netknights.piauthenticator.AppConstants.DIGITS;
 import static it.netknights.piauthenticator.AppConstants.FB_CONFIG_FILE;
 import static it.netknights.piauthenticator.AppConstants.HOTP;
+import static it.netknights.piauthenticator.AppConstants.IV_LENGTH;
 import static it.netknights.piauthenticator.AppConstants.KEYFILE;
 import static it.netknights.piauthenticator.AppConstants.LABEL;
 import static it.netknights.piauthenticator.AppConstants.PERIOD;
@@ -87,25 +97,29 @@ import static it.netknights.piauthenticator.AppConstants.WITHPIN;
 public class Util {
 
     private PresenterUtilInterface presenterUtilInterface;
+    private String baseFilePath;
 
-    Util(PresenterUtilInterface presenterUtilInterface) {
+    Util(PresenterUtilInterface presenterUtilInterface, String baseFilePath) {
         this.presenterUtilInterface = presenterUtilInterface;
+        this.baseFilePath = baseFilePath;
+    }
+
+    Util() {
     }
 
     /**
      * This Method loads the encrypted saved tokens, in the progress the Secret Key is unwrapped
      * and used to decrypt the saved tokens
      *
-     * @param context is needed to get the FilesDir
      * @return An ArrayList of Tokens
      */
-    static ArrayList<Token> loadTokens(Context context) {
+    ArrayList<Token> loadTokens() {
         ArrayList<Token> tokens = new ArrayList<>();
 
         try {
-            byte[] data = readFile(new File(context.getFilesDir() + "/" + DATAFILE));
-            SecretKey key = EncryptionHelper.getSecretKey(context, new File(context.getFilesDir() + "/" + KEYFILE));
-            data = EncryptionHelper.decrypt(key, data);
+            byte[] data = readFile(new File(baseFilePath + "/" + DATAFILE));
+            SecretKey key = getSecretKey(new File(baseFilePath + "/" + KEYFILE));
+            data = decrypt(key, data);
 
             JSONArray a = new JSONArray(new String(data));
             for (int i = 0; i < a.length(); i++) {
@@ -121,10 +135,9 @@ public class Util {
      * Encrpyt and save the ArrayList of tokens with a Secret Key, which is wrapped by a Public Key
      * that is stored in the Keystore
      *
-     * @param context Needed to get the FilesDir
-     * @param tokens  ArrayList of tokens to save
+     * @param tokens ArrayList of tokens to save
      */
-    static void saveTokens(Context context, ArrayList<Token> tokens) {
+    void saveTokens(ArrayList<Token> tokens) {
         JSONArray tmp = new JSONArray();
         if (tokens == null) {
             return;
@@ -138,37 +151,34 @@ public class Util {
         }
         try {
             byte[] data = tmp.toString().getBytes();
-            SecretKey key = EncryptionHelper.getSecretKey(context, new File(context.getFilesDir() + "/" + KEYFILE));
-            data = EncryptionHelper.encrypt(key, data);
-            writeFile(new File(context.getFilesDir() + "/" + DATAFILE), data);
+            SecretKey key = getSecretKey(new File(baseFilePath + "/" + KEYFILE));
+            data = encrypt(key, data);
+            writeFile(new File(baseFilePath + "/" + DATAFILE), data);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private static Token makeTokenFromJSON(JSONObject o) throws JSONException {
+    private Token makeTokenFromJSON(JSONObject o) throws JSONException {
         //Log.d("LOAD TOKEN FROM: ", o.toString());
 
         // when no serial is found (for "old" data) it is set to the label
         String serial;
+        String label = o.getString(LABEL);
         try {
             serial = o.getString(SERIAL);
         } catch (JSONException e) {
-            serial = o.getString(SERIAL);
+            serial = label;
         }
-        // when loading "old" data the type is still a string so we convert it here
         String type = o.getString(TYPE);
-        ;
-
-        String label = o.getString(LABEL);
 
         if (type.equals(PUSH)) {
             Token t = new Token(serial, label);
             t.rollout_finished = o.getBoolean(ROLLOUT_FINISHED);
-            // TODO add exp date / url
             t.rollout_url = o.getString(ROLLOUT_URL);
             try {
-                t.rollout_expiration = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(o.getString(ROLLOUT_EXPIRATION));
+                t.rollout_expiration = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                        .parse(o.getString(ROLLOUT_EXPIRATION));
             } catch (ParseException e) {
                 e.printStackTrace();
             }
@@ -200,7 +210,7 @@ public class Util {
         return tmp;
     }
 
-    private static JSONObject makeJSONfromToken(Token t) throws JSONException {
+    private JSONObject makeJSONfromToken(Token t) throws JSONException {
         //logprint("saving tokens");
         JSONObject o = new JSONObject();
 
@@ -212,7 +222,8 @@ public class Util {
             o.put(ROLLOUT_FINISHED, t.rollout_finished);
             //TODO add exp date / url
             o.put(ROLLOUT_URL, t.rollout_url);
-            o.put(ROLLOUT_EXPIRATION, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(t.rollout_expiration));
+            o.put(ROLLOUT_EXPIRATION, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                    .format(t.rollout_expiration));
             return o;
         }
 
@@ -242,7 +253,7 @@ public class Util {
         return o;
     }
 
-    static void storePIPubkey(String key, String serial, Context context) throws GeneralSecurityException, IOException, IllegalArgumentException {
+    void storePIPubkey(String key, String serial) throws GeneralSecurityException, IOException, IllegalArgumentException {
         byte[] keybytes = Base64.decode(key.getBytes(), Base64.DEFAULT);
 
         PublicKey pubkey = PKCS1ToSubjectPublicKeyInfo.decodePKCS1PublicKey(keybytes);
@@ -253,24 +264,27 @@ public class Util {
         PublicKey pubkey = kf.generatePublic(keySpec); */
 
         // encrypt
-        SecretKey encryptionKey = EncryptionHelper.getSecretKey(context,
-                new File(context.getFilesDir() + "/" + KEYFILE));
+        SecretKey encryptionKey = getSecretKey(new File(baseFilePath + "/" + KEYFILE));
 
-        byte[] dataToSave = EncryptionHelper.encrypt(encryptionKey, pubkey.getEncoded());
+        byte[] dataToSave = encrypt(encryptionKey, pubkey.getEncoded());
         // write to file
-        writeFile(new File(context.getFilesDir() + "/" + serial + "_" + PUBKEYFILE), dataToSave);
+        writeFile(new File(baseFilePath + "/" + serial + "_" + PUBKEYFILE), dataToSave);
     }
 
-    static PublicKey getPIPubkey(Context context, String serial) {
+    PublicKey getPIPubkey(String serial) {
+        if (baseFilePath == null) return null;
+        return getPIPubkey(baseFilePath, serial);
+    }
+
+    PublicKey getPIPubkey(String filepath, String serial) {
         try {
-            byte[] encryptedData = readFile(new File(context.getFilesDir() + "/" + serial + "_" + PUBKEYFILE));
+            byte[] encryptedData = readFile(new File(filepath + "/" + serial + "_" + PUBKEYFILE));
             // decrypt
-            SecretKey encryptionKey = EncryptionHelper.getSecretKey(context,
-                    new File(context.getFilesDir() + "/" + KEYFILE));
+            SecretKey encryptionKey = getSecretKey(new File(filepath + "/" + KEYFILE));
             if (encryptedData == null) {
                 return null;
             }
-            byte[] keybytes = EncryptionHelper.decrypt(encryptionKey, encryptedData);
+            byte[] keybytes = decrypt(encryptionKey, encryptedData);
             // build pubkey
             X509EncodedKeySpec X509publicKey = new X509EncodedKeySpec(keybytes);
             KeyFactory kf = KeyFactory.getInstance("RSA");
@@ -280,14 +294,6 @@ public class Util {
             e.printStackTrace();
         }
         return null;
-    }
-
-    static Map<String, String> convert(String str) {
-        str = str.replace(",", "");
-        String[] tokens = str.split(" |=");
-        Map<String, String> map = new HashMap<>();
-        for (int i = 0; i < tokens.length - 1; ) map.put(tokens[i++], tokens[i++]);
-        return map;
     }
 
     /**
@@ -321,13 +327,13 @@ public class Util {
         return ret;
     }
 
-    static void writeFile(File file, byte[] data) throws IOException {
+    private void writeFile(File file, byte[] data) throws IOException {
         try (OutputStream out = new FileOutputStream(file)) {
             out.write(data);
         }
     }
 
-    static byte[] readFile(File file) throws IOException {
+    private byte[] readFile(File file) throws IOException {
         try (InputStream in = new FileInputStream(file)) {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             byte[] buffer = new byte[1024];
@@ -353,7 +359,7 @@ public class Util {
         PublicKey pub;
         for (Token t : tokenlist) {
             if (t.getType().equals(PUSH)) {
-                pub = getPIPubkey(presenterUtilInterface.getContext(), t.getSerial());
+                pub = getPIPubkey(t.getSerial());
                 if (pub != null)
                     logprint(t.getSerial() + " : " + pub.getFormat());
             }
@@ -361,8 +367,8 @@ public class Util {
     }
 
     void removePubkeyFor(String serial) {
-        File f = new File(presenterUtilInterface.getContext().getFilesDir() + "/" + serial + "_" + PUBKEYFILE);
-        boolean res = false;
+        File f = new File(baseFilePath + "/" + serial + "_" + PUBKEYFILE);
+        boolean res;
         if (f.exists()) {
             res = f.delete();
             if (res) {
@@ -387,12 +393,11 @@ public class Util {
             e.printStackTrace();
         }
         byte[] data = o.toString().getBytes();
-        SecretKey key = null;
+        SecretKey key;
         try {
-            key = EncryptionHelper.getSecretKey(presenterUtilInterface.getContext(),
-                    new File(presenterUtilInterface.getContext().getFilesDir() + "/" + KEYFILE));
-            data = EncryptionHelper.encrypt(key, data);
-            writeFile(new File(presenterUtilInterface.getContext().getFilesDir() + "/" + FB_CONFIG_FILE), data);
+            key = getSecretKey(new File(baseFilePath + "/" + KEYFILE));
+            data = encrypt(key, data);
+            writeFile(new File(baseFilePath + "/" + FB_CONFIG_FILE), data);
         } catch (GeneralSecurityException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -407,15 +412,14 @@ public class Util {
     FirebaseInitConfig loadFirebaseConfig() {
         logprint("Loading Firebase config...");
         try {
-            byte[] data = readFile(new File(presenterUtilInterface.getContext().getFilesDir() + "/" + FB_CONFIG_FILE));
+            byte[] data = readFile(new File(baseFilePath + "/" + FB_CONFIG_FILE));
             if (data == null) {
                 logprint("Firebase config not found!");
                 return null;
             }
 
-            SecretKey key = EncryptionHelper.getSecretKey(presenterUtilInterface.getContext(),
-                    new File(presenterUtilInterface.getContext().getFilesDir() + "/" + KEYFILE));
-            data = EncryptionHelper.decrypt(key, data);
+            SecretKey key = getSecretKey(new File(baseFilePath + "/" + KEYFILE));
+            data = decrypt(key, data);
 
             JSONObject o = new JSONObject(new String(data));
             String projID = o.getString(PROJECT_ID);
@@ -434,6 +438,64 @@ public class Util {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private static byte[] encrypt(SecretKey secretKey, IvParameterSpec iv, byte[] plainText)
+            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+        Cipher cipher = Cipher.getInstance(CRYPT_ALGORITHM);
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
+        return cipher.doFinal(plainText);
+    }
+
+    private static byte[] decrypt(SecretKey secretKey, IvParameterSpec iv, byte[] cipherText)
+            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+        Cipher cipher = Cipher.getInstance(CRYPT_ALGORITHM);
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
+        return cipher.doFinal(cipherText);
+    }
+
+    static byte[] encrypt(SecretKey secretKey, byte[] plaintext)
+            throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException,
+            IllegalBlockSizeException, InvalidAlgorithmParameterException {
+        final byte[] iv = new byte[AppConstants.IV_LENGTH];
+        new SecureRandom().nextBytes(iv);
+        byte[] cipherText = encrypt(secretKey, new IvParameterSpec(iv), plaintext);
+        byte[] combined = new byte[iv.length + cipherText.length];
+        System.arraycopy(iv, 0, combined, 0, iv.length);
+        System.arraycopy(cipherText, 0, combined, iv.length, cipherText.length);
+        return combined;
+    }
+
+    static byte[] decrypt(SecretKey secretKey, byte[] cipherText)
+            throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
+            BadPaddingException, InvalidAlgorithmParameterException {
+        byte[] iv = Arrays.copyOfRange(cipherText, 0, IV_LENGTH);
+        byte[] cipher = Arrays.copyOfRange(cipherText, IV_LENGTH, cipherText.length);
+        return decrypt(secretKey, new IvParameterSpec(iv), cipher);
+    }
+
+    /**
+     * Load our symmetric secret key.
+     * The symmetric secret key is stored securely on disk by wrapping
+     * it with a public/private key pair, possibly backed by hardware.
+     */
+    SecretKey getSecretKey(File keyFile)
+            throws GeneralSecurityException, IOException {
+        final SecretKeyWrapper wrapper = presenterUtilInterface.getWrapper();
+        // Generate secret key if none exists
+        if (!keyFile.exists()) {
+            final byte[] raw = new byte[AppConstants.KEY_LENGTH];
+            new SecureRandom().nextBytes(raw);
+            final SecretKey key = new SecretKeySpec(raw, "AES");
+            final byte[] wrapped = wrapper.wrap(key);
+            writeFile(keyFile, wrapped);
+        }
+        // Even if we just generated the key, always read it back to ensure we
+        // can read it successfully.
+        final byte[] wrapped = readFile(keyFile);
+        return wrapper.unwrap(wrapped);
     }
 
 

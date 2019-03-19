@@ -88,7 +88,7 @@ public class FCMReceiverService extends FirebaseMessagingService {
 
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this,
                 NOTIFICATION_CHANNEL_ID)                                // Android 8+ uses notification channels
-                .setSmallIcon(R.drawable.ic_add_white_24dp)
+                .setSmallIcon(R.drawable.ic_pi_notification)
                 .setContentTitle(title)
                 .setContentText(question)
                 .setPriority(NotificationCompat.PRIORITY_MAX)          // 7.1 and lower

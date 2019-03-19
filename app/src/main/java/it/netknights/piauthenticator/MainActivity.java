@@ -28,8 +28,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.PorterDuff;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -51,20 +53,61 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PublicKey;
+import java.security.UnrecoverableEntryException;
+import java.security.cert.CertificateException;
+
+import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
+import static it.netknights.piauthenticator.AppConstants.API_KEY;
+import static it.netknights.piauthenticator.AppConstants.APP_ID;
 import static it.netknights.piauthenticator.AppConstants.AUTHENTICATION_URL;
+import static it.netknights.piauthenticator.AppConstants.COUNTER;
+import static it.netknights.piauthenticator.AppConstants.DIGITS;
+import static it.netknights.piauthenticator.AppConstants.ENROLLMENT_CRED;
+import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
+import static it.netknights.piauthenticator.AppConstants.ISSUER;
+import static it.netknights.piauthenticator.AppConstants.LABEL;
 import static it.netknights.piauthenticator.AppConstants.NONCE;
 import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_CHANNEL_ID;
+import static it.netknights.piauthenticator.AppConstants.PERIOD;
+import static it.netknights.piauthenticator.AppConstants.PERSISTENT;
+import static it.netknights.piauthenticator.AppConstants.PIN;
+import static it.netknights.piauthenticator.AppConstants.PROJECT_ID;
+import static it.netknights.piauthenticator.AppConstants.PROJECT_NUMBER;
+import static it.netknights.piauthenticator.AppConstants.PUSH;
+import static it.netknights.piauthenticator.AppConstants.PUSH_VERSION;
 import static it.netknights.piauthenticator.AppConstants.QUESTION;
+import static it.netknights.piauthenticator.AppConstants.ROLLOUT_URL;
+import static it.netknights.piauthenticator.AppConstants.SECRET;
 import static it.netknights.piauthenticator.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
 import static it.netknights.piauthenticator.AppConstants.TITLE;
-import static it.netknights.piauthenticator.Interfaces.*;
+import static it.netknights.piauthenticator.AppConstants.TOTP;
+import static it.netknights.piauthenticator.AppConstants.TTL;
+import static it.netknights.piauthenticator.AppConstants.TWOSTEP_DIFFICULTY;
+import static it.netknights.piauthenticator.AppConstants.TWOSTEP_OUTPUT;
+import static it.netknights.piauthenticator.AppConstants.TWOSTEP_SALT;
+import static it.netknights.piauthenticator.AppConstants.TYPE;
+import static it.netknights.piauthenticator.AppConstants.WITHPIN;
+import static it.netknights.piauthenticator.Interfaces.MainActivityInterface;
+import static it.netknights.piauthenticator.Interfaces.PresenterInterface;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 import static it.netknights.piauthenticator.Util.logprint;
 
@@ -74,8 +117,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private TokenListAdapter tokenlistadapter;
     private ListView listview;
     private AlertDialog status_dialog;
-    // getting the token requires the Activity
+    private Handler handler;
+    private Runnable timer;
+
+    // getting the firebase token requires the Activity
     String firebase_token;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,7 +139,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             String url = intent.getStringExtra(AUTHENTICATION_URL);
             String signature = intent.getStringExtra(SIGNATURE);
             String question = intent.getStringExtra(QUESTION);
-            presenterInterface.addPushAuthRequest(nonce, url, serial, question, title, signature);
+            if (serial != null && nonce != null && title != null && url != null && signature != null && question != null)
+                presenterInterface.addPushAuthRequest(nonce, url, serial, question, title, signature);
         }
 
         setupViews();
@@ -101,6 +149,16 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         // SETUP INTERFACES
         Presenter presenter = new Presenter();
         tokenlistadapter = new TokenListAdapter();
+        Util util = new Util(presenter, getFilesDir().getAbsolutePath());
+        presenter.setUtil(util);
+        try {
+            SecretKeyWrapper wrapper = new SecretKeyWrapper(this, "settings");
+            presenter.setSecretKeyWrapper(wrapper);
+        } catch (GeneralSecurityException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         presenter.setMainActivityInterface(this);
         presenter.setTokenListInterface(tokenlistadapter);
         presenterInterface = presenter;
@@ -109,7 +167,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         presenterInterface.init();
 
         listview.setAdapter(tokenlistadapter);
-
 
 
         createNotificationChannel();
@@ -137,8 +194,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                         "&appid=1%3A850240559902%3Aandroid%3A812605f9a33242a9&enrollment_credential=9311ee50678983c0f29d3d843f86e39405e2b427" +
                         "&projectnumber=850240559902";
                 try {
-                    AsyncTask<String, Integer, Boolean> tokenCreation = new TokenCreationTask(MainActivity.this, MainActivity.this.util);
-                    tokenCreation.execute(s2);
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 } */
@@ -156,7 +212,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     private void setupViews() {
-        setTitle(AppConstants.APP_TITLE);
+        setTitle("      " + AppConstants.APP_TITLE);
         setContentView(R.layout.activity_main);
         listview = findViewById(R.id.listview);
         listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
@@ -167,9 +223,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 return true;
             }
         });
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setBackgroundColor(getResources().getColor(PIBLUE));
+        //toolbar.setNavigationIcon(R.drawable.ic_toolbar_back);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setLogo(R.mipmap.ic_launcher);
             getSupportActionBar().setDisplayUseLogoEnabled(true);
@@ -212,6 +270,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         return super.onOptionsItemSelected(item);
     }
 
+    @SuppressWarnings("ConstantConditions") //makes no sense here
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
@@ -220,8 +279,120 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             if (result.getContents() == null) {
                 makeToast(R.string.toast_cancelled);
             } else {
+                // Extract data here, URI is an android dependency
                 try {
-                    presenterInterface.scanQRfinished(result.getContents());
+                    String content = result.getContents().replaceFirst("otpauth", "http");
+                    Uri uri = Uri.parse(content);
+                    URL url = null;
+                    try {
+                        url = new URL(content);
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (!url.getProtocol().equals("http")) {
+                        try {
+                            throw new Exception("Invalid Protocol");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    if (!url.getHost().equals(TOTP)) {
+                        if (!url.getHost().equals(HOTP)) {
+                            if (!url.getHost().equals(PUSH)) {
+                                try {
+                                    throw new Exception("No TOTP, HOTP or Push Token");
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                    }
+                    // TOKEN TYPE
+                    String type = url.getHost();
+                    // SERIAL
+                    String serial = uri.getPath().substring(1);
+
+                    ScanResult scanResult = new ScanResult(type, serial);
+
+                    // LABEL = ISSUER + SERIAL
+                    String label = serial;
+                    String issuer = uri.getQueryParameter(ISSUER);
+                    if (issuer != null && !label.startsWith(issuer)) {
+                        label = issuer + ": " + label;
+                    }
+                    scanResult.label = label;
+                    // ---------------- PUSH ----------------
+                    if (type.equals(PUSH)) {
+                        // Check for FirebaseInit info
+                        if (uri.getQueryParameter(PROJECT_ID) != null) {
+                            String projID = uri.getQueryParameter(PROJECT_ID);
+                            String appID = uri.getQueryParameter(APP_ID);
+                            String api_key = uri.getQueryParameter(API_KEY);
+                            String projNumber = uri.getQueryParameter(PROJECT_NUMBER);
+                            if (projID != null && appID != null && api_key != null && projNumber != null) {
+                                scanResult.firebaseInitConfig = new FirebaseInitConfig(projID, appID, api_key, projNumber);
+                            }
+                        }
+                        scanResult.rollout_url = uri.getQueryParameter(ROLLOUT_URL);
+                        if (uri.getQueryParameter(TTL) != null) {
+                            scanResult.ttl = Integer.parseInt(uri.getQueryParameter(TTL));
+                        }
+
+                        if (uri.getQueryParameter(ENROLLMENT_CRED) != null) {
+                            scanResult.enrollment_credential = uri.getQueryParameter(ENROLLMENT_CRED);
+                        }
+
+                        if (uri.getQueryParameter(PUSH_VERSION) != null) {
+                            //TODO is the push_version just int or x.x.x?
+                            scanResult.push_version = Integer.parseInt(uri.getQueryParameter(PUSH_VERSION));
+                        }
+                    }
+                    // ---------------- END PUSH ----------------
+
+                    scanResult.secret = uri.getQueryParameter(SECRET);
+
+                    if (uri.getQueryParameter(DIGITS) != null) {
+                        scanResult.digits = Integer.parseInt(uri.getQueryParameter(DIGITS));
+                    }
+                    if (uri.getQueryParameter(PERIOD) != null) {
+                        scanResult.period = Integer.parseInt(uri.getQueryParameter(PERIOD));
+                    }
+                    if (uri.getQueryParameter(COUNTER) != null) {
+                        scanResult.counter = Integer.parseInt(uri.getQueryParameter(COUNTER));
+                    }
+                    if (uri.getQueryParameter(ALGORITHM) != null) {
+                        scanResult.algorithm = uri.getQueryParameter(ALGORITHM).toUpperCase();
+                    }
+                    if (uri.getBooleanQueryParameter(PIN, false)) {
+                        scanResult.pin = true;
+                    }
+                    if (uri.getBooleanQueryParameter(PERSISTENT, false)) {
+                        scanResult.persistent = true;
+                    }
+                    // tap to show is currently not used
+                    if (uri.getBooleanQueryParameter(TAPTOSHOW, false)) {
+                        scanResult.taptoshow = true;
+                    }
+
+                    // --------------------- 2 STEP ---------------------
+                    // if at least one parameter for 2step is set do 2step init
+                    if (uri.getQueryParameter(TWOSTEP_SALT) != null ||
+                            uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null ||
+                            uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
+                        scanResult.do2Step = true;
+                        if (uri.getQueryParameter(TWOSTEP_SALT) != null) {
+                            scanResult.phonepartlength = Integer.parseInt(uri.getQueryParameter(TWOSTEP_SALT));
+                        }
+                        if (uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
+                            scanResult.output_size = Integer.parseInt(uri.getQueryParameter(TWOSTEP_OUTPUT)) * 8;
+                        }
+
+                        if (uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null) {
+                            scanResult.iterations = Integer.parseInt(uri.getQueryParameter(TWOSTEP_DIFFICULTY));
+                        }
+                    }
+                    presenterInterface.scanQRfinished(scanResult);
                 } catch (Exception e) {
                     makeToast(R.string.toast_invalid_qr);
                     e.printStackTrace();
@@ -229,7 +400,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             }
         } else if (requestCode == INTENT_ADD_TOKEN_MANUALLY) {
             if (resultCode == Activity.RESULT_OK) {
-                presenterInterface.addTokenFromBundle(data);
+                // Extract values from the intent here, so the logic does not depend on Intent
+                String period = null;
+                if (data.getStringExtra(TYPE).equals(TOTP)) {
+                    period = String.valueOf(data.getIntExtra(PERIOD, 30));
+                }
+                presenterInterface.addTokenFromIntent(data.getStringExtra(TYPE), data.getByteArrayExtra(SECRET), data.getStringExtra(LABEL),
+                        data.getIntExtra(DIGITS, 6), data.getStringExtra(ALGORITHM), period, data.getBooleanExtra(WITHPIN, false));
             } else {
                 makeToast(R.string.toast_cancelled);
             }
@@ -259,7 +436,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
         MenuInflater inflater = mode.getMenuInflater();
-
         if (presenterInterface.isCurrentSelectionWithPin()) {
             inflater.inflate(R.menu.actionmode_menu, menu);
             if (presenterInterface.isCurrentSelectionPersistent()) {
@@ -425,6 +601,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
+    public void onDestroyActionMode(ActionMode mode) {
+        presenterInterface.setCurrentSelection(-1); // equals null in the data model
+        tokenlistadapter.notifyChange();
+        presenterInterface.saveTokenlist();
+    }
+
+    @Override
     public void makeToast(int resID) {
         Toast.makeText(MainActivity.this, resID, Toast.LENGTH_SHORT).show();
     }
@@ -433,7 +616,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     public void setStatusDialogText(String text) {
         // if there is no dialog yet inflate it
         if (status_dialog == null) {
-            View view_pro_progress = getLayoutInflater().inflate(R.layout.pushrollout_loading, null);
+            View view_pro_progress = getLayoutInflater().inflate(R.layout.pushrollout_loading, listview, false);
             AlertDialog.Builder dialog_builder = new AlertDialog.Builder(this);
             dialog_builder.setView(view_pro_progress);
             dialog_builder.setCancelable(false);
@@ -452,6 +635,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             return;
         }
         tv_status.setText(text);
+    }
+
+    @Override
+    public void setStatusDialogText(int id) {
+        setStatusDialogText(getString(id));
     }
 
     @Override
@@ -475,10 +663,72 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
-    public void onDestroyActionMode(ActionMode mode) {
-        presenterInterface.setCurrentSelection(-1); // equals null in the data model
-        tokenlistadapter.notifyChange();
-        presenterInterface.saveTokenlist();
+    public String fireBaseInit(FirebaseInitConfig firebaseInitConfig) {
+        logprint("Initializing Firebase...");
+        // Check if Firebase is already initalized
+        if (!FirebaseApp.getApps(this).isEmpty()) {
+            logprint("Firebase already initialized for: " + FirebaseApp.getApps(this).toString());
+        } else {
+            // INIT FIREBASE
+            String projID = firebaseInitConfig.projID;
+            String appID = firebaseInitConfig.appID;
+            String api_key = firebaseInitConfig.api_key;
+            String gcmSenderID = firebaseInitConfig.projNumber;
+            String database_url = "https://" + projID + ".firebaseio.com";
+            String storage_bucket = projID + ".appspot.com";
+
+            FirebaseOptions.Builder builder = new FirebaseOptions.Builder()
+                    .setApplicationId(appID)
+                    .setApiKey(api_key)
+                    .setDatabaseUrl(database_url)
+                    .setStorageBucket(storage_bucket)
+                    .setProjectId(projID)
+                    .setGcmSenderId(gcmSenderID);
+            FirebaseApp.initializeApp(this, builder.build());
+
+            logprint("Firebase initialized!");
+        }
+        return getFirebaseToken();
+    }
+
+    @Override
+    public PublicKey generateKeyPairFor(String serial) {
+        PublicKey pubkey = null;
+        try {
+            pubkey = SecretKeyWrapper.generateKeyPair(serial, getApplicationContext());
+        } catch (KeyStoreException | UnrecoverableEntryException | InvalidAlgorithmParameterException | NoSuchProviderException
+                | IOException | NoSuchAlgorithmException |
+                CertificateException e) {
+            e.printStackTrace();
+        }
+        if (pubkey == null) {
+            logprint("Generated PublicKey for " + serial + " is null.");
+        }
+        return pubkey;
+    }
+
+    @Override
+    public void startTimer() {
+        handler = new Handler();
+        timer = new Runnable() {
+            @Override
+            public void run() {
+                presenterInterface.timerProgress(((int) (System.currentTimeMillis() / 1000) % 60));
+                handler.postDelayed(this, 1000);
+            }
+        };
+        handler.post(timer);
+        handler.removeCallbacks(timer);
+    }
+
+    @Override
+    public void stopTimer() {
+        handler.removeCallbacks(timer);
+    }
+
+    @Override
+    public void resumeTimer() {
+        handler.post(timer);
     }
 
     public static void changeDialogFontColor(final AlertDialog dialog) {
@@ -539,11 +789,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
-    public Context getContext() {
-        return this;
-    }
-
-    @Override
     public void makeAlertDialog(String title, String message) {
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle(title)
@@ -563,4 +808,5 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     public void makeToast(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
+
 }

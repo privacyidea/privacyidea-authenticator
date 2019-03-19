@@ -30,8 +30,9 @@ class Model {
     ArrayList<PushAuthRequest> pushAuthRequests;
     Token currentSelection;
 
-    Model(ArrayList<Token> tokenlist) {
+    Model(ArrayList<Token> tokenlist, ArrayList<PushAuthRequest> pushAuthRequests) {
         this.tokens = tokenlist;
+        this.pushAuthRequests = pushAuthRequests;
     }
 
     void setCurrentSelection(int position) {
@@ -65,5 +66,59 @@ class Model {
         } else {
             return null;
         }
+    }
+}
+
+class FirebaseInitConfig {
+    String projID;
+    String appID;
+    String api_key;
+    String projNumber;
+
+    FirebaseInitConfig(String projID, String appID, String api_key, String projNumber) {
+        this.projID = projID;
+        this.appID = appID;
+        this.api_key = api_key;
+        this.projNumber = projNumber;
+    }
+}
+
+class PushAuthRequest {
+    String nonce, url, serial, question, title, signature;
+
+    PushAuthRequest(String nonce, String url, String serial, String question, String title, String signature) {
+        this.nonce = nonce;
+        this.url = url;
+        this.serial = serial;
+        this.question = question;
+        this.title = title;
+        this.signature = signature;
+    }
+}
+
+class ScanResult {
+    // BASE
+    String type, serial, label;
+
+    // NORMAL TOKEN
+    String secret, algorithm = "sha1";              // Default
+    int digits = 6, period = 30, counter = 1;       // Defaults
+    boolean pin = false, persistent = false, taptoshow = false;
+
+    // TWO STEP TOKEN (addition)
+    boolean do2Step = false;
+    int phonepartlength = 10;                       // in bytes
+    int iterations = 10000;
+    int output_size = 160;                          // in bits
+
+    // PUSH TOKEN
+    String rollout_url, enrollment_credential;
+    int ttl = 10;                                   // 10 Minutes is the default
+    FirebaseInitConfig firebaseInitConfig;
+    int push_version = 1;
+
+    ScanResult(String type, String serial) {
+        this.type = type;
+        this.serial = serial;
     }
 }

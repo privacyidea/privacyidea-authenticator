@@ -14,7 +14,7 @@ android {
         def versionMinor = 0
         def versionPatch = 4
 
-        versionCode versionMajor * 10000+ versionMinor * 100  + versionPatch
+        versionCode versionMajor * 10000 + versionMinor * 100 + versionPatch
         versionName "${versionMajor}.${versionMinor}.${versionPatch}"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -39,6 +39,10 @@ android {
         abortOnError false
     }
 
+    /* Async Task do nothing in Tests, but at least they don't crash */
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
 }
 
 dependencies {

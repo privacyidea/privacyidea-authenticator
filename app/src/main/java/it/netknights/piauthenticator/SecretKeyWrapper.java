@@ -132,7 +132,7 @@ class SecretKeyWrapper {
      * Use {@link #unwrap(byte[])} to later recover the original
      * {@link SecretKey}.
      *
-     * @return a wrapped version of the given {@link SecretKey} that can be
+     * @return a wrapped push_version of the given {@link SecretKey} that can be
      * safely stored on untrusted storage.
      */
     byte[] wrap(SecretKey key) throws GeneralSecurityException {
@@ -242,20 +242,26 @@ class SecretKeyWrapper {
      * Remove the privateKey from the Keystore for the given alias/serial
      *
      * @param alias                the serial is the alias of the privateKey in the Keystore
-     * @throws CertificateException
-     * @throws NoSuchAlgorithmException
-     * @throws IOException
-     * @throws KeyStoreException
      */
-    static void removePrivateKeyFor(String alias) throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException {
-        final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
-        keyStore.load(null);
-        if (!keyStore.containsAlias(alias)) {
-            logprint("key for alias " + alias + " was not found for deletion!");
-            return;
+    void removePrivateKeyFor(String alias) {
+        try {
+            final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+            keyStore.load(null);
+            if (!keyStore.containsAlias(alias)) {
+                logprint("key for alias " + alias + " was not found for deletion!");
+                return;
+            }
+            keyStore.deleteEntry(alias);
+            logprint("key for alias " + alias + " was deleted from keystore!");
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        keyStore.deleteEntry(alias);
-        logprint("key for alias " + alias + " was deleted from keystore!");
     }
 
     /**

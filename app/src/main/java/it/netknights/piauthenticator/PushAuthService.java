@@ -41,7 +41,6 @@ import static it.netknights.piauthenticator.AppConstants.QUESTION;
 import static it.netknights.piauthenticator.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
 import static it.netknights.piauthenticator.AppConstants.TITLE;
-import static it.netknights.piauthenticator.Util.getPIPubkey;
 import static it.netknights.piauthenticator.Util.logprint;
 
 public class PushAuthService extends Service {
@@ -84,9 +83,10 @@ public class PushAuthService extends Service {
             logprint("PushAuthService: appPrivateKey is null, Authentication is not started.");
             return Service.START_STICKY;    // Restart the Service in case of being killed, but don't redeliver the intent
         }
+        Util util = new Util();
         AsyncTask<Void, Integer, Boolean> pushAuth = new PushAuthTask(
                 new PushAuthRequest(nonce, url, serial, question, title, signature),
-                getPIPubkey(getBaseContext(), serial), appPrivateKey);
+                util.getPIPubkey(getBaseContext().getFilesDir().getAbsolutePath(), serial), appPrivateKey);
         pushAuth.execute();
         //return Service.START_REDELIVER_INTENT;
         return Service.START_STICKY;
