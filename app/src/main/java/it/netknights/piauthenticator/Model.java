@@ -30,9 +30,22 @@ class Model {
     ArrayList<PushAuthRequest> pushAuthRequests;
     Token currentSelection;
 
+    Model() {
+        this.tokens = new ArrayList<>();
+        this.pushAuthRequests = new ArrayList<>();
+    }
+
     Model(ArrayList<Token> tokenlist, ArrayList<PushAuthRequest> pushAuthRequests) {
-        this.tokens = tokenlist;
-        this.pushAuthRequests = pushAuthRequests;
+        if (tokenlist == null) {
+            this.tokens = new ArrayList<>();
+        } else {
+            this.tokens = tokenlist;
+        }
+        if (pushAuthRequests == null) {
+            this.pushAuthRequests = new ArrayList<>();
+        } else {
+            this.pushAuthRequests = pushAuthRequests;
+        }
     }
 
     void setCurrentSelection(int position) {
@@ -61,6 +74,7 @@ class Model {
             StringBuilder sb = new StringBuilder();
             for (Token t : upForDeletion) {
                 sb.append(t.getSerial()).append("\n");
+                tokens.remove(t);
             }
             return sb.toString();
         } else {
@@ -85,14 +99,16 @@ class FirebaseInitConfig {
 
 class PushAuthRequest {
     String nonce, url, serial, question, title, signature;
+    boolean sslVerify;
 
-    PushAuthRequest(String nonce, String url, String serial, String question, String title, String signature) {
+    PushAuthRequest(String nonce, String url, String serial, String question, String title, String signature, boolean sslVerify) {
         this.nonce = nonce;
         this.url = url;
         this.serial = serial;
         this.question = question;
         this.title = title;
         this.signature = signature;
+        this.sslVerify = sslVerify;
     }
 }
 
@@ -116,6 +132,7 @@ class ScanResult {
     int ttl = 10;                                   // 10 Minutes is the default
     FirebaseInitConfig firebaseInitConfig;
     int push_version = 1;
+    boolean sslverify = true;
 
     ScanResult(String type, String serial) {
         this.type = type;

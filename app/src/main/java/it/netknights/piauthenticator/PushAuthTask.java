@@ -42,6 +42,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
 
+import javax.net.ssl.HttpsURLConnection;
+
 import static it.netknights.piauthenticator.AppConstants.CONNECT_TIMEOUT;
 import static it.netknights.piauthenticator.AppConstants.PA_INVALID_SIGNATURE;
 import static it.netknights.piauthenticator.AppConstants.PA_SIGNING_FAILURE;
@@ -54,6 +56,7 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> {
     private String nonce, endpoint_url, serial, question, title, signature;
     private PublicKey piPublicKey;
     private PrivateKey appPrivateKey;
+    private boolean sslVerify;
 
     PushAuthTask(PushAuthRequest pushAuthRequest,
                  PublicKey piPublicKey, PrivateKey appPrivateKey) {
@@ -65,6 +68,7 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> {
         this.signature = pushAuthRequest.signature;
         this.appPrivateKey = appPrivateKey;
         this.piPublicKey = piPublicKey;
+        this.sslVerify = pushAuthRequest.sslVerify;
     }
 
     @Override
@@ -79,10 +83,10 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> {
         // 0. Split data
         // TODO convert key-value pairs to the map that was signed in the server
         // TODO how does the payload look like?
-        StringBuilder sb = new StringBuilder();
-        sb.append(nonce).append("|").append(endpoint_url).append("|").append(serial).append("|").append(question)
-                .append("|").append(title);
-        String toVerify = sb.toString();
+        String strSSLVerify = sslVerify ? "1" : "0";
+
+        String toVerify = nonce + "|" + endpoint_url + "|" + serial + "|" + question +
+                "|" + title + "|" + strSSLVerify;
 
         // 1. Verify the signature
 
@@ -132,9 +136,9 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> {
             e.printStackTrace();
             return false;
         }
-        HttpURLConnection con;
+        HttpsURLConnection con;
         try {
-            con = (HttpURLConnection) url.openConnection();
+            con = (HttpsURLConnection) url.openConnection();
         } catch (IOException e) {
             e.printStackTrace();
             return false;
@@ -148,6 +152,11 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> {
         }
         con.setReadTimeout(READ_TIMEOUT);
         con.setConnectTimeout(CONNECT_TIMEOUT);
+
+        if (!sslVerify) {
+            con = Util.turnOffSSLVerification(con);
+        }
+
         logprint("Sending...");
         // Send the pubkey and firebase token
         OutputStream os = null;
@@ -156,7 +165,7 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        BufferedWriter writer = null;
+        BufferedWriter writer;
         writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
         logprint("Nonce: " + nonce);
         logprint("Signature: " + signature_to_send);

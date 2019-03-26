@@ -26,8 +26,10 @@ import org.apache.commons.codec.binary.Base32;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.UnrecoverableEntryException;
@@ -43,6 +45,7 @@ import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_DONE;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_JSON;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_URL;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
+import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_1;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_2;
@@ -70,18 +73,23 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     private TokenListViewInterface tokenListInterface;
     private MainActivityInterface mainActivityInterface;
-
     private Model model;
     private Util util;
-    private SecretKeyWrapper secretKeyWrapper;
+
+    Presenter(TokenListViewInterface tokenListViewInterface, MainActivityInterface mainActivityInterface, Util util) {
+        this.tokenListInterface = tokenListViewInterface;
+        this.mainActivityInterface = mainActivityInterface;
+        this.util = util;
+    }
 
     @Override
     public void init() {
         // Logic of onCreate
 
-        model = new Model(util.loadTokens()
-                , new ArrayList<PushAuthRequest>());
-
+        if (model == null) {
+            model = new Model(util.loadTokens()
+                    , new ArrayList<PushAuthRequest>());
+        }
         FirebaseInitConfig firebaseInitConfig = util.loadFirebaseConfig();
         if (firebaseInitConfig != null) {
             mainActivityInterface.fireBaseInit(firebaseInitConfig);
@@ -92,12 +100,9 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
         String expired = model.checkForExpiredTokens();
         if (expired != null) {
-            mainActivityInterface.makeAlertDialog("Token expired!", expired);
+            mainActivityInterface.makeAlertDialog(R.string.TokenExpiredTitle, expired);
+            tokenListInterface.notifyChange();
         }
-    }
-
-    public void setUtil(Util util) {
-        this.util = util;
     }
 
     @Override
@@ -109,8 +114,8 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 // The current setup is v1
                 if (result.push_version > 1) {
                     // Higher than v1 is currently not supported
-                    mainActivityInterface.makeAlertDialog("Incompatible Version",
-                            "The requested rollout version is higher than the supported one on this phone!");
+                    mainActivityInterface.makeAlertDialog(R.string.IncompatiblePushVersion,
+                            R.string.IncompatiblePushVersionMessage);
                     return;
                 }
 
@@ -118,6 +123,9 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 if (result.firebaseInitConfig != null) {
                     util.storeFirebaseConfig(result.firebaseInitConfig);
                     mainActivityInterface.fireBaseInit(result.firebaseInitConfig);
+                }
+                if (!result.sslverify) {
+                    token.sslVerify = false;
                 }
                 token.rollout_finished = false;
                 Calendar now = Calendar.getInstance();
@@ -170,17 +178,17 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             token.setWithPIN(true);
         }
         rolloutFinished(token);
-        mainActivityInterface.makeToast("Token added: " + serial);
+        mainActivityInterface.makeToast(mainActivityInterface.getStringResource(R.string.TokenAddedToast) + serial);
     }
 
     @Override
-    public void addPushAuthRequest(String nonce, String url, String serial, String question, String title, String signature) {
-        model.pushAuthRequests.add(new PushAuthRequest(nonce, url, serial, question, title, signature));
+    public void addPushAuthRequest(PushAuthRequest request) {
+        model.pushAuthRequests.add(request);
     }
 
     @Override
     public void onResume() {
-        refreshAllTOTP();
+        refreshOTPs();
         mainActivityInterface.resumeTimer();
     }
 
@@ -196,12 +204,8 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     @Override
     public void printKeystore() {
-        try {
-            SecretKeyWrapper.printKeystore();
-            this.util.printPubkeys(model.tokens);
-        } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException | UnrecoverableEntryException e) {
-            e.printStackTrace();
-        }
+        mainActivityInterface.printKeystore();
+        util.printPubkeys(model.tokens);
     }
 
     @Override
@@ -337,7 +341,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         }
         if (req == null) return; // none found
         try {
-            PrivateKey appPrivateKey = SecretKeyWrapper.getPrivateKeyFor(t_serial);
+            PrivateKey appPrivateKey = getWrapper().getPrivateKeyFor(t_serial);
             PublicKey piPublicKey = util.getPIPubkey(req.serial);
             if (appPrivateKey != null && piPublicKey != null) {
                 new PushAuthTask(req, piPublicKey, appPrivateKey).execute();
@@ -382,21 +386,13 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         tokenListInterface.notifyChange();
     }
 
-    @Override
-    public void timerProgress(int progress) {
-        tokenListInterface.updateProgressbars(progress);
-        // refresh OTP values only around the periods
-        if (progress < 3 || progress > 27 && progress < 33 || progress > 57) {
-            refreshAllTOTP();
-        }
-    }
-
     /**
      * Remove a token from the list. This includes Pub/Priv Keys for Pushtoken
      *
      * @param currToken the token to remove
      */
     protected void removeToken(Token currToken) {
+        if (currToken == null) return;
         if (currToken.getType().equals(PUSH)) {
             util.removePubkeyFor(currToken.getSerial());
             getWrapper().removePrivateKeyFor(currToken.getSerial());
@@ -412,6 +408,15 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         saveTokenlist();
     }
 
+    @Override
+    public void timerProgress(int progress) {
+        tokenListInterface.updateProgressbars(progress);
+        // refresh OTP values only around the periods
+        if (progress < 3 || progress > 27 && progress < 33 || progress > 57) {
+            refreshOTPs();
+        }
+    }
+
     private void refreshOTPs() {
         for (int i = 0; i < model.tokens.size(); i++) {
             if (!model.tokens.get(i).getType().equals(PUSH)) {
@@ -420,28 +425,6 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         }
         tokenListInterface.notifyChange();
     }
-
-    private void refreshAllTOTP() {
-        for (int i = 0; i < model.tokens.size(); i++) {
-            if (model.tokens.get(i).getType().equals(TOTP)) {
-                model.tokens.get(i).setCurrentOTP(OTPGenerator.generate(model.tokens.get(i)));
-            }
-        }
-        tokenListInterface.notifyChange();
-    }
-
-    void setMainActivityInterface(MainActivityInterface mainActivityInterface) {
-        this.mainActivityInterface = mainActivityInterface;
-    }
-
-    void setTokenListInterface(TokenListViewInterface tokenListInterface) {
-        this.tokenListInterface = tokenListInterface;
-    }
-
-    void setSecretKeyWrapper(SecretKeyWrapper secretKeyWrapper) {
-        this.secretKeyWrapper = secretKeyWrapper;
-    }
-
 
     private void doTwoStepRollout(Token token, int phonepartlength, int iterations, int output_size) {
         new TwoStepRolloutTask(token, phonepartlength, iterations, output_size, this).execute();
@@ -455,6 +438,13 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         if (token == null) return;
         if (!token.getType().equals(PUSH)) {
             token.setCurrentOTP(generate(token));
+        } else {
+            // Do not add token twice
+            for (Token t : model.tokens) {
+                if (t.getSerial().equals(token.getSerial()) && t.getType().equals(PUSH)) {
+                    return;
+                }
+            }
         }
         model.tokens.add(token);
         saveTokenlist();
@@ -468,7 +458,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     @Override
     public PublicKey generatePublicKeyFor(String serial) {
-        return mainActivityInterface.generateKeyPairFor(serial);
+        return mainActivityInterface.generatePublicKeyFor(serial);
     }
 
     /**
@@ -486,8 +476,6 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             // this means the "key" field was empty or the DECODED data is not a key
             updateTaskStatus(PRO_STATUS_RESPONSE_NO_KEY, token);
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
             updateTaskStatus(PRO_STATUS_BAD_BASE64, token);
@@ -495,7 +483,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     /**
-     * Updates the UI according to the statusCode. This includes opening/closing dialogs and chosing the dialog type.
+     * Updates the UI according to the statusCode. This includes opening/closing dialogs and choosing the dialog type.
      *
      * @param statusCode statusCode
      */
@@ -515,7 +503,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 break;
             //----------- TWO STEP ROLLOUT -----------
             case STATUS_TWO_STEP_ROLLOUT:
-                mainActivityInterface.setStatusDialogText("Please wait while the secret is generated.");
+                mainActivityInterface.setStatusDialogText(R.string.WaitWhileSecretIsGenerated);
                 break;
             case STATUS_TWO_STEP_ROLLOUT_DONE:
                 rolloutFinished(token);
@@ -540,36 +528,34 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             case PRO_STATUS_BAD_BASE64:
                 token.rollout_finished = false;
                 rolloutFinished(token);
-                mainActivityInterface.cancelStatusDialog();
-                mainActivityInterface.makeAlertDialog("Error", "The key from the server was not in the correct format.");
+                mainActivityInterface.makeAlertDialog(R.string.Error, R.string.KeyFromServerWrongFormat);
                 break;
             case PRO_STATUS_MALFORMED_JSON:
                 token.rollout_finished = false;
                 rolloutFinished(token);
-                mainActivityInterface.cancelStatusDialog();
-                mainActivityInterface.makeAlertDialog("Error", "The response could not be parsed.");
+                mainActivityInterface.makeAlertDialog(R.string.Error, R.string.ResponseNotParsed);
                 break;
             case PRO_STATUS_RESPONSE_NO_KEY:
                 token.rollout_finished = false;
                 rolloutFinished(token);
-                mainActivityInterface.cancelStatusDialog();
-                mainActivityInterface.makeAlertDialog("Error", "The response does not contain a key.");
+                mainActivityInterface.makeAlertDialog((R.string.Error), (R.string.ResponseNoKey));
                 break;
             case PRO_STATUS_REGISTRATION_TIME_EXPIRED:
-                mainActivityInterface.cancelStatusDialog();
-                mainActivityInterface.makeAlertDialog("Error", "Registration time expired.");
+                mainActivityInterface.makeAlertDialog(R.string.Error, R.string.RegistrationTimeExpired);
+                removeToken(token);
                 break;
             case PRO_STATUS_MALFORMED_URL:
-                mainActivityInterface.cancelStatusDialog();
-                mainActivityInterface.makeAlertDialog("Error", "Rollout URL is invalid.");
+                mainActivityInterface.makeAlertDialog(R.string.Error, R.string.RolloutURLinvalid);
                 break;
             case PRO_STATUS_UNKNOWN_HOST:
                 token.rollout_finished = false;
                 rolloutFinished(token);
-                mainActivityInterface.cancelStatusDialog();
-                mainActivityInterface.makeAlertDialog("Error", "Rollout URL cannot be resolved.");
+                mainActivityInterface.makeAlertDialog(R.string.Error, R.string.RolloutURLNotResolved);
                 break;
-
+            case PRO_STATUS_RESPONSE_NOT_OK:
+                token.rollout_finished = false;
+                rolloutFinished(token);
+                mainActivityInterface.makeAlertDialog(R.string.Error, R.string.ServerResponseNotOk);
             default:
                 logprint("Unknown statusCode in updateTaskStatus: " + statusCode);
                 break;
@@ -583,6 +569,6 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     @Override
     public SecretKeyWrapper getWrapper() {
-        return secretKeyWrapper;
+        return mainActivityInterface.getWrapper();
     }
 }

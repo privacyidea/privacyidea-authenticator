@@ -65,12 +65,15 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
+import java.util.Enumeration;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
 import static it.netknights.piauthenticator.AppConstants.API_KEY;
@@ -97,6 +100,7 @@ import static it.netknights.piauthenticator.AppConstants.ROLLOUT_URL;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
 import static it.netknights.piauthenticator.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.AppConstants.SSL_VERIFY;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
 import static it.netknights.piauthenticator.AppConstants.TITLE;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
@@ -122,6 +126,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     // getting the firebase token requires the Activity
     String firebase_token;
+    private SecretKeyWrapper secretKeyWrapper;
 
 
     @Override
@@ -139,30 +144,30 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             String url = intent.getStringExtra(AUTHENTICATION_URL);
             String signature = intent.getStringExtra(SIGNATURE);
             String question = intent.getStringExtra(QUESTION);
+            boolean sslVerify = intent.getBooleanExtra(SSL_VERIFY, true);
             if (serial != null && nonce != null && title != null && url != null && signature != null && question != null)
-                presenterInterface.addPushAuthRequest(nonce, url, serial, question, title, signature);
+                presenterInterface.addPushAuthRequest(new PushAuthRequest(nonce, url, serial, question, title, signature, sslVerify));
         }
 
         setupViews();
         setupFab();
 
-        // SETUP INTERFACES
-        Presenter presenter = new Presenter();
+        // SETUP INTERFACES AND DEPENDENCIES
         tokenlistadapter = new TokenListAdapter();
-        Util util = new Util(presenter, getFilesDir().getAbsolutePath());
-        presenter.setUtil(util);
+        secretKeyWrapper = null;
         try {
-            SecretKeyWrapper wrapper = new SecretKeyWrapper(this, "settings");
-            presenter.setSecretKeyWrapper(wrapper);
+            secretKeyWrapper = new SecretKeyWrapper(this);
         } catch (GeneralSecurityException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        presenter.setMainActivityInterface(this);
-        presenter.setTokenListInterface(tokenlistadapter);
+        Util util = new Util(secretKeyWrapper, getFilesDir().getAbsolutePath());
+        Presenter presenter = new Presenter(tokenlistadapter, this, util);
+
         presenterInterface = presenter;
         tokenlistadapter.setPresenterInterface(presenter);
+
         // init the model before the adapter is set
         presenterInterface.init();
 
@@ -338,18 +343,23 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                         if (uri.getQueryParameter(TTL) != null) {
                             scanResult.ttl = Integer.parseInt(uri.getQueryParameter(TTL));
                         }
-
                         if (uri.getQueryParameter(ENROLLMENT_CRED) != null) {
                             scanResult.enrollment_credential = uri.getQueryParameter(ENROLLMENT_CRED);
                         }
-
                         if (uri.getQueryParameter(PUSH_VERSION) != null) {
-                            //TODO is the push_version just int or x.x.x?
                             scanResult.push_version = Integer.parseInt(uri.getQueryParameter(PUSH_VERSION));
+                        }
+                        if (uri.getQueryParameter(SSL_VERIFY) != null) {
+                            logprint((uri.getQueryParameter(SSL_VERIFY)));
+                            if (Integer.parseInt(uri.getQueryParameter(SSL_VERIFY)) < 1) {
+                                logprint("SSL VERIFY 0 in QR");
+                                scanResult.sslverify = false;
+                            }
                         }
                     }
                     // ---------------- END PUSH ----------------
 
+                    // ---------------- NORMAL TOKEN ----------------
                     scanResult.secret = uri.getQueryParameter(SECRET);
 
                     if (uri.getQueryParameter(DIGITS) != null) {
@@ -375,7 +385,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                         scanResult.taptoshow = true;
                     }
 
-                    // --------------------- 2 STEP ---------------------
+                    // --------------------- OPTIONAL 2 STEP ---------------------
                     // if at least one parameter for 2step is set do 2step init
                     if (uri.getQueryParameter(TWOSTEP_SALT) != null ||
                             uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null ||
@@ -608,6 +618,68 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
+    public void printKeystore() {
+        final KeyStore keyStore;
+        try {
+            keyStore = KeyStore.getInstance("AndroidKeyStore");
+            keyStore.load(null);
+            Enumeration<String> aliases = keyStore.aliases();
+            String s;
+            PrivateKey k;
+            SecretKeyWrapper skw = new SecretKeyWrapper(this);
+            logprint("-------- KEYSTORE ELEMENTS (PrivKeys) --------");
+            while (aliases.hasMoreElements()) {
+                s = aliases.nextElement();
+                k = skw.getPrivateKeyFor(s);
+                if (k != null) {
+                    logprint("" + s + " : " + k.toString());
+                } else {
+                    logprint("" + s + " : NO KEY FOUND");
+                }
+            }
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableEntryException e) {
+            e.printStackTrace();
+        } catch (GeneralSecurityException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public PublicKey generatePublicKeyFor(String alias) {
+        try {
+            return SecretKeyWrapper.generateKeyPair(alias, this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableEntryException e) {
+            e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public String getStringResource(int id) {
+        return getString(id);
+    }
+
+    @Override
     public void makeToast(int resID) {
         Toast.makeText(MainActivity.this, resID, Toast.LENGTH_SHORT).show();
     }
@@ -692,22 +764,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
-    public PublicKey generateKeyPairFor(String serial) {
-        PublicKey pubkey = null;
-        try {
-            pubkey = SecretKeyWrapper.generateKeyPair(serial, getApplicationContext());
-        } catch (KeyStoreException | UnrecoverableEntryException | InvalidAlgorithmParameterException | NoSuchProviderException
-                | IOException | NoSuchAlgorithmException |
-                CertificateException e) {
-            e.printStackTrace();
-        }
-        if (pubkey == null) {
-            logprint("Generated PublicKey for " + serial + " is null.");
-        }
-        return pubkey;
-    }
-
-    @Override
     public void startTimer() {
         handler = new Handler();
         timer = new Runnable() {
@@ -729,6 +785,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     public void resumeTimer() {
         handler.post(timer);
+    }
+
+    @Override
+    public SecretKeyWrapper getWrapper() {
+        return secretKeyWrapper;
     }
 
     public static void changeDialogFontColor(final AlertDialog dialog) {
@@ -790,6 +851,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     @Override
     public void makeAlertDialog(String title, String message) {
+        if (status_dialog != null) {
+            status_dialog.cancel();
+        }
+
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle(title)
                 .setMessage(message)
@@ -802,6 +867,16 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         final AlertDialog alert = builder.create();
         MainActivity.changeDialogFontColor(alert);
         alert.show();
+    }
+
+    @Override
+    public void makeAlertDialog(int titleID, String message) {
+        makeAlertDialog(getStringResource(titleID), message);
+    }
+
+    @Override
+    public void makeAlertDialog(int titleID, int messageID) {
+        makeAlertDialog(getStringResource(titleID), getStringResource(messageID));
     }
 
     @Override

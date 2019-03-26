@@ -56,18 +56,17 @@ class OTPGenerator {
      * @return the current OTP value for the input token
      */
     static String generate(Token token) {
-        String secretAsHEX = byteArrayToHexString(token.getSecret());
-        String digits = String.valueOf(token.getDigits());
-        //Log.d(TAG, "generate: for: " + token.getLabel() + " with secret: " + secretAsHEX);
-        if (token.getType().equals(TOTP)) {
-            return String.format("%0" + token.getDigits() + "d", generateTOTP(secretAsHEX,
-                    (System.currentTimeMillis() / 1000), digits, token.getPeriod(), token.getAlgorithm()));
-        }
-        if (token.getType().equals(HOTP)) {
-            return String.format("%0" + token.getDigits() + "d", generateHOTP(secretAsHEX,
-                    String.valueOf(token.getCounter()), digits, token.getAlgorithm()));
-        }
-        return "";
+        if (token.getType().equals(HOTP) || token.getType().equals(TOTP)) {
+            String secretAsHEX = byteArrayToHexString(token.getSecret());
+            String digits = String.valueOf(token.getDigits());
+            if (token.getType().equals(TOTP)) {
+                return String.format("%0" + token.getDigits() + "d", generateTOTP(secretAsHEX,
+                        (System.currentTimeMillis() / 1000), digits, token.getPeriod(), token.getAlgorithm()));
+            } else {
+                return String.format("%0" + token.getDigits() + "d", generateHOTP(secretAsHEX,
+                        String.valueOf(token.getCounter()), digits, token.getAlgorithm()));
+            }
+        } else return "";
     }
 
     /**
@@ -80,7 +79,7 @@ class OTPGenerator {
      * @param algorithm The hashing algorithm, "HmacSHA1", "HmacSHA256", "HmacSHA512"
      * @return The OTP value for the HOTP Token
      */
-    private static int generateTOTP(String key, long t, String digits, int period, String algorithm) {
+    static int generateTOTP(String key, long t, String digits, int period, String algorithm) {
          /*
         The unix system time is devided by the time step. This number of time slices is used as
         counter input for the normal HOTP algorithm
@@ -175,7 +174,6 @@ class OTPGenerator {
         } catch (GeneralSecurityException gse) {
             gse.printStackTrace();
             throw new UndeclaredThrowableException(gse);
-
         }
     }
 
@@ -195,8 +193,7 @@ class OTPGenerator {
         // Generate a outputKeyLength-bit key
         SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
         KeySpec keySpec = new PBEKeySpec(passphraseOrPin, salt, iterations, outputKeyLength);
-        byte[] bb = secretKeyFactory.generateSecret(keySpec).getEncoded();
-        return bb;
+        return secretKeyFactory.generateSecret(keySpec).getEncoded();
     }
 
 }

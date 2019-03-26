@@ -36,6 +36,10 @@ class Interfaces {
     interface MainActivityInterface {
         void makeAlertDialog(String title, String message);
 
+        void makeAlertDialog(int titleID, String message);
+
+        void makeAlertDialog(int titleID, int messageID);
+
         void makeToast(String message);
 
         void makeToast(int resID);
@@ -50,13 +54,19 @@ class Interfaces {
 
         String fireBaseInit(FirebaseInitConfig firebaseInitConfig);
 
-        PublicKey generateKeyPairFor(String serial);
-
         void startTimer();
 
         void stopTimer();
 
         void resumeTimer();
+
+        SecretKeyWrapper getWrapper();
+
+        void printKeystore();
+
+        PublicKey generatePublicKeyFor(String alias);
+
+        String getStringResource(int id);
     }
 
     interface PresenterInterface {
@@ -66,7 +76,7 @@ class Interfaces {
 
         void addTokenFromIntent(String type, byte[] secret, String serial, int digits, String algorithm, String period, boolean withPIN);
 
-        void addPushAuthRequest(String nonce, String url, String serial, String question, String title, String signature);
+        void addPushAuthRequest(PushAuthRequest request);
 
         void onResume();
 

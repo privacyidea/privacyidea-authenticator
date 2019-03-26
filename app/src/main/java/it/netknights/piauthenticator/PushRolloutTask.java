@@ -21,7 +21,6 @@
 package it.netknights.piauthenticator;
 
 import android.os.AsyncTask;
-import android.util.Base64;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,7 +31,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
@@ -40,18 +38,24 @@ import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import java.util.Date;
 
+import javax.net.ssl.HttpsURLConnection;
+
 import it.netknights.piauthenticator.Interfaces.PresenterTaskInterface;
 
 import static it.netknights.piauthenticator.AppConstants.CONNECT_TIMEOUT;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_DONE;
+import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_KEY_RECEIVED;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_JSON;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_URL;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
+import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_1;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_2;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_3;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_UNKNOWN_HOST;
 import static it.netknights.piauthenticator.AppConstants.READ_TIMEOUT;
+import static it.netknights.piauthenticator.AppConstants.RESPONSE_DETAIL;
+import static it.netknights.piauthenticator.AppConstants.RESPONSE_PUBLIC_KEY;
 import static it.netknights.piauthenticator.Util.logprint;
 
 public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
@@ -60,6 +64,7 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
     private String rollout_url;
     private Token token;
     private PresenterTaskInterface presenterTaskInterface;
+    private String in_key;
 
     PushRolloutTask(Token t, PresenterTaskInterface presenterTaskInterface) {
         this.token = t;
@@ -96,6 +101,8 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
         publishProgress(PRO_STATUS_STEP_2);
 
         logprint("Setting up connection");
+
+
         // Connection setup
         URL url = null;
         try {
@@ -105,9 +112,9 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
             e.printStackTrace();
             return false;
         }
-        HttpURLConnection con = null;
+        HttpsURLConnection con;
         try {
-            con = (HttpURLConnection) url.openConnection();
+            con = (HttpsURLConnection) url.openConnection();
         } catch (IOException e) {
             e.printStackTrace();
             return false;
@@ -121,6 +128,10 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
         }
         con.setReadTimeout(READ_TIMEOUT);
         con.setConnectTimeout(CONNECT_TIMEOUT);
+
+        if (!token.sslVerify) {
+            con = Util.turnOffSSLVerification(con);
+        }
         logprint("Sending...");
         // Send the pubkey and firebase token
         OutputStream os = null;
@@ -133,16 +144,14 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
         }
 
         BufferedWriter writer;
-        assert os != null;
         writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
         String key = null;
         if (pubkey != null) {
-            key = Base64.encodeToString(pubkey.getEncoded(), Base64.DEFAULT);
+            key = new Util().encodeBase64(pubkey.getEncoded());
         }
-        logprint("URL: " + rollout_url);
+        logprint("Enrollment cred: " + token.enrollment_credential);
         logprint("Serial: " + serial);
         logprint("Token: " + fb_token);
-        logprint("Pubkey format: " + pubkey.getFormat());
         logprint("pubkey: " + key);
         try {
             writer.write("enrollment_credential=" + token.enrollment_credential);
@@ -167,7 +176,7 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+        logprint("response code: " + responsecode);
         BufferedReader br = null;
         String line;
         StringBuilder response = new StringBuilder();
@@ -185,17 +194,19 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
             if (!response.toString().equals("")) {
                 try {
                     JSONObject resp = new JSONObject(response.toString());
-                    JSONObject detail = resp.getJSONObject("detail");
-                    String in_key = detail.getString("public_key");
+                    JSONObject detail = resp.getJSONObject(RESPONSE_DETAIL);
+                    in_key = detail.getString(RESPONSE_PUBLIC_KEY);
                     logprint("in_key:" + in_key);
                     publishProgress(PRO_STATUS_DONE);
-                    presenterTaskInterface.receivePublicKey(in_key, token);
+                    publishProgress(PRO_STATUS_KEY_RECEIVED);
                 } catch (JSONException e) {
                     logprint("Malformed JSON in response");
                     publishProgress(PRO_STATUS_MALFORMED_JSON);
                     e.printStackTrace();
                 }
             }
+        } else {
+            publishProgress(PRO_STATUS_RESPONSE_NOT_OK);
         }
         // TODO other response codes
         con.disconnect();
@@ -207,7 +218,11 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> {
         super.onProgressUpdate(values);
         // Pass the statusCode to the presenter. This must be done via this method
         // because onProgressUpdate runs on the main thread.
-        presenterTaskInterface.updateTaskStatus(values[0], token);
+        if (values[0] == PRO_STATUS_KEY_RECEIVED) {
+            presenterTaskInterface.receivePublicKey(in_key, token);
+        } else {
+            presenterTaskInterface.updateTaskStatus(values[0], token);
+        }
     }
 
     @Override

@@ -28,6 +28,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationManagerCompat;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -40,6 +41,7 @@ import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_ID;
 import static it.netknights.piauthenticator.AppConstants.QUESTION;
 import static it.netknights.piauthenticator.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.AppConstants.SSL_VERIFY;
 import static it.netknights.piauthenticator.AppConstants.TITLE;
 import static it.netknights.piauthenticator.Util.logprint;
 
@@ -65,18 +67,21 @@ public class PushAuthService extends Service {
         String url = intent.getStringExtra(AUTHENTICATION_URL);
         String signature = intent.getStringExtra(SIGNATURE);
         String question = intent.getStringExtra(QUESTION);
+        boolean sslVerify = intent.getBooleanExtra(SSL_VERIFY, true);
         PrivateKey appPrivateKey = null;
         try {
-            appPrivateKey = SecretKeyWrapper.getPrivateKeyFor(serial);
+            appPrivateKey = new SecretKeyWrapper(getApplicationContext()).getPrivateKeyFor(serial);
+        } catch (IOException e) {
+            e.printStackTrace();
         } catch (CertificateException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-        } catch (IOException e) {
+        } catch (UnrecoverableEntryException e) {
             e.printStackTrace();
         } catch (KeyStoreException e) {
             e.printStackTrace();
-        } catch (UnrecoverableEntryException e) {
+        } catch (GeneralSecurityException e) {
             e.printStackTrace();
         }
         if (appPrivateKey == null) {
@@ -85,7 +90,7 @@ public class PushAuthService extends Service {
         }
         Util util = new Util();
         AsyncTask<Void, Integer, Boolean> pushAuth = new PushAuthTask(
-                new PushAuthRequest(nonce, url, serial, question, title, signature),
+                new PushAuthRequest(nonce, url, serial, question, title, signature, sslVerify),
                 util.getPIPubkey(getBaseContext().getFilesDir().getAbsolutePath(), serial), appPrivateKey);
         pushAuth.execute();
         //return Service.START_REDELIVER_INTENT;

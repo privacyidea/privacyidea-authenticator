@@ -48,6 +48,7 @@ public class Token {
     boolean rollout_finished = true;
     Date rollout_expiration;
     String rollout_url;
+    boolean sslVerify = true;
 
     Token(byte[] secret, String serial, String label, String type, int digits) {
         this.secret = secret;
@@ -55,7 +56,7 @@ public class Token {
         this.label = label;
         this.type = type;
         this.digits = digits;
-        this.period = this.type.equals(TOTP)? 30 : 0;
+        this.period = this.type.equals(TOTP) ? 30 : 0;
         this.counter = 0;
     }
 
@@ -103,7 +104,7 @@ public class Token {
     }
 
     void setWithPIN(boolean withPIN) {
-        if(withPIN) {
+        if (withPIN) {
             this.isLocked = true;
         } else {
             this.isLocked = false;
@@ -143,10 +144,6 @@ public class Token {
         return label;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
     public String getType() {
         return type;
     }
@@ -184,7 +181,7 @@ public class Token {
         return persistent;
     }
 
-    public void setPersistent(boolean val){
+    public void setPersistent(boolean val) {
         persistent = val;
     }
 }

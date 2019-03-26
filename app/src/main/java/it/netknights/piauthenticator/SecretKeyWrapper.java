@@ -28,6 +28,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
 import android.security.KeyPairGeneratorSpec;
+import android.security.keystore.KeyGenParameterSpec;
 import android.support.annotation.RequiresApi;
 
 import org.apache.commons.codec.binary.Base32;
@@ -49,6 +50,7 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Calendar;
@@ -56,9 +58,11 @@ import java.util.Enumeration;
 import java.util.GregorianCalendar;
 
 import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.security.auth.x500.X500Principal;
 
+import static it.netknights.piauthenticator.AppConstants.KEY_WRAP_ALGORITHM;
 import static it.netknights.piauthenticator.Util.logprint;
 
 /**
@@ -80,27 +84,27 @@ class SecretKeyWrapper {
      * If no pair with that alias exists, it will be generated.
      */
     @SuppressLint("GetInstance")
-    SecretKeyWrapper(Context context, String alias)
+    SecretKeyWrapper(Context context)
             throws GeneralSecurityException, IOException {
-        mCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        mCipher = Cipher.getInstance(KEY_WRAP_ALGORITHM);
 
         final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
         keyStore.load(null);
 
-        if (!keyStore.containsAlias(alias)) {
-            generateKeyPair(context, alias);
+        if (!keyStore.containsAlias("settings")) {
+            generateKeyPair( "settings", context);
         }
 
         // Even if we just generated the key, always read it back to ensure we
         // can read it successfully.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             //Following code is for API 28+
-            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, null);
-            Certificate certificate = keyStore.getCertificate(alias);
+            PrivateKey privateKey = (PrivateKey) keyStore.getKey("settings", null);
+            Certificate certificate = keyStore.getCertificate("settings");
             KeyStore.PrivateKeyEntry entry = new KeyStore.PrivateKeyEntry(privateKey, new Certificate[]{certificate});
             mPair = new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey());
         } else {
-            final KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(alias, null);
+            final KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry("settings", null);
             mPair = new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey());
         }
 
@@ -110,15 +114,15 @@ class SecretKeyWrapper {
     }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
-    private static void generateKeyPair(Context context, String alias)
+    private static void generateKeyPair(Context context)
             throws GeneralSecurityException {
         final Calendar start = new GregorianCalendar();
         final Calendar end = new GregorianCalendar();
         end.add(Calendar.YEAR, 100);
         final KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA", "AndroidKeyStore");
         final KeyPairGeneratorSpec spec = new KeyPairGeneratorSpec.Builder(context)
-                .setAlias(alias)
-                .setSubject(new X500Principal("CN=" + alias))
+                .setAlias("settings")
+                .setSubject(new X500Principal("CN=" + "settings"))
                 .setSerialNumber(BigInteger.ONE)
                 .setStartDate(start.getTime())
                 .setEndDate(end.getTime())
@@ -201,7 +205,7 @@ class SecretKeyWrapper {
      * @param alias the alias to load the key for
      * @return the PrivateKey
      */
-    static PrivateKey getPrivateKeyFor(String alias) throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException, UnrecoverableEntryException {
+    PrivateKey getPrivateKeyFor(String alias) throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException, UnrecoverableEntryException {
         final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
         keyStore.load(null);
         if (!keyStore.containsAlias(alias)) {
@@ -220,28 +224,10 @@ class SecretKeyWrapper {
         }
     }
 
-    static void printKeystore() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException, UnrecoverableEntryException {
-        final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
-        keyStore.load(null);
-        Enumeration<String> aliases = keyStore.aliases();
-        String s;
-        PrivateKey k;
-        logprint("-------- KEYSTORE ELEMENTS (PrivKeys) --------");
-        while (aliases.hasMoreElements()) {
-            s = aliases.nextElement();
-            k = getPrivateKeyFor(s);
-            if (k != null) {
-                logprint("" + s + " : " + k.toString());
-            } else {
-                logprint("" + s + " : NO KEY FOUND");
-            }
-        }
-    }
-
     /**
      * Remove the privateKey from the Keystore for the given alias/serial
      *
-     * @param alias                the serial is the alias of the privateKey in the Keystore
+     * @param alias the serial is the alias of the privateKey in the Keystore
      */
     void removePrivateKeyFor(String alias) {
         try {
@@ -265,16 +251,14 @@ class SecretKeyWrapper {
     }
 
     /**
-     *
-     * @param privateKey    privateKey to sign the message with
-     * @param message       message to sign
-     * @return              Base32 formatted signature
+     * @param privateKey privateKey to sign the message with
+     * @param message    message to sign
+     * @return Base32 formatted signature
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeyException
      * @throws SignatureException
      */
     static String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        // TODO format of nonce??
         logprint("message to sign: " + message);
         byte[] bMessage = message.getBytes(StandardCharsets.UTF_8);
 
@@ -283,16 +267,14 @@ class SecretKeyWrapper {
         s.update(bMessage);
 
         byte[] signature = s.sign();
-        // TODO format of signature
         return new Base32().encodeAsString(signature);
     }
 
     /**
-     *
-     * @param publicKey     publicKey to verify the signature with
-     * @param signature     signature to verify, !!formatted in Base32!!
-     * @param payload       payload that was signed
-     * @return              true if the signature is valid, false otherwise
+     * @param publicKey publicKey to verify the signature with
+     * @param signature signature to verify, !!formatted in Base32!!
+     * @param payload   payload that was signed
+     * @return true if the signature is valid, false otherwise
      * @throws InvalidKeyException
      * @throws NoSuchAlgorithmException
      * @throws SignatureException
@@ -301,7 +283,7 @@ class SecretKeyWrapper {
             NoSuchAlgorithmException, SignatureException {
         logprint("signature to verify (b32): " + signature);
         logprint("message to verify signature for: " + payload);
-        if(!new Base32().isInAlphabet(signature)){
+        if (!new Base32().isInAlphabet(signature)) {
             logprint("verifySignature: The given signature is not Base32 encoded!");
             return false;
         }

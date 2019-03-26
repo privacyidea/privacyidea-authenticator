@@ -24,19 +24,21 @@ public class AppConstants {
 
     static final String APP_TITLE = " privacyIDEA Authenticator";
     static final String PACKAGE_NAME = "it.netknights.piauthenticator";
-    static String TAG = "it.netknights.piauth";
+    static final String TAG = "it.netknights.piauth";
 
     static final int INTENT_ADD_TOKEN_MANUALLY = 101;
     static final int INTENT_ABOUT = 102;
     static final int PERMISSIONS_REQUEST_CAMERA = 103;
 
     static final String CRYPT_ALGORITHM = "AES/GCM/NoPadding";
+    static final String KEY_WRAP_ALGORITHM = "RSA/ECB/PKCS1Padding";
     static final int KEY_LENGTH = 16;
     static final int IV_LENGTH = 12;
 
-    // ----- FILE NAMES -----
+    // ----- FILE NAMES -----test
     static final String DATAFILE = "data.dat";
     static final String KEYFILE = "key.key";
+    static final String PUBKEYFILE = "pubkey.key";
     static final String FB_CONFIG_FILE = "fbconf.dat";
     // -----------------------
 
@@ -101,12 +103,15 @@ public class AppConstants {
     static final String ROLLOUT_FINISHED = "rollout_finished";
     static final String ROLLOUT_EXPIRATION = "rollout_expiration";
     static final String PUSH_VERSION = "v";
+    static final String SSL_VERIFY = "sslverify";
+
+    static final String RESPONSE_DETAIL = "detail";
+    static final String RESPONSE_PUBLIC_KEY = "public_key";
 
     // Constants
     static final int READ_TIMEOUT = 10000;
     static final int CONNECT_TIMEOUT = 15000;
 
-    static final String PUBKEYFILE = "pubkey.key";
     static final String NOTIFICATION_CHANNEL_ID = "privacyIDEAPush";
     static final int NOTIFICATION_ID = 654321;
 
@@ -115,20 +120,17 @@ public class AppConstants {
     static final int PRO_STATUS_STEP_2 = 1002;
     static final int PRO_STATUS_STEP_3 = 1003;
     static final int PRO_STATUS_DONE = 1004;
+    static final int PRO_STATUS_KEY_RECEIVED = 1005;
     static final int PRO_STATUS_REGISTRATION_TIME_EXPIRED = 1010;
     static final int PRO_STATUS_RESPONSE_NO_KEY = 1011;
     static final int PRO_STATUS_MALFORMED_URL = 1012;
     static final int PRO_STATUS_BAD_BASE64 = 1013;
     static final int PRO_STATUS_UNKNOWN_HOST = 1014;
     static final int PRO_STATUS_MALFORMED_JSON = 1015;
+    static final int PRO_STATUS_RESPONSE_NOT_OK = 1016;
 
     static final int PA_INVALID_SIGNATURE = 2001;
     static final int PA_SIGNING_FAILURE = 2002;
-
-    static final int STATUS_DO_FIREBASE_INIT = 3001;
-    static final int STATUS_DO_PUSH_ROLLOUT = 3002;
-    static final int STATUS_DO_2STEP_ROLLOUT = 3003;
-    static final int STATUS_TOKEN_CREATION_FINISHED_OK = 3004;
 
     static final int STATUS_INIT_FIREBASE = 3101;
     static final int STATUS_INIT_FIREBASE_DONE = 3102;

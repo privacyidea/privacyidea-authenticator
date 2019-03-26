@@ -99,9 +99,6 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         nextbtn.setVisibility(GONE);
         progressBar.setVisibility(GONE);
         otptext.setText(token.getCurrentOTP());
-        if(token.getCurrentOTP() == null){
-            logprint("current otp empty");
-        }
         labeltext.setText(token.getLabel());
 
         if (token.isWithPIN() && token.getPin().equals("")) {
@@ -243,15 +240,17 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
                         nextbtn.setClickable(false);
                         nextbtn.setLongClickable(false);
                         progressBar.setVisibility(GONE);
-                        labeltext.setText(token.getSerial());
-                        otptext.setText("[PUSH]");
+                        labeltext.setText("Pushtoken");
+                        otptext.setTextSize(24);
+                        otptext.setText(token.getSerial());
                     } else {
                         nextbtn.setVisibility(GONE);
                         nextbtn.setClickable(false);
                         nextbtn.setLongClickable(false);
                         progressBar.setVisibility(GONE);
-                        labeltext.setText(token.getSerial());
-                        otptext.setText("[PUSH]");
+                        labeltext.setText("Pushtoken");
+                        otptext.setTextSize(24);
+                        otptext.setText(token.getSerial());
                         nextbtn.setVisibility(VISIBLE);
                         nextbtn.setText(v.getContext().getString(R.string.Retry));
                         nextbtn.setOnClickListener(new View.OnClickListener() {

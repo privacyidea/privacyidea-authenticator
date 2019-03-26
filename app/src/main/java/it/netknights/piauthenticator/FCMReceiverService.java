@@ -24,19 +24,27 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
-import android.util.Log;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 import java.util.Map;
 
-import static it.netknights.piauthenticator.AppConstants.*;
+import static it.netknights.piauthenticator.AppConstants.AUTHENTICATION_URL;
+import static it.netknights.piauthenticator.AppConstants.NONCE;
+import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_CHANNEL_ID;
+import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_ID;
+import static it.netknights.piauthenticator.AppConstants.QUESTION;
+import static it.netknights.piauthenticator.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.AppConstants.SSL_VERIFY;
+import static it.netknights.piauthenticator.AppConstants.TITLE;
 import static it.netknights.piauthenticator.Util.logprint;
 
 public class FCMReceiverService extends FirebaseMessagingService {
 
     String question, nonce, serial, signature, title, url;
+    boolean sslVerify = true;
 
     @Override
     public void onMessageReceived(RemoteMessage message) {
@@ -61,6 +69,11 @@ public class FCMReceiverService extends FirebaseMessagingService {
         if (map.containsKey(SIGNATURE)) {
             signature = map.get(SIGNATURE);
         }
+        if (map.containsKey(SSL_VERIFY)) {
+            if (Integer.parseInt(map.get(SSL_VERIFY)) < 1) {
+                sslVerify = false;
+            }
+        }
 
         // Start the service with the data from the push when the button in the notification is pressed
         Intent service_intent = new Intent(this, PushAuthService.class);
@@ -69,7 +82,8 @@ public class FCMReceiverService extends FirebaseMessagingService {
                 .putExtra(TITLE, title)
                 .putExtra(AUTHENTICATION_URL, url)
                 .putExtra(SIGNATURE, signature)
-                .putExtra(QUESTION, question);
+                .putExtra(QUESTION, question)
+                .putExtra(SSL_VERIFY, sslVerify);
 
         PendingIntent pService_intent = PendingIntent.getService(this, 0, service_intent, PendingIntent.FLAG_UPDATE_CURRENT);
         NotificationCompat.Action action = new NotificationCompat.Action.Builder(0, "Allow", pService_intent).build();
@@ -80,7 +94,8 @@ public class FCMReceiverService extends FirebaseMessagingService {
                 .putExtra(TITLE, title)
                 .putExtra(AUTHENTICATION_URL, url)
                 .putExtra(SIGNATURE, signature)
-                .putExtra(QUESTION, question);
+                .putExtra(QUESTION, question)
+                .putExtra(SSL_VERIFY, sslVerify);
 
         PendingIntent pActivity_intent = PendingIntent.getActivity(this, 0, activity_intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -104,7 +119,7 @@ public class FCMReceiverService extends FirebaseMessagingService {
     @Override
     public void onNewToken(String s) {
         super.onNewToken(s);
-        Log.e("NEW TOKEN", s);
+        logprint("New Token in FCMReceiver: " + s);
     }
 
 }
