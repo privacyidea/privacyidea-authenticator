@@ -25,19 +25,12 @@ import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.annotation.RequiresApi;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.view.ActionMode;
-import android.support.v7.widget.Toolbar;
 import android.text.InputType;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -45,18 +38,17 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.InstanceIdResult;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
@@ -65,20 +57,21 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
-import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
-import java.util.Enumeration;
+
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ActionMode;
+import androidx.appcompat.widget.Toolbar;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
 import static it.netknights.piauthenticator.AppConstants.API_KEY;
 import static it.netknights.piauthenticator.AppConstants.APP_ID;
-import static it.netknights.piauthenticator.AppConstants.AUTHENTICATION_URL;
 import static it.netknights.piauthenticator.AppConstants.COUNTER;
 import static it.netknights.piauthenticator.AppConstants.DIGITS;
 import static it.netknights.piauthenticator.AppConstants.ENROLLMENT_CRED;
@@ -96,7 +89,6 @@ import static it.netknights.piauthenticator.AppConstants.PROJECT_NUMBER;
 import static it.netknights.piauthenticator.AppConstants.PUSH;
 import static it.netknights.piauthenticator.AppConstants.PUSH_VERSION;
 import static it.netknights.piauthenticator.AppConstants.QUESTION;
-import static it.netknights.piauthenticator.AppConstants.ROLLOUT_URL;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
 import static it.netknights.piauthenticator.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
@@ -109,6 +101,7 @@ import static it.netknights.piauthenticator.AppConstants.TWOSTEP_DIFFICULTY;
 import static it.netknights.piauthenticator.AppConstants.TWOSTEP_OUTPUT;
 import static it.netknights.piauthenticator.AppConstants.TWOSTEP_SALT;
 import static it.netknights.piauthenticator.AppConstants.TYPE;
+import static it.netknights.piauthenticator.AppConstants.URL;
 import static it.netknights.piauthenticator.AppConstants.WITHPIN;
 import static it.netknights.piauthenticator.Interfaces.MainActivityInterface;
 import static it.netknights.piauthenticator.Interfaces.PresenterInterface;
@@ -132,22 +125,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        Intent intent = getIntent();
-        if (intent.getExtras() == null) {
-            logprint("No intent found onCreate.");
-        } else {
-            // intent contain push auth info
-            String serial = intent.getStringExtra(SERIAL);
-            String nonce = intent.getStringExtra(NONCE);
-            String title = intent.getStringExtra(TITLE);
-            String url = intent.getStringExtra(AUTHENTICATION_URL);
-            String signature = intent.getStringExtra(SIGNATURE);
-            String question = intent.getStringExtra(QUESTION);
-            boolean sslVerify = intent.getBooleanExtra(SSL_VERIFY, true);
-            if (serial != null && nonce != null && title != null && url != null && signature != null && question != null)
-                presenterInterface.addPushAuthRequest(new PushAuthRequest(nonce, url, serial, question, title, signature, sslVerify));
-        }
 
         setupViews();
         setupFab();
@@ -179,33 +156,37 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             paintStatusbar();
         }
+
+        // Check for intent (=Pending auth requests)
+
+        Intent intent = getIntent();
+        if (intent.getExtras() == null) {
+            logprint("No intent found onCreate.");
+        } else {
+            // intent contain push auth info
+            logprint("Intent Found onCreate:");
+            logprint(intent.getExtras().toString());
+            String serial = intent.getStringExtra(SERIAL);
+            String nonce = intent.getStringExtra(NONCE);
+            String title = intent.getStringExtra(TITLE);
+            String url = intent.getStringExtra(URL);
+            String signature = intent.getStringExtra(SIGNATURE);
+            String question = intent.getStringExtra(QUESTION);
+            boolean sslVerify = intent.getBooleanExtra(SSL_VERIFY, true);
+            if (serial != null && nonce != null && title != null && url != null && signature != null && question != null) {
+                logprint("Intent data: " + intent.getExtras().toString());
+                presenterInterface.addPushAuthRequest(new PushAuthRequest(nonce, url, serial, question, title, signature, sslVerify));
+            } else {
+                logprint("Not all data for PushAuth available");
+            }
+        }
     }
 
     private void setupFab() {
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setBackgroundColor(getResources().getColor(PIBLUE));
         fab.bringToFront();
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                scanQR();
-/*
-                // TODO for faster testing purposes skip the qr scan
-                String serial = "PIPU000FSA" + String.valueOf(Math.round(Math.random() * 100));
-                String url = "https://sdffffff.free.beeceptor.com";
-
-                String s2 = "otpauth://pipush/PIPU0012F668?url=https%3A//sdffffff.free.beeceptor.com&ttl=10&issuer=privacyIDEA&projectid=test-d3861" +
-                        "&apikey=AIzaSyBeFSjwJ8aEcHQaj4-iqT-sLAX6lmSrvbo" +
-                        "&appid=1%3A850240559902%3Aandroid%3A812605f9a33242a9&enrollment_credential=9311ee50678983c0f29d3d843f86e39405e2b427" +
-                        "&projectnumber=850240559902";
-                try {
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } */
-            }
-
-        });
+        fab.setOnClickListener(v -> scanQR());
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -220,19 +201,15 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         setTitle("      " + AppConstants.APP_TITLE);
         setContentView(R.layout.activity_main);
         listview = findViewById(R.id.listview);
-        listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                presenterInterface.setCurrentSelection(i);
-                startSupportActionMode(MainActivity.this);
-                return true;
-            }
+        listview.setOnItemLongClickListener((adapterView, view, i, l) -> {
+            presenterInterface.setCurrentSelection(i);
+            startSupportActionMode(MainActivity.this);
+            return true;
         });
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setBackgroundColor(getResources().getColor(PIBLUE));
-        //toolbar.setNavigationIcon(R.drawable.ic_toolbar_back);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setLogo(R.mipmap.ic_launcher);
             getSupportActionBar().setDisplayUseLogoEnabled(true);
@@ -261,25 +238,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             Intent enterDetailIntent = EnterDetailsActivity.makeIntent(MainActivity.this);
             startActivityForResult(enterDetailIntent, INTENT_ADD_TOKEN_MANUALLY);
         }
-
-        if (id == R.id.print_keys) {
-            presenterInterface.printKeystore();
-            FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(MainActivity.this, new OnSuccessListener<InstanceIdResult>() {
-                @Override
-                public void onSuccess(InstanceIdResult instanceIdResult) {
-                    logprint("Firebase Token: " + instanceIdResult.getToken());
-                }
-            });
-        }
-
         return super.onOptionsItemSelected(item);
     }
 
-    @SuppressWarnings("ConstantConditions") //makes no sense here
+    @SuppressWarnings("ConstantConditions")
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
-
         if (result != null) {
             if (result.getContents() == null) {
                 makeToast(R.string.toast_cancelled);
@@ -302,16 +267,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                             e.printStackTrace();
                         }
                     }
-                    if (!url.getHost().equals(TOTP)) {
-                        if (!url.getHost().equals(HOTP)) {
-                            if (!url.getHost().equals(PUSH)) {
-                                try {
-                                    throw new Exception("No TOTP, HOTP or Push Token");
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
+                    if (!url.getHost().equals(TOTP) && !url.getHost().equals(HOTP) &&
+                            !url.getHost().equals(PUSH)) {
+                        try {
+                            throw new Exception("No TOTP, HOTP or Push Token");
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
+
                     }
                     // TOKEN TYPE
                     String type = url.getHost();
@@ -339,7 +302,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                                 scanResult.firebaseInitConfig = new FirebaseInitConfig(projID, appID, api_key, projNumber);
                             }
                         }
-                        scanResult.rollout_url = uri.getQueryParameter(ROLLOUT_URL);
+                        scanResult.rollout_url = uri.getQueryParameter(URL);
                         if (uri.getQueryParameter(TTL) != null) {
                             scanResult.ttl = Integer.parseInt(uri.getQueryParameter(TTL));
                         }
@@ -350,9 +313,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                             scanResult.push_version = Integer.parseInt(uri.getQueryParameter(PUSH_VERSION));
                         }
                         if (uri.getQueryParameter(SSL_VERIFY) != null) {
-                            logprint((uri.getQueryParameter(SSL_VERIFY)));
                             if (Integer.parseInt(uri.getQueryParameter(SSL_VERIFY)) < 1) {
-                                logprint("SSL VERIFY 0 in QR");
                                 scanResult.sslverify = false;
                             }
                         }
@@ -499,20 +460,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             builder.setTitle(R.string.confirm_deletion_title);
             builder.setMessage(getString(R.string.confirm_deletion_text)
                     + presenterInterface.getCurrentSelectionLabel() + " ?");
-            builder.setPositiveButton(R.string.button_text_yes, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    presenterInterface.removeCurrentSelection();
-                    mode.finish();
-                }
+            builder.setPositiveButton(R.string.button_text_yes, (dialog, which) -> {
+                presenterInterface.removeCurrentSelection();
+                mode.finish();
             });
-            builder.setNegativeButton(R.string.button_text_no, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    makeToast(R.string.toast_deletion_cancelled);
-                    dialog.cancel();
-                    mode.finish();
-                }
+            builder.setNegativeButton(R.string.button_text_no, (dialog, which) -> {
+                makeToast(R.string.toast_deletion_cancelled);
+                dialog.cancel();
+                mode.finish();
             });
             final AlertDialog alert = builder.create();
             MainActivity.changeDialogFontColor(alert);
@@ -530,23 +485,19 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             input.getBackground().setColorFilter(input.getContext().getResources().getColor(PIBLUE), PorterDuff.Mode.SRC_IN);
             builder.setView(input);
 
-            builder.setPositiveButton(getString(R.string.button_text_save), new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int whichButton) {
-                    presenterInterface.setCurrentSelectionLabel(input.getEditableText().toString());
-                    tokenlistadapter.notifyChange();
-                    presenterInterface.saveTokenlist();
-                    makeToast(presenterInterface.getCurrentSelectionLabel()
-                            + ": " + getString(R.string.toast_name_changed));
-                    mode.finish();
-                }
+            builder.setPositiveButton(getString(R.string.button_text_save), (dialog, whichButton) -> {
+                presenterInterface.setCurrentSelectionLabel(input.getEditableText().toString());
+                tokenlistadapter.notifyChange();
+                presenterInterface.saveTokenlist();
+                makeToast(presenterInterface.getCurrentSelectionLabel()
+                        + ": " + getString(R.string.toast_name_changed));
+                mode.finish();
             });
 
-            builder.setNegativeButton(getString(R.string.button_text_cancel), new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int whichButton) {
-                    dialog.cancel();
-                    makeToast(R.string.toast_edit_cancelled);
-                    mode.finish();
-                }
+            builder.setNegativeButton(getString(R.string.button_text_cancel), (dialog, whichButton) -> {
+                dialog.cancel();
+                makeToast(R.string.toast_edit_cancelled);
+                mode.finish();
             });
             final AlertDialog alert = builder.create();
             MainActivity.changeDialogFontColor(alert);
@@ -574,27 +525,23 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 builder.setTitle(R.string.title_change_pin);
                 builder.setView(layout);
 
-                builder.setPositiveButton(getString(R.string.button_text_save), new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        int firstpin = Integer.parseInt(firstinput.getEditableText().toString());
-                        int secondpin = Integer.parseInt(secondinput.getEditableText().toString());
-                        if (firstpin == secondpin) {
-                            presenterInterface.changeCurrentSelectionPIN(firstpin);
-                            makeToast(presenterInterface.getCurrentSelectionLabel()
-                                    + ": " + getString(R.string.toast_pin_changed));
-                        } else {
-                            makeToast(R.string.toast_pins_dont_match);
-                        }
-                        mode.finish();
+                builder.setPositiveButton(getString(R.string.button_text_save), (dialog, whichButton) -> {
+                    int firstpin = Integer.parseInt(firstinput.getEditableText().toString());
+                    int secondpin = Integer.parseInt(secondinput.getEditableText().toString());
+                    if (firstpin == secondpin) {
+                        presenterInterface.changeCurrentSelectionPIN(firstpin);
+                        makeToast(presenterInterface.getCurrentSelectionLabel()
+                                + ": " + getString(R.string.toast_pin_changed));
+                    } else {
+                        makeToast(R.string.toast_pins_dont_match);
                     }
+                    mode.finish();
                 });
 
-                builder.setNegativeButton(getString(R.string.button_text_cancel), new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        dialog.cancel();
-                        makeToast(R.string.toast_change_pin_cancelled);
-                        mode.finish();
-                    }
+                builder.setNegativeButton(getString(R.string.button_text_cancel), (dialog, whichButton) -> {
+                    dialog.cancel();
+                    makeToast(R.string.toast_change_pin_cancelled);
+                    mode.finish();
                 });
                 final AlertDialog alert = builder.create();
                 MainActivity.changeDialogFontColor(alert);
@@ -615,41 +562,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         presenterInterface.setCurrentSelection(-1); // equals null in the data model
         tokenlistadapter.notifyChange();
         presenterInterface.saveTokenlist();
-    }
-
-    @Override
-    public void printKeystore() {
-        final KeyStore keyStore;
-        try {
-            keyStore = KeyStore.getInstance("AndroidKeyStore");
-            keyStore.load(null);
-            Enumeration<String> aliases = keyStore.aliases();
-            String s;
-            PrivateKey k;
-            SecretKeyWrapper skw = new SecretKeyWrapper(this);
-            logprint("-------- KEYSTORE ELEMENTS (PrivKeys) --------");
-            while (aliases.hasMoreElements()) {
-                s = aliases.nextElement();
-                k = skw.getPrivateKeyFor(s);
-                if (k != null) {
-                    logprint("" + s + " : " + k.toString());
-                } else {
-                    logprint("" + s + " : NO KEY FOUND");
-                }
-            }
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (UnrecoverableEntryException e) {
-            e.printStackTrace();
-        } catch (GeneralSecurityException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -685,8 +597,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
+    public void makeToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
     public void setStatusDialogText(String text) {
-        // if there is no dialog yet inflate it
+        // if there is no dialog yet, inflate it
         if (status_dialog == null) {
             View view_pro_progress = getLayoutInflater().inflate(R.layout.pushrollout_loading, listview, false);
             AlertDialog.Builder dialog_builder = new AlertDialog.Builder(this);
@@ -724,18 +641,15 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     public String getFirebaseToken() {
         logprint("Getting Firebase token...");
-        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(this, new OnSuccessListener<InstanceIdResult>() {
-            @Override
-            public void onSuccess(InstanceIdResult instanceIdResult) {
-                logprint("Firebase Token: " + instanceIdResult.getToken());
-                firebase_token = instanceIdResult.getToken();
-            }
+        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(this, instanceIdResult -> {
+            logprint("Firebase Token: " + instanceIdResult.getToken());
+            firebase_token = instanceIdResult.getToken();
         });
         return firebase_token;
     }
 
     @Override
-    public String fireBaseInit(FirebaseInitConfig firebaseInitConfig) {
+    public String firebaseInit(FirebaseInitConfig firebaseInitConfig) {
         logprint("Initializing Firebase...");
         // Check if Firebase is already initalized
         if (!FirebaseApp.getApps(this).isEmpty()) {
@@ -761,6 +675,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             logprint("Firebase initialized!");
         }
         return getFirebaseToken();
+    }
+
+    @Override
+    public void removeFirebase() {
+        if(FirebaseApp.getApps(this).isEmpty()){
+            return;
+        }
+        FirebaseApp.getApps(this).clear();
     }
 
     @Override
@@ -793,21 +715,18 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     public static void changeDialogFontColor(final AlertDialog dialog) {
-        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
-            @Override
-            public void onShow(DialogInterface dialogInterface) {
-                int piblue = dialog.getContext().getResources().getColor(PIBLUE);
-                if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null) {
-                    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(piblue);
-                }
+        dialog.setOnShowListener(dialogInterface -> {
+            int piblue = dialog.getContext().getResources().getColor(PIBLUE);
+            if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null) {
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(piblue);
+            }
 
-                if (dialog.getButton(AlertDialog.BUTTON_NEUTRAL) != null) {
-                    dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(piblue);
-                }
+            if (dialog.getButton(AlertDialog.BUTTON_NEUTRAL) != null) {
+                dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(piblue);
+            }
 
-                if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
-                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(piblue);
-                }
+            if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(piblue);
             }
         });
     }
@@ -852,18 +771,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     public void makeAlertDialog(String title, String message) {
         if (status_dialog != null) {
-            status_dialog.cancel();
+            cancelStatusDialog();
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle(title)
                 .setMessage(message)
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.cancel();
-                    }
-                });
+                .setPositiveButton("OK", (dialog, which) -> dialog.cancel());
         final AlertDialog alert = builder.create();
         MainActivity.changeDialogFontColor(alert);
         alert.show();
@@ -877,11 +791,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     public void makeAlertDialog(int titleID, int messageID) {
         makeAlertDialog(getStringResource(titleID), getStringResource(messageID));
-    }
-
-    @Override
-    public void makeToast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
 }

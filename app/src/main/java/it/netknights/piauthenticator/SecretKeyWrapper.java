@@ -28,17 +28,13 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
 import android.security.KeyPairGeneratorSpec;
-import android.security.keystore.KeyGenParameterSpec;
-import android.support.annotation.RequiresApi;
 
-import org.apache.commons.codec.binary.Base32;
+import androidx.annotation.RequiresApi;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -47,18 +43,13 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
-import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Calendar;
-import java.util.Enumeration;
 import java.util.GregorianCalendar;
 
 import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.security.auth.x500.X500Principal;
 
@@ -92,7 +83,7 @@ class SecretKeyWrapper {
         keyStore.load(null);
 
         if (!keyStore.containsAlias("settings")) {
-            generateKeyPair( "settings", context);
+            generateKeyPair("settings", context);
         }
 
         // Even if we just generated the key, always read it back to ensure we
@@ -250,50 +241,4 @@ class SecretKeyWrapper {
         }
     }
 
-    /**
-     * @param privateKey privateKey to sign the message with
-     * @param message    message to sign
-     * @return Base32 formatted signature
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidKeyException
-     * @throws SignatureException
-     */
-    static String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        logprint("message to sign: " + message);
-        byte[] bMessage = message.getBytes(StandardCharsets.UTF_8);
-
-        Signature s = Signature.getInstance("SHA256withRSA");
-        s.initSign(privateKey);
-        s.update(bMessage);
-
-        byte[] signature = s.sign();
-        return new Base32().encodeAsString(signature);
-    }
-
-    /**
-     * @param publicKey publicKey to verify the signature with
-     * @param signature signature to verify, !!formatted in Base32!!
-     * @param payload   payload that was signed
-     * @return true if the signature is valid, false otherwise
-     * @throws InvalidKeyException
-     * @throws NoSuchAlgorithmException
-     * @throws SignatureException
-     */
-    static boolean verifySignature(PublicKey publicKey, String signature, String payload) throws InvalidKeyException,
-            NoSuchAlgorithmException, SignatureException {
-        logprint("signature to verify (b32): " + signature);
-        logprint("message to verify signature for: " + payload);
-        if (!new Base32().isInAlphabet(signature)) {
-            logprint("verifySignature: The given signature is not Base32 encoded!");
-            return false;
-        }
-
-        byte[] message = payload.getBytes(StandardCharsets.UTF_8);
-        byte[] bSignature = new Base32().decode(signature);
-        Signature sig = Signature.getInstance("SHA256withRSA");
-
-        sig.initVerify(publicKey);
-        sig.update(message);
-        return sig.verify(bSignature);
-    }
 }

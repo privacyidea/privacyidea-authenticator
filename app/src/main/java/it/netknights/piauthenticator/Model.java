@@ -81,6 +81,15 @@ class Model {
             return null;
         }
     }
+
+    boolean hasPushToken() {
+        for (Token t:tokens) {
+            if(t.getType().equals(PUSH)){
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 class FirebaseInitConfig {

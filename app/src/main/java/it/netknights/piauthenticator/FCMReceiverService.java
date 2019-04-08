@@ -22,15 +22,17 @@ package it.netknights.piauthenticator;
 
 import android.app.PendingIntent;
 import android.content.Intent;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
+import android.os.Build;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 import java.util.Map;
+import java.util.Random;
 
-import static it.netknights.piauthenticator.AppConstants.AUTHENTICATION_URL;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+
 import static it.netknights.piauthenticator.AppConstants.NONCE;
 import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_CHANNEL_ID;
 import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_ID;
@@ -39,6 +41,7 @@ import static it.netknights.piauthenticator.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
 import static it.netknights.piauthenticator.AppConstants.SSL_VERIFY;
 import static it.netknights.piauthenticator.AppConstants.TITLE;
+import static it.netknights.piauthenticator.AppConstants.URL;
 import static it.netknights.piauthenticator.Util.logprint;
 
 public class FCMReceiverService extends FirebaseMessagingService {
@@ -63,8 +66,8 @@ public class FCMReceiverService extends FirebaseMessagingService {
         if (map.containsKey(TITLE)) {
             title = map.get(TITLE);
         }
-        if (map.containsKey(AUTHENTICATION_URL)) {
-            url = map.get(AUTHENTICATION_URL);
+        if (map.containsKey(URL)) {
+            url = map.get(URL);
         }
         if (map.containsKey(SIGNATURE)) {
             signature = map.get(SIGNATURE);
@@ -75,45 +78,64 @@ public class FCMReceiverService extends FirebaseMessagingService {
             }
         }
 
+        // Generate a random notification ID
+        Random random = new Random();
+        int notificationID = random.nextInt(9999 - 1000) + 1000;
+
         // Start the service with the data from the push when the button in the notification is pressed
         Intent service_intent = new Intent(this, PushAuthService.class);
-        service_intent.putExtra(SERIAL, serial)
-                .putExtra(NONCE, nonce)
-                .putExtra(TITLE, title)
-                .putExtra(AUTHENTICATION_URL, url)
-                .putExtra(SIGNATURE, signature)
-                .putExtra(QUESTION, question)
-                .putExtra(SSL_VERIFY, sslVerify);
+        service_intent = packIntent(service_intent, notificationID);
 
-        PendingIntent pService_intent = PendingIntent.getService(this, 0, service_intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        NotificationCompat.Action action = new NotificationCompat.Action.Builder(0, "Allow", pService_intent).build();
-
+        // Or start the Activity with the same data if the notification is pressed
         Intent activity_intent = new Intent(this, MainActivity.class);
-        activity_intent.putExtra(SERIAL, serial)
-                .putExtra(NONCE, nonce)
-                .putExtra(TITLE, title)
-                .putExtra(AUTHENTICATION_URL, url)
-                .putExtra(SIGNATURE, signature)
-                .putExtra(QUESTION, question)
-                .putExtra(SSL_VERIFY, sslVerify);
+        activity_intent = packIntent(activity_intent, notificationID);
 
-        PendingIntent pActivity_intent = PendingIntent.getActivity(this, 0, activity_intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        // Build the PendingIntents with the random notificationID as request code so multiple PendingIntents can live simultaneously
+        PendingIntent pActivity_intent = PendingIntent.getActivity(this, notificationID, activity_intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pService_intent = PendingIntent.getService(this, notificationID, service_intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        // TODO indicate verification from within app?
+
+        NotificationCompat.Action action = new NotificationCompat.Action.Builder(0, "Allow", pService_intent).build();
 
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this,
                 NOTIFICATION_CHANNEL_ID)                                // Android 8+ uses notification channels
                 .setSmallIcon(R.drawable.ic_pi_notification)
                 .setContentTitle(title)
                 .setContentText(question)
+                .setSubText("Token: " + serial)                        // TODO Maybe add a service name field?
                 .setPriority(NotificationCompat.PRIORITY_MAX)          // 7.1 and lower
                 .addAction(action)                                     // Add the allow Button
                 .setAutoCancel(true)                                   // Remove the notification after tabbing it
                 .setWhen(0)
                 .setContentIntent(pActivity_intent);                   // Intent for opening activity with the request
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            mBuilder.setColor(getResources().getColor(R.color.PIBLUE, null));
+        }
+
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-        notificationManager.notify(NOTIFICATION_ID, mBuilder.build());
+        notificationManager.notify(notificationID, mBuilder.build());
+        logprint("Notification sent with id: " + notificationID);
+        logprint("Service data: " + service_intent.getExtras().toString());
+        logprint("Activity data: " + activity_intent.getExtras().toString());
+    }
+
+    /**
+     * Add the data from the FCM Message to the intent.
+     *
+     * @param intent intent to add data to
+     * @return the intent
+     */
+    Intent packIntent(Intent intent, int notificationID) {
+        intent.putExtra(SERIAL, serial)
+                .putExtra(NONCE, nonce)
+                .putExtra(TITLE, title)
+                .putExtra(URL, url)
+                .putExtra(SIGNATURE, signature)
+                .putExtra(QUESTION, question)
+                .putExtra(SSL_VERIFY, sslVerify)
+                .putExtra(NOTIFICATION_ID, notificationID);
+        return intent;
     }
 
     @Override

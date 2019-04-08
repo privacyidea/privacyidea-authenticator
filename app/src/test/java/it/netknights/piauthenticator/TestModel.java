@@ -1,8 +1,6 @@
 package it.netknights.piauthenticator;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
@@ -10,6 +8,7 @@ import java.util.Date;
 
 import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -76,5 +75,19 @@ public class TestModel {
         assertEquals(token, m.currentSelection);
         m.setCurrentSelection(-1);
         assertNull(m.currentSelection);
+    }
+
+    @Test
+    public void hasPushToken() {
+        Token token = new Token("serial", "label");
+        ArrayList<Token> list = new ArrayList<>();
+        list.add(token);
+        Model m = new Model(list, null);
+
+        assertTrue(m.hasPushToken());
+
+        m.tokens.remove(0);
+
+        assertFalse(m.hasPushToken());
     }
 }

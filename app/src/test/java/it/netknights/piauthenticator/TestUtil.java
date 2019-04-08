@@ -1,6 +1,7 @@
 package it.netknights.piauthenticator;
 
 
+import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
 import org.junit.Before;
@@ -13,9 +14,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -216,7 +221,7 @@ public class TestUtil {
         assertNull(key);
     }
 
-    @Test
+    // FIXME include
     public void testLoadingOldToken() {
         // Older token did not have the serial attribute.
         // Upon loading them, their label should be set as their serial
@@ -243,4 +248,24 @@ public class TestUtil {
         assertEquals("label", loaded.get(0).getSerial());
     }
 
+    @Test
+    public void testSignAndVerify() throws NoSuchAlgorithmException, SignatureException, InvalidKeyException {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+        kpg.initialize(4096);
+        KeyPair keyPair = kpg.generateKeyPair();
+
+        String message = "tWWJkDPAoODGFVxulzhW7R3/1Hjx2JJy2ad5S/kqxs/cwSUwuYLvez1tlNBfwy+27QTTZL8bagKCXnOfWfymLg";
+
+        String signature = Util.sign(keyPair.getPrivate(), message);
+        assertTrue(Util.verifySignature(keyPair.getPublic(), signature, message));
+
+        // wrong signature is rejected
+        byte[] rndm = new byte[512];
+        new SecureRandom().nextBytes(rndm);
+        assertFalse(Util.verifySignature(keyPair.getPublic(),new Base32().encodeAsString(rndm), message));
+
+        // signature which is not in b32 format is rejected
+        assertFalse(Util.verifySignature(keyPair.getPublic(), "9999999", message));
+
+    }
 }

@@ -52,7 +52,9 @@ class Interfaces {
 
         String getFirebaseToken();
 
-        String fireBaseInit(FirebaseInitConfig firebaseInitConfig);
+        String firebaseInit(FirebaseInitConfig firebaseInitConfig);
+
+        void removeFirebase();
 
         void startTimer();
 
@@ -61,8 +63,6 @@ class Interfaces {
         void resumeTimer();
 
         SecretKeyWrapper getWrapper();
-
-        void printKeystore();
 
         PublicKey generatePublicKeyFor(String alias);
 
@@ -85,8 +85,6 @@ class Interfaces {
         void onStop();
 
         void setCurrentSelection(int position);
-
-        void printKeystore();
 
         void saveTokenlist();
 
@@ -147,5 +145,14 @@ class Interfaces {
 
     interface PresenterUtilInterface {
         SecretKeyWrapper getWrapper();
+    }
+
+    interface EndpointCallback {
+        void updateStatus(int statusCode);
+        void responseReceived(String response, int responseCode);
+    }
+
+    interface PushAuthCallbackInterface {
+        void authenticationFinished(boolean success);
     }
 }

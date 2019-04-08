@@ -24,8 +24,8 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Window;
 import android.view.WindowManager;
@@ -42,6 +42,7 @@ public class AboutActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setTitle(R.string.AboutTitle);
         setContentView(R.layout.activity_about);
         setupViews();
         paintStatusbar();
@@ -62,8 +63,8 @@ public class AboutActivity extends AppCompatActivity {
     }
 
     private void setupViews() {
-        listView = (ListView) findViewById(R.id.listView_about);
-        TextView textViewVersion = (TextView) findViewById(R.id.textView_version);
+        listView = findViewById(R.id.listView_about);
+        TextView textViewVersion = findViewById(R.id.textView_version);
         PackageInfo info = null;
 
         try {

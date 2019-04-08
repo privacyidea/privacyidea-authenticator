@@ -24,18 +24,20 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.IBinder;
-import android.support.annotation.Nullable;
-import android.support.v4.app.NotificationManagerCompat;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
 
-import static it.netknights.piauthenticator.AppConstants.AUTHENTICATION_URL;
+import androidx.annotation.Nullable;
+import androidx.core.app.NotificationManagerCompat;
+
 import static it.netknights.piauthenticator.AppConstants.NONCE;
 import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_ID;
 import static it.netknights.piauthenticator.AppConstants.QUESTION;
@@ -43,9 +45,10 @@ import static it.netknights.piauthenticator.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
 import static it.netknights.piauthenticator.AppConstants.SSL_VERIFY;
 import static it.netknights.piauthenticator.AppConstants.TITLE;
+import static it.netknights.piauthenticator.AppConstants.URL;
 import static it.netknights.piauthenticator.Util.logprint;
 
-public class PushAuthService extends Service {
+public class PushAuthService extends Service implements Interfaces.PushAuthCallbackInterface {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -60,17 +63,27 @@ public class PushAuthService extends Service {
             logprint("intent is null, returning");
             return Service.START_STICKY;
         }
-        NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID);
+        logprint(intent.getExtras().toString());
+
+        int notificationID = intent.getIntExtra(NOTIFICATION_ID, 654321);
+        NotificationManagerCompat.from(this).cancel(notificationID);
+
         String serial = intent.getStringExtra(SERIAL);
         String nonce = intent.getStringExtra(NONCE);
         String title = intent.getStringExtra(TITLE);
-        String url = intent.getStringExtra(AUTHENTICATION_URL);
+        String url = intent.getStringExtra(URL);
         String signature = intent.getStringExtra(SIGNATURE);
         String question = intent.getStringExtra(QUESTION);
         boolean sslVerify = intent.getBooleanExtra(SSL_VERIFY, true);
+
+
         PrivateKey appPrivateKey = null;
+        PublicKey publicKey = null;
         try {
-            appPrivateKey = new SecretKeyWrapper(getApplicationContext()).getPrivateKeyFor(serial);
+            SecretKeyWrapper skw = new SecretKeyWrapper(getApplicationContext());
+            appPrivateKey = skw.getPrivateKeyFor(serial);
+            Util util = new Util(skw, getApplicationContext().getFilesDir().getAbsolutePath());
+            publicKey = util.getPIPubkey(serial);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
@@ -84,16 +97,30 @@ public class PushAuthService extends Service {
         } catch (GeneralSecurityException e) {
             e.printStackTrace();
         }
-        if (appPrivateKey == null) {
+        if(appPrivateKey == null) {
             logprint("PushAuthService: appPrivateKey is null, Authentication is not started.");
-            return Service.START_STICKY;    // Restart the Service in case of being killed, but don't redeliver the intent
+            return Service.START_NOT_STICKY;    // Restart the Service in case of being killed, but don't redeliver the intent
         }
-        Util util = new Util();
-        AsyncTask<Void, Integer, Boolean> pushAuth = new PushAuthTask(
-                new PushAuthRequest(nonce, url, serial, question, title, signature, sslVerify),
-                util.getPIPubkey(getBaseContext().getFilesDir().getAbsolutePath(), serial), appPrivateKey);
+        if(publicKey == null) {
+            logprint("PushAuthService: appPrivateKey is null, Authentication is not started.");
+            return Service.START_NOT_STICKY;    // Restart the Service in case of being killed, but don't redeliver the intent
+        }
+
+            // start the authentication
+            AsyncTask<Void, Integer, Boolean> pushAuth = new PushAuthTask(
+                    new PushAuthRequest(nonce, url, serial, question, title, signature, sslVerify),
+                    publicKey, appPrivateKey, this);
         pushAuth.execute();
         //return Service.START_REDELIVER_INTENT;
-        return Service.START_STICKY;
+        return Service.START_NOT_STICKY;
+    }
+
+    @Override
+    public void authenticationFinished(boolean success) {
+        if (success) {
+            Toast.makeText(getApplicationContext(), R.string.AuthenticationSuccessful, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(getApplicationContext(), R.string.AuthenticationFailed, Toast.LENGTH_SHORT).show();
+        }
     }
 }

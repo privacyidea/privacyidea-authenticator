@@ -42,14 +42,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
-import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.ParseException;
@@ -64,13 +67,6 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
 import static it.netknights.piauthenticator.AppConstants.API_KEY;
@@ -94,7 +90,8 @@ import static it.netknights.piauthenticator.AppConstants.PUBKEYFILE;
 import static it.netknights.piauthenticator.AppConstants.PUSH;
 import static it.netknights.piauthenticator.AppConstants.ROLLOUT_EXPIRATION;
 import static it.netknights.piauthenticator.AppConstants.ROLLOUT_FINISHED;
-import static it.netknights.piauthenticator.AppConstants.ROLLOUT_URL;
+import static it.netknights.piauthenticator.AppConstants.TAG;
+import static it.netknights.piauthenticator.AppConstants.URL;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
 import static it.netknights.piauthenticator.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
@@ -125,6 +122,9 @@ public class Util {
         ArrayList<Token> tokens = new ArrayList<>();
         try {
             byte[] data = loadDataFromFile(DATAFILE);
+            if (data == null) {
+                return null;
+            }
             JSONArray a = new JSONArray(new String(data));
             for (int i = 0; i < a.length(); i++) {
                 tokens.add(makeTokenFromJSON(a.getJSONObject(i)));
@@ -177,7 +177,7 @@ public class Util {
             t.rollout_finished = o.getBoolean(ROLLOUT_FINISHED);
             if (!t.rollout_finished) {
                 // If the
-                t.rollout_url = o.getString(ROLLOUT_URL);
+                t.rollout_url = o.getString(URL);
                 t.enrollment_credential = o.getString(ENROLLMENT_CRED);
                 try {
                     t.rollout_expiration = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
@@ -185,8 +185,8 @@ public class Util {
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
-                return t;
             }
+            return t;
         }
 
         Token tmp = new Token(new Base32().decode(o.getString(SECRET)), serial, label,
@@ -226,7 +226,7 @@ public class Util {
             o.put(ROLLOUT_FINISHED, t.rollout_finished);
             // If the rollout is not finished yet, save the data necessary to complete it
             if (!t.rollout_finished) {
-                o.put(ROLLOUT_URL, t.rollout_url);
+                o.put(URL, t.rollout_url);
                 o.put(ROLLOUT_EXPIRATION, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
                         .format(t.rollout_expiration));
                 o.put(ENROLLMENT_CRED, t.enrollment_credential);
@@ -282,6 +282,7 @@ public class Util {
         try {
             byte[] keybytes = loadDataFromFile(serial + "_" + PUBKEYFILE, filepath);
             // build pubkey
+            if (keybytes == null) return null;
             X509EncodedKeySpec X509publicKey = new X509EncodedKeySpec(keybytes);
             KeyFactory kf = KeyFactory.getInstance("RSA");
             return kf.generatePublic(X509publicKey);
@@ -350,18 +351,6 @@ public class Util {
         }
     }
 
-    void printPubkeys(ArrayList<Token> tokenlist) {
-        logprint("------ PUBKEYS (IN FILES) ------");
-        PublicKey pub;
-        for (Token t : tokenlist) {
-            if (t.getType().equals(PUSH)) {
-                pub = getPIPubkey(t.getSerial());
-                if (pub != null)
-                    logprint(t.getSerial() + " : " + pub.getFormat());
-            }
-        }
-    }
-
     void removePubkeyFor(String serial) {
         File f = new File(baseFilePath + "/" + serial + "_" + PUBKEYFILE);
         boolean res;
@@ -421,16 +410,26 @@ public class Util {
         }
     }
 
+
+    void removeFirebaseConfig() {
+        File f = new File(baseFilePath + "/" + FB_CONFIG_FILE);
+        if (f.exists()) {
+            if(f.delete()) {
+                logprint("Firebase config removed.");
+            }
+        }
+    }
+
     /**
      * Encrypt and save the given data in the specified file and baseFilePath.
      * baseFilePath + "/" + fileName
      *
-     * @param fileName
-     * @param baseFilePath
-     * @param data
-     * @return
+     * @param fileName  Name of the file to save to
+     * @param baseFilePath  Path to the app's data storage
+     * @param data  Data to save
+     * @return  true if successful, false if error
      */
-    boolean saveToFile(String fileName, String baseFilePath, byte[] data) {
+    private boolean saveToFile(String fileName, String baseFilePath, byte[] data) {
         try {
             SecretKey key = getSecretKey(new File(baseFilePath + "/" + KEYFILE));
             data = encrypt(key, data);
@@ -502,6 +501,9 @@ public class Util {
      */
     SecretKey getSecretKey(File keyFile)
             throws GeneralSecurityException, IOException {
+        if (secretKeyWrapper == null) {
+            throw new GeneralSecurityException("No SecretKeyWrapper available!");
+        }
         // Generate secret key if none exists
         if (!keyFile.exists()) {
             final byte[] raw = new byte[AppConstants.KEY_LENGTH];
@@ -513,7 +515,56 @@ public class Util {
         // Even if we just generated the key, always read it back to ensure we
         // can read it successfully.
         final byte[] wrapped = readFile(keyFile);
+        if (wrapped == null) return null;
         return secretKeyWrapper.unwrap(wrapped);
+    }
+
+
+    /**
+     * @param privateKey privateKey to sign the message with
+     * @param message    message to sign
+     * @return Base32 formatted signature
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeyException
+     * @throws SignatureException
+     */
+    static String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+        logprint("message to sign: " + message);
+        byte[] bMessage = message.getBytes(StandardCharsets.UTF_8);
+
+        Signature s = Signature.getInstance("SHA256withRSA");
+        s.initSign(privateKey);
+        s.update(bMessage);
+
+        byte[] signature = s.sign();
+        return new Base32().encodeAsString(signature);
+    }
+
+    /**
+     * @param publicKey publicKey to verify the signature with
+     * @param signature signature to verify, !!formatted in Base32!!
+     * @param payload   payload that was signed
+     * @return true if the signature is valid, false otherwise
+     * @throws InvalidKeyException
+     * @throws NoSuchAlgorithmException
+     * @throws SignatureException
+     */
+    static boolean verifySignature(PublicKey publicKey, String signature, String payload) throws InvalidKeyException,
+            NoSuchAlgorithmException, SignatureException {
+        logprint("signature to verify (b32): " + signature);
+        logprint("message to verify signature for: " + payload);
+        if (!new Base32().isInAlphabet(signature)) {
+            logprint("verifySignature: The given signature is not Base32 encoded!");
+            return false;
+        }
+
+        byte[] message = payload.getBytes(StandardCharsets.UTF_8);
+        byte[] bSignature = new Base32().decode(signature);
+        Signature sig = Signature.getInstance("SHA256withRSA");
+
+        sig.initVerify(publicKey);
+        sig.update(message);
+        return sig.verify(bSignature);
     }
 
     byte[] decodeBase64(String key) {
@@ -558,46 +609,7 @@ public class Util {
     public static void logprint(String msg) {
         if (msg == null)
             return;
-        Log.e("PI-Authenticator", msg);
-    }
-
-    static HttpsURLConnection turnOffSSLVerification(HttpsURLConnection con){
-        logprint("Turning SSL verification off...");
-        final TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    @Override
-                    public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {
-                    }
-
-                    @Override
-                    public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {
-                    }
-
-                    @Override
-                    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                        return new java.security.cert.X509Certificate[]{};
-                    }
-                }
-        };
-        SSLContext sslContext = null;
-        try {
-            sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (KeyManagementException e) {
-            e.printStackTrace();
-        }
-        final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-        con.setSSLSocketFactory(sslSocketFactory);
-        con.setHostnameVerifier(new HostnameVerifier() {
-            @Override
-            public boolean verify(String hostname, SSLSession session) {
-                return true;
-            }
-        });
-        logprint("Done.");
-        return con;
+        Log.e(TAG, msg);
     }
 
 }

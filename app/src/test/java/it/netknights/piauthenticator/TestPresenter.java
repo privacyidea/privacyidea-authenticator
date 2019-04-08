@@ -25,14 +25,14 @@ import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_BAD_BASE64;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_DONE;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_JSON;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_URL;
+import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_1;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_2;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_3;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_UNKNOWN_HOST;
+import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
 import static it.netknights.piauthenticator.AppConstants.PUSH;
 import static it.netknights.piauthenticator.AppConstants.QUESTION;
 import static it.netknights.piauthenticator.AppConstants.SHA1;
@@ -92,7 +92,7 @@ public class TestPresenter {
     @Test
     public void testInit() {
         presenter.init();
-        verify(mainActivityInterface, never()).fireBaseInit((FirebaseInitConfig) any());
+        verify(mainActivityInterface, never()).firebaseInit((FirebaseInitConfig) any());
         verify(mainActivityInterface, never()).makeAlertDialog(anyString(), anyString());
 
         FirebaseInitConfig firebaseInitConfig = new FirebaseInitConfig("projid", "appid", "api_key", "projNumber");
@@ -100,7 +100,7 @@ public class TestPresenter {
         when(model.checkForExpiredTokens()).thenReturn("serial");
 
         presenter.init();
-        verify(mainActivityInterface).fireBaseInit(firebaseInitConfig);
+        verify(mainActivityInterface).firebaseInit(firebaseInitConfig);
         // When there are expired tokens, it is called with titleID and String message
         verify(mainActivityInterface, times(1)).makeAlertDialog(anyInt(), anyString());
 
@@ -307,11 +307,11 @@ public class TestPresenter {
         assertEquals(5, presenter.getTokenCount());
 
         // t3 should not be added, because the url is malformed
-        presenter.updateTaskStatus(PRO_STATUS_MALFORMED_URL, t3);
+        presenter.updateTaskStatus(STATUS_ENDPOINT_MALFORMED_URL, t3);
         assertEquals(5, presenter.getTokenCount());
 
         // t3 should be added again, but unfinished
-        presenter.updateTaskStatus(PRO_STATUS_UNKNOWN_HOST, t3);
+        presenter.updateTaskStatus(STATUS_ENDPOINT_UNKNOWN_HOST, t3);
         assertFalse(presenter.getTokenAtPosition(5).rollout_finished);
         assertEquals(6, presenter.getTokenCount());
 
@@ -415,7 +415,7 @@ public class TestPresenter {
 
         presenter.scanQRfinished(res2);
         verify(util).storeFirebaseConfig(res2.firebaseInitConfig);
-        verify(mainActivityInterface).fireBaseInit(res2.firebaseInitConfig);
+        verify(mainActivityInterface).firebaseInit(res2.firebaseInitConfig);
 
         Calendar now = Calendar.getInstance();
         now.add(Calendar.MINUTE, res2.ttl);
@@ -455,6 +455,19 @@ public class TestPresenter {
 
         assertTrue(model.pushAuthRequests.isEmpty());
         verify(tokenListViewInterface).notifyChange();
+    }
+
+    @Test
+    public void lastPushToken() {
+        clearTokenlist();
+        Token pushy = new Token("serial", "label");
+        presenter.addToken(pushy);
+
+        presenter.removeToken(pushy);
+
+        verify(model).hasPushToken();
+        verify(mainActivityInterface).removeFirebase();
+        verify(util).removeFirebaseConfig();
     }
 
     private void clearTokenlist() {

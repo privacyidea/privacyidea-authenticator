@@ -26,10 +26,8 @@ import org.apache.commons.codec.binary.Base32;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.UnrecoverableEntryException;
@@ -43,16 +41,17 @@ import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_BAD_BASE64;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_DONE;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_JSON;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_URL;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_1;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_2;
 import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_3;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_UNKNOWN_HOST;
 import static it.netknights.piauthenticator.AppConstants.PUSH;
 import static it.netknights.piauthenticator.AppConstants.QUESTION;
+import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_ERROR;
+import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
+import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
 import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE;
 import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE_DONE;
 import static it.netknights.piauthenticator.AppConstants.STATUS_STANDARD_ROLLOUT_DONE;
@@ -69,7 +68,7 @@ import static it.netknights.piauthenticator.OTPGenerator.generate;
 import static it.netknights.piauthenticator.OTPGenerator.hashPIN;
 import static it.netknights.piauthenticator.Util.logprint;
 
-public class Presenter implements PresenterInterface, PresenterTaskInterface, PresenterUtilInterface {
+public class Presenter implements PresenterInterface, PresenterTaskInterface, PresenterUtilInterface, Interfaces.PushAuthCallbackInterface {
 
     private TokenListViewInterface tokenListInterface;
     private MainActivityInterface mainActivityInterface;
@@ -87,12 +86,11 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         // Logic of onCreate
 
         if (model == null) {
-            model = new Model(util.loadTokens()
-                    , new ArrayList<PushAuthRequest>());
+            model = new Model(util.loadTokens(), new ArrayList<PushAuthRequest>());
         }
         FirebaseInitConfig firebaseInitConfig = util.loadFirebaseConfig();
         if (firebaseInitConfig != null) {
-            mainActivityInterface.fireBaseInit(firebaseInitConfig);
+            mainActivityInterface.firebaseInit(firebaseInitConfig);
         }
 
         mainActivityInterface.startTimer();
@@ -100,7 +98,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
         String expired = model.checkForExpiredTokens();
         if (expired != null) {
-            mainActivityInterface.makeAlertDialog(R.string.TokenExpiredTitle, expired);
+            mainActivityInterface.makeAlertDialog(R.string.TokenExpiredTitle, expired.trim());
             tokenListInterface.notifyChange();
         }
     }
@@ -122,7 +120,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 token = new Token(result.serial, result.label);
                 if (result.firebaseInitConfig != null) {
                     util.storeFirebaseConfig(result.firebaseInitConfig);
-                    mainActivityInterface.fireBaseInit(result.firebaseInitConfig);
+                    mainActivityInterface.firebaseInit(result.firebaseInitConfig);
                 }
                 if (!result.sslverify) {
                     token.sslVerify = false;
@@ -183,7 +181,17 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     @Override
     public void addPushAuthRequest(PushAuthRequest request) {
-        model.pushAuthRequests.add(request);
+        // Requests for token that are not enrolled yet are not allowed
+        for (Token token : model.tokens) {
+            if (token.getSerial().equals(request.serial)) {
+                if (!token.rollout_finished) {
+                    return;
+                } else {
+                    logprint("Push Auth Request for " + request.serial + " added.");
+                    model.pushAuthRequests.add(request);
+                }
+            }
+        }
     }
 
     @Override
@@ -200,12 +208,6 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     @Override
     public void onStop() {
         saveTokenlist();
-    }
-
-    @Override
-    public void printKeystore() {
-        mainActivityInterface.printKeystore();
-        util.printPubkeys(model.tokens);
     }
 
     @Override
@@ -292,11 +294,6 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     @Override
-    public Token removeTokenAtPosition(int position) {
-        return model.tokens.remove(position);
-    }
-
-    @Override
     public void addToken(Token token) {
         if (!token.getType().equals(PUSH)) {
             if (token.getCurrentOTP() == null) {
@@ -304,6 +301,42 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             }
         }
         model.tokens.add(token);
+    }
+
+    @Override
+    //This is only used for swapping when changing position in the list
+    public Token removeTokenAtPosition(int position) {
+        return model.tokens.remove(position);
+    }
+
+    /**
+     * Remove a token from the list. This includes Pub/Priv Keys for Pushtoken
+     *
+     * @param currToken the token to remove
+     */
+    protected void removeToken(Token currToken) {
+        if (currToken == null) return;
+
+        int position = model.tokens.indexOf(currToken);
+        tokenListInterface.removeProgressbar(position);
+
+        if (model.tokens.size() >= position && position >= 0 && !model.tokens.isEmpty()) {
+            model.tokens.remove(position);
+        }
+
+        if (currToken.getType().equals(PUSH)) {
+            util.removePubkeyFor(currToken.getSerial());
+            getWrapper().removePrivateKeyFor(currToken.getSerial());
+            // if the removed token was the last push token, remove the firebase config
+            if(!model.hasPushToken()){
+                util.removeFirebaseConfig();
+                mainActivityInterface.removeFirebase();
+            }
+        }
+
+        tokenListInterface.notifyChange();
+        mainActivityInterface.makeToast(R.string.toast_token_removed);
+        saveTokenlist();
     }
 
     /**
@@ -344,7 +377,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             PrivateKey appPrivateKey = getWrapper().getPrivateKeyFor(t_serial);
             PublicKey piPublicKey = util.getPIPubkey(req.serial);
             if (appPrivateKey != null && piPublicKey != null) {
-                new PushAuthTask(req, piPublicKey, appPrivateKey).execute();
+                new PushAuthTask(req, piPublicKey, appPrivateKey, this).execute();
                 model.pushAuthRequests.remove(req);
                 tokenListInterface.notifyChange();
             }
@@ -386,28 +419,6 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         tokenListInterface.notifyChange();
     }
 
-    /**
-     * Remove a token from the list. This includes Pub/Priv Keys for Pushtoken
-     *
-     * @param currToken the token to remove
-     */
-    protected void removeToken(Token currToken) {
-        if (currToken == null) return;
-        if (currToken.getType().equals(PUSH)) {
-            util.removePubkeyFor(currToken.getSerial());
-            getWrapper().removePrivateKeyFor(currToken.getSerial());
-        }
-        int position = model.tokens.indexOf(currToken);
-        tokenListInterface.removeProgressbar(position);
-
-        if (model.tokens.size() >= position && position >= 0 && !model.tokens.isEmpty()) {
-            model.tokens.remove(position);
-        }
-        tokenListInterface.notifyChange();
-        mainActivityInterface.makeToast(R.string.toast_token_removed);
-        saveTokenlist();
-    }
-
     @Override
     public void timerProgress(int progress) {
         tokenListInterface.updateProgressbars(progress);
@@ -442,6 +453,8 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             // Do not add token twice
             for (Token t : model.tokens) {
                 if (t.getSerial().equals(token.getSerial()) && t.getType().equals(PUSH)) {
+                    saveTokenlist();
+                    tokenListInterface.notifyChange();
                     return;
                 }
             }
@@ -544,18 +557,20 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 mainActivityInterface.makeAlertDialog(R.string.Error, R.string.RegistrationTimeExpired);
                 removeToken(token);
                 break;
-            case PRO_STATUS_MALFORMED_URL:
+            case STATUS_ENDPOINT_MALFORMED_URL:
                 mainActivityInterface.makeAlertDialog(R.string.Error, R.string.RolloutURLinvalid);
                 break;
-            case PRO_STATUS_UNKNOWN_HOST:
+            case STATUS_ENDPOINT_UNKNOWN_HOST:
                 token.rollout_finished = false;
                 rolloutFinished(token);
                 mainActivityInterface.makeAlertDialog(R.string.Error, R.string.RolloutURLNotResolved);
                 break;
             case PRO_STATUS_RESPONSE_NOT_OK:
+            case STATUS_ENDPOINT_ERROR:
                 token.rollout_finished = false;
                 rolloutFinished(token);
                 mainActivityInterface.makeAlertDialog(R.string.Error, R.string.ServerResponseNotOk);
+                break;
             default:
                 logprint("Unknown statusCode in updateTaskStatus: " + statusCode);
                 break;
@@ -570,5 +585,14 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     @Override
     public SecretKeyWrapper getWrapper() {
         return mainActivityInterface.getWrapper();
+    }
+
+    @Override
+    public void authenticationFinished(boolean success) {
+        if (success) {
+            mainActivityInterface.makeToast(R.string.AuthenticationSuccessful);
+        } else {
+            mainActivityInterface.makeToast(R.string.AuthenticationFailed);
+        }
     }
 }
