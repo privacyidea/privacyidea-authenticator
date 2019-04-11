@@ -1,0 +1,5 @@
+.idea/
+.gradle/
+local.properties
+privacyidea-authenticator.iml
+app/app.iml
