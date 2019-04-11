@@ -3,7 +3,7 @@
 
   Authors: Nils Behlen <nils.behlen@netknights.it>
 
-  Copyright (c) 2017 NetKnights GmbH
+  Copyright (c) 2017-2019 NetKnights GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -22,22 +22,15 @@ package it.netknights.piauthenticator;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.PorterDuff;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.SystemClock;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.view.ActionMode;
-import androidx.appcompat.widget.Toolbar;
 import android.text.InputType;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -45,139 +38,176 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
+import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
-import org.apache.commons.codec.binary.Base32;
-
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.MessageDigest;
+import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
+import java.security.NoSuchProviderException;
+import java.security.PublicKey;
+import java.security.UnrecoverableEntryException;
+import java.security.cert.CertificateException;
+
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ActionMode;
+import androidx.appcompat.widget.Toolbar;
 
 import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
+import static it.netknights.piauthenticator.AppConstants.API_KEY;
+import static it.netknights.piauthenticator.AppConstants.APP_ID;
 import static it.netknights.piauthenticator.AppConstants.COUNTER;
 import static it.netknights.piauthenticator.AppConstants.DIGITS;
-import static it.netknights.piauthenticator.AppConstants.HMACSHA1;
-import static it.netknights.piauthenticator.AppConstants.HMACSHA256;
-import static it.netknights.piauthenticator.AppConstants.HMACSHA512;
+import static it.netknights.piauthenticator.AppConstants.ENROLLMENT_CRED;
 import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
 import static it.netknights.piauthenticator.AppConstants.ISSUER;
 import static it.netknights.piauthenticator.AppConstants.LABEL;
+import static it.netknights.piauthenticator.AppConstants.NONCE;
+import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_CHANNEL_ID;
 import static it.netknights.piauthenticator.AppConstants.PERIOD;
-import static it.netknights.piauthenticator.AppConstants.UNDELETABLE;
+import static it.netknights.piauthenticator.AppConstants.PERSISTENT;
 import static it.netknights.piauthenticator.AppConstants.PIN;
+import static it.netknights.piauthenticator.AppConstants.PROJECT_ID;
+import static it.netknights.piauthenticator.AppConstants.PROJECT_NUMBER;
+import static it.netknights.piauthenticator.AppConstants.PUSH;
+import static it.netknights.piauthenticator.AppConstants.PUSH_VERSION;
+import static it.netknights.piauthenticator.AppConstants.QUESTION;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
+import static it.netknights.piauthenticator.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.AppConstants.SSL_VERIFY;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
+import static it.netknights.piauthenticator.AppConstants.TITLE;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
+import static it.netknights.piauthenticator.AppConstants.TTL;
 import static it.netknights.piauthenticator.AppConstants.TWOSTEP_DIFFICULTY;
 import static it.netknights.piauthenticator.AppConstants.TWOSTEP_OUTPUT;
 import static it.netknights.piauthenticator.AppConstants.TWOSTEP_SALT;
 import static it.netknights.piauthenticator.AppConstants.TYPE;
+import static it.netknights.piauthenticator.AppConstants.URL;
 import static it.netknights.piauthenticator.AppConstants.WITHPIN;
-import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
+import static it.netknights.piauthenticator.Interfaces.MainActivityInterface;
+import static it.netknights.piauthenticator.Interfaces.PresenterInterface;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
+import static it.netknights.piauthenticator.Util.logprint;
 
 
-public class MainActivity extends AppCompatActivity implements ActionMode.Callback {
+public class MainActivity extends AppCompatActivity implements ActionMode.Callback, MainActivityInterface {
+    private PresenterInterface presenterInterface;
     private TokenListAdapter tokenlistadapter;
-    ArrayList<Token> tokenlist;
+    private ListView listview;
+    private AlertDialog status_dialog;
     private Handler handler;
     private Runnable timer;
-    private Util util;
-    private Token nextSelection = null;
-    private ListView listview;
+
+    // getting the firebase token requires the Activity
+    String firebase_token;
+    private SecretKeyWrapper secretKeyWrapper;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        util = new Util(this);
+
         setupViews();
         setupFab();
-        paintStatusbar();
-        setupAdapter();
-        startTimerThread();
 
-       /* Locale locale = new Locale("de");
-        Locale.setDefault(locale);
-        Configuration config = new Configuration();
-        config.locale = locale;
-        getBaseContext().getResources().updateConfiguration(config, getBaseContext().getResources().getDisplayMetrics());
-        Toast.makeText(MainActivity.this,Locale. ,Toast.LENGTH_SHORT).show();*/
-    }
-
-    private void setupFab() {
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setBackgroundColor(getResources().getColor(PIBLUE));
-        fab.bringToFront();
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                scanQR();
-            }
-        });
-    }
-
-    private void startTimerThread() {
-        handler = new Handler();
-        timer = new Runnable() {
-            @Override
-            public void run() {
-                int progress = (int) (System.currentTimeMillis() / 1000) % 60;
-                tokenlistadapter.updatePBs(progress);
-                // refresh OTP values only around the periods
-                if (progress < 3 || progress > 27 && progress < 33 || progress > 57) {
-                    tokenlistadapter.refreshAllTOTP();
-                }
-                handler.postDelayed(this, 1000);
-            }
-        };
-        handler.post(timer);
-        handler.removeCallbacks(timer);
-    }
-
-    private void setupAdapter() {
-        tokenlist = Util.loadTokens(this);
+        // SETUP INTERFACES AND DEPENDENCIES
         tokenlistadapter = new TokenListAdapter();
-        listview.setAdapter(tokenlistadapter);
-        tokenlistadapter.setTokens(tokenlist);
-        tokenlistadapter.refreshOTPs();
-    }
+        secretKeyWrapper = null;
+        try {
+            secretKeyWrapper = new SecretKeyWrapper(this);
+        } catch (GeneralSecurityException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Util util = new Util(secretKeyWrapper, getFilesDir().getAbsolutePath());
+        Presenter presenter = new Presenter(tokenlistadapter, this, util);
 
-    public void paintStatusbar() {
-        //------------------ try to paint the statusbar -------------------------------
+        presenterInterface = presenter;
+        tokenlistadapter.setPresenterInterface(presenter);
+
+        // init the model before the adapter is set
+        presenterInterface.init();
+
+        listview.setAdapter(tokenlistadapter);
+
+
+        createNotificationChannel();
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            Window window = getWindow();
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            window.setStatusBarColor(getResources().getColor(PIBLUE));
+            paintStatusbar();
+        }
+
+        // Check for intent (=Pending auth requests)
+
+        Intent intent = getIntent();
+        if (intent.getExtras() == null) {
+            logprint("No intent found onCreate.");
+        } else {
+            // intent contain push auth info
+            logprint("Intent Found onCreate:");
+            logprint(intent.getExtras().toString());
+            String serial = intent.getStringExtra(SERIAL);
+            String nonce = intent.getStringExtra(NONCE);
+            String title = intent.getStringExtra(TITLE);
+            String url = intent.getStringExtra(URL);
+            String signature = intent.getStringExtra(SIGNATURE);
+            String question = intent.getStringExtra(QUESTION);
+            boolean sslVerify = intent.getBooleanExtra(SSL_VERIFY, true);
+            if (serial != null && nonce != null && title != null && url != null && signature != null && question != null) {
+                logprint("Intent data: " + intent.getExtras().toString());
+                presenterInterface.addPushAuthRequest(new PushAuthRequest(nonce, url, serial, question, title, signature, sslVerify));
+            } else {
+                logprint("Not all data for PushAuth available");
+            }
         }
     }
 
+    private void setupFab() {
+        FloatingActionButton fab = findViewById(R.id.fab);
+        fab.setBackgroundColor(getResources().getColor(PIBLUE));
+        fab.bringToFront();
+        fab.setOnClickListener(v -> scanQR());
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public void paintStatusbar() {
+        Window window = getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        window.setStatusBarColor(getResources().getColor(PIBLUE));
+    }
+
     private void setupViews() {
-        setTitle(AppConstants.APP_TITLE);
+        setTitle("      " + AppConstants.APP_TITLE);
         setContentView(R.layout.activity_main);
-        listview = (ListView) findViewById(R.id.listview);
-        listview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                nextSelection = tokenlist.get(i);
-                startSupportActionMode(MainActivity.this);
-                return true;
-            }
+        listview = findViewById(R.id.listview);
+        listview.setOnItemLongClickListener((adapterView, view, i, l) -> {
+            presenterInterface.setCurrentSelection(i);
+            startSupportActionMode(MainActivity.this);
+            return true;
         });
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setBackgroundColor(getResources().getColor(PIBLUE));
         if (getSupportActionBar() != null) {
@@ -198,50 +228,160 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         // this is the item selected from the toolbar menu
         int id = item.getItemId();
         // save the tokenlist before another activity starts it's lifecycle
-        saveTokenlist();
+        presenterInterface.saveTokenlist();
         if (id == R.id.action_about) {
             Intent aboutintent = new Intent(this, AboutActivity.class);
             startActivity(aboutintent);
             return true;
         }
         if (id == R.id.action_enter_detail) {
-            Intent settingsIntent = EnterDetailsActivity.makeIntent(MainActivity.this);
-            startActivityForResult(settingsIntent, INTENT_ADD_TOKEN_MANUALLY);
+            Intent enterDetailIntent = EnterDetailsActivity.makeIntent(MainActivity.this);
+            startActivityForResult(enterDetailIntent, INTENT_ADD_TOKEN_MANUALLY);
         }
         return super.onOptionsItemSelected(item);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
-
         if (result != null) {
             if (result.getContents() == null) {
-                Toast.makeText(this, R.string.toast_cancelled, Toast.LENGTH_SHORT).show();
+                makeToast(R.string.toast_cancelled);
             } else {
+                // Extract data here, URI is an android dependency
                 try {
-                    Token t = makeTokenFromURI(result.getContents());
-                    tokenlist.add(t);
-                    Toast.makeText(this, getString(R.string.toast_token_added_for) + " " + t.getLabel(), Toast.LENGTH_SHORT).show();
-                    tokenlistadapter.refreshOTPs();
-                    saveTokenlist();
+                    String content = result.getContents().replaceFirst("otpauth", "http");
+                    Uri uri = Uri.parse(content);
+                    URL url = null;
+                    try {
+                        url = new URL(content);
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (!url.getProtocol().equals("http")) {
+                        try {
+                            throw new Exception("Invalid Protocol");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    if (!url.getHost().equals(TOTP) && !url.getHost().equals(HOTP) &&
+                            !url.getHost().equals(PUSH)) {
+                        try {
+                            throw new Exception("No TOTP, HOTP or Push Token");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                    // TOKEN TYPE
+                    String type = url.getHost();
+                    // SERIAL
+                    String serial = uri.getPath().substring(1);
+
+                    ScanResult scanResult = new ScanResult(type, serial);
+
+                    // LABEL = ISSUER + SERIAL
+                    String label = serial;
+                    String issuer = uri.getQueryParameter(ISSUER);
+                    if (issuer != null && !label.startsWith(issuer)) {
+                        label = issuer + ": " + label;
+                    }
+                    scanResult.label = label;
+                    // ---------------- PUSH ----------------
+                    if (type.equals(PUSH)) {
+                        // Check for FirebaseInit info
+                        if (uri.getQueryParameter(PROJECT_ID) != null) {
+                            String projID = uri.getQueryParameter(PROJECT_ID);
+                            String appID = uri.getQueryParameter(APP_ID);
+                            String api_key = uri.getQueryParameter(API_KEY);
+                            String projNumber = uri.getQueryParameter(PROJECT_NUMBER);
+                            if (projID != null && appID != null && api_key != null && projNumber != null) {
+                                scanResult.firebaseInitConfig = new FirebaseInitConfig(projID, appID, api_key, projNumber);
+                            }
+                        }
+                        scanResult.rollout_url = uri.getQueryParameter(URL);
+                        if (uri.getQueryParameter(TTL) != null) {
+                            scanResult.ttl = Integer.parseInt(uri.getQueryParameter(TTL));
+                        }
+                        if (uri.getQueryParameter(ENROLLMENT_CRED) != null) {
+                            scanResult.enrollment_credential = uri.getQueryParameter(ENROLLMENT_CRED);
+                        }
+                        if (uri.getQueryParameter(PUSH_VERSION) != null) {
+                            scanResult.push_version = Integer.parseInt(uri.getQueryParameter(PUSH_VERSION));
+                        }
+                        if (uri.getQueryParameter(SSL_VERIFY) != null) {
+                            if (Integer.parseInt(uri.getQueryParameter(SSL_VERIFY)) < 1) {
+                                scanResult.sslverify = false;
+                            }
+                        }
+                    }
+                    // ---------------- END PUSH ----------------
+
+                    // ---------------- NORMAL TOKEN ----------------
+                    scanResult.secret = uri.getQueryParameter(SECRET);
+
+                    if (uri.getQueryParameter(DIGITS) != null) {
+                        scanResult.digits = Integer.parseInt(uri.getQueryParameter(DIGITS));
+                    }
+                    if (uri.getQueryParameter(PERIOD) != null) {
+                        scanResult.period = Integer.parseInt(uri.getQueryParameter(PERIOD));
+                    }
+                    if (uri.getQueryParameter(COUNTER) != null) {
+                        scanResult.counter = Integer.parseInt(uri.getQueryParameter(COUNTER));
+                    }
+                    if (uri.getQueryParameter(ALGORITHM) != null) {
+                        scanResult.algorithm = uri.getQueryParameter(ALGORITHM).toUpperCase();
+                    }
+                    if (uri.getBooleanQueryParameter(PIN, false)) {
+                        scanResult.pin = true;
+                    }
+                    if (uri.getBooleanQueryParameter(PERSISTENT, false)) {
+                        scanResult.persistent = true;
+                    }
+                    // tap to show is currently not used
+                    if (uri.getBooleanQueryParameter(TAPTOSHOW, false)) {
+                        scanResult.taptoshow = true;
+                    }
+
+                    // --------------------- OPTIONAL 2 STEP ---------------------
+                    // if at least one parameter for 2step is set do 2step init
+                    if (uri.getQueryParameter(TWOSTEP_SALT) != null ||
+                            uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null ||
+                            uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
+                        scanResult.do2Step = true;
+                        if (uri.getQueryParameter(TWOSTEP_SALT) != null) {
+                            scanResult.phonepartlength = Integer.parseInt(uri.getQueryParameter(TWOSTEP_SALT));
+                        }
+                        if (uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
+                            scanResult.output_size = Integer.parseInt(uri.getQueryParameter(TWOSTEP_OUTPUT)) * 8;
+                        }
+
+                        if (uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null) {
+                            scanResult.iterations = Integer.parseInt(uri.getQueryParameter(TWOSTEP_DIFFICULTY));
+                        }
+                    }
+                    presenterInterface.scanQRfinished(scanResult);
                 } catch (Exception e) {
-                    Toast.makeText(this, R.string.toast_invalid_qr, Toast.LENGTH_SHORT).show();
+                    makeToast(R.string.toast_invalid_qr);
                     e.printStackTrace();
                 }
             }
         } else if (requestCode == INTENT_ADD_TOKEN_MANUALLY) {
             if (resultCode == Activity.RESULT_OK) {
-                Token token = makeTokenFromIntent(data);
-                tokenlist.add(token);
-                tokenlistadapter.refreshOTPs();
-                saveTokenlist();
-                Toast.makeText(this, getString(R.string.toast_token_added_for) + " " + token.getLabel(), Toast.LENGTH_SHORT).show();
+                // Extract values from the intent here, so the logic does not depend on Intent
+                String period = null;
+                if (data.getStringExtra(TYPE).equals(TOTP)) {
+                    period = String.valueOf(data.getIntExtra(PERIOD, 30));
+                }
+                presenterInterface.addTokenFromIntent(data.getStringExtra(TYPE), data.getByteArrayExtra(SECRET), data.getStringExtra(LABEL),
+                        data.getIntExtra(DIGITS, 6), data.getStringExtra(ALGORITHM), period, data.getBooleanExtra(WITHPIN, false));
             } else {
-                Toast.makeText(this, R.string.toast_cancelled, Toast.LENGTH_SHORT).show();
+                makeToast(R.string.toast_cancelled);
             }
-        } /*else if (requestCode == INTENT_ABOUT) {
-        }*/ else {
+        } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
     }
@@ -249,29 +389,27 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     public void onResume() {
         super.onResume();
-        tokenlistadapter.refreshAllTOTP();
-        handler.post(timer);
+        presenterInterface.onResume();
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        handler.removeCallbacks(timer);
+        presenterInterface.onPause();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        saveTokenlist();
+        presenterInterface.onStop();
     }
 
     @Override
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
         MenuInflater inflater = mode.getMenuInflater();
-
-        if (nextSelection.isWithPIN()) {
+        if (presenterInterface.isCurrentSelectionWithPin()) {
             inflater.inflate(R.menu.actionmode_menu, menu);
-            if (nextSelection.isUndeletable()) {
+            if (presenterInterface.isCurrentSelectionPersistent()) {
                 for (int i = 0; i < menu.size(); i++) {
                     if (menu.getItem(i).getItemId() == R.id.delete_token2) {
                         menu.getItem(i).setEnabled(false);
@@ -281,7 +419,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             }
         } else {
             inflater.inflate(R.menu.actionmode_menu_nopin, menu);
-            if (nextSelection.isUndeletable()) {
+            if (presenterInterface.isCurrentSelectionPersistent()) {
                 for (int i = 0; i < menu.size(); i++) {
                     if (menu.getItem(i).getItemId() == R.id.delete_token2) {
                         menu.getItem(i).setEnabled(false);
@@ -295,18 +433,16 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     @Override
     public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-        tokenlistadapter.setCurrentSelection(nextSelection);
-        tokenlistadapter.notifyDataSetChanged();
+        tokenlistadapter.notifyChange();
         mode.setTitle(getString(R.string.actionmode_title));
         return true;
     }
 
     @Override
     public boolean onActionItemClicked(final ActionMode mode, MenuItem item) {
-        final Token currToken = tokenlistadapter.getCurrentSelection();
         final int id = item.getItemId();
         if (id == R.id.delete_token2) {
-           /* if (currToken.isUndeletable()) {
+           /* if (currToken.isPersistent()) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
                 builder.setTitle("Deletion not possible");
                 builder.setMessage("This Token is persistent and can not be deleted!");
@@ -320,33 +456,22 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 MainActivity.changeDialogFontColor(alert);
                 alert.show();
             } else {*/
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle(R.string.confirm_deletion_title);
-                builder.setMessage(getString(R.string.confirm_deletion_text) + " " + currToken.getLabel() + " ?");
-                builder.setPositiveButton(R.string.button_text_yes, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        int pos = tokenlist.indexOf(currToken);
-                        tokenlist.remove(pos);
-                        tokenlistadapter.getPbs().remove(pos);
-                        tokenlistadapter.notifyDataSetChanged();
-                        Toast.makeText(MainActivity.this, R.string.toast_token_removed, Toast.LENGTH_SHORT).show();
-                        saveTokenlist();
-                        //Log.d(Util.TAG,"deletion: pos: "+pos+" ");
-                        mode.finish();
-                    }
-                });
-                builder.setNegativeButton(R.string.button_text_no, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Toast.makeText(MainActivity.this, R.string.toast_deletion_cancelled, Toast.LENGTH_SHORT).show();
-                        dialog.cancel();
-                        mode.finish();
-                    }
-                });
-                final AlertDialog alert = builder.create();
-                MainActivity.changeDialogFontColor(alert);
-                alert.show();
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(R.string.confirm_deletion_title);
+            builder.setMessage(getString(R.string.confirm_deletion_text)
+                    + presenterInterface.getCurrentSelectionLabel() + " ?");
+            builder.setPositiveButton(R.string.button_text_yes, (dialog, which) -> {
+                presenterInterface.removeCurrentSelection();
+                mode.finish();
+            });
+            builder.setNegativeButton(R.string.button_text_no, (dialog, which) -> {
+                makeToast(R.string.toast_deletion_cancelled);
+                dialog.cancel();
+                mode.finish();
+            });
+            final AlertDialog alert = builder.create();
+            MainActivity.changeDialogFontColor(alert);
+            alert.show();
             //}
             return true;
         }
@@ -355,27 +480,24 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle(R.string.edit_name_title);
             final EditText input = new EditText(this);
-            input.setText(currToken.getLabel());
+            input.setText(presenterInterface.getCurrentSelectionLabel());
             input.setSelectAllOnFocus(true);
             input.getBackground().setColorFilter(input.getContext().getResources().getColor(PIBLUE), PorterDuff.Mode.SRC_IN);
             builder.setView(input);
 
-            builder.setPositiveButton(getString(R.string.button_text_save), new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int whichButton) {
-                    currToken.setLabel(input.getEditableText().toString());
-                    tokenlistadapter.notifyDataSetChanged();
-                    saveTokenlist();
-                    Toast.makeText(MainActivity.this, currToken.getLabel() + ": " + getString(R.string.toast_name_changed), Toast.LENGTH_SHORT).show();
-                    mode.finish();
-                }
+            builder.setPositiveButton(getString(R.string.button_text_save), (dialog, whichButton) -> {
+                presenterInterface.setCurrentSelectionLabel(input.getEditableText().toString());
+                tokenlistadapter.notifyChange();
+                presenterInterface.saveTokenlist();
+                makeToast(presenterInterface.getCurrentSelectionLabel()
+                        + ": " + getString(R.string.toast_name_changed));
+                mode.finish();
             });
 
-            builder.setNegativeButton(getString(R.string.button_text_cancel), new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int whichButton) {
-                    dialog.cancel();
-                    Toast.makeText(MainActivity.this, R.string.toast_edit_cancelled, Toast.LENGTH_SHORT).show();
-                    mode.finish();
-                }
+            builder.setNegativeButton(getString(R.string.button_text_cancel), (dialog, whichButton) -> {
+                dialog.cancel();
+                makeToast(R.string.toast_edit_cancelled);
+                mode.finish();
             });
             final AlertDialog alert = builder.create();
             MainActivity.changeDialogFontColor(alert);
@@ -384,7 +506,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
 
         if (id == R.id.change_pin2) {
-            if (currToken.isWithPIN() && !currToken.isLocked()) {
+            if (presenterInterface.isCurrentSelectionWithPin()
+                    && !presenterInterface.isCurrentSelectionLocked()) {
                 LinearLayout layout = new LinearLayout(this);
                 layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -402,29 +525,23 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                 builder.setTitle(R.string.title_change_pin);
                 builder.setView(layout);
 
-                builder.setPositiveButton(getString(R.string.button_text_save), new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        int firstpin = Integer.parseInt(firstinput.getEditableText().toString());
-                        int secondpin = Integer.parseInt(secondinput.getEditableText().toString());
-                        if (firstpin == secondpin) {
-                            String hashedPIN = OTPGenerator.hashPIN(firstpin, currToken);
-                            currToken.setPin(hashedPIN);
-                            tokenlistadapter.notifyDataSetChanged();
-                            saveTokenlist();
-                            Toast.makeText(MainActivity.this, currToken.getLabel() + ": " + getString(R.string.toast_pin_changed), Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(MainActivity.this, R.string.toast_pins_dont_match, Toast.LENGTH_SHORT).show();
-                        }
-                        mode.finish();
+                builder.setPositiveButton(getString(R.string.button_text_save), (dialog, whichButton) -> {
+                    int firstpin = Integer.parseInt(firstinput.getEditableText().toString());
+                    int secondpin = Integer.parseInt(secondinput.getEditableText().toString());
+                    if (firstpin == secondpin) {
+                        presenterInterface.changeCurrentSelectionPIN(firstpin);
+                        makeToast(presenterInterface.getCurrentSelectionLabel()
+                                + ": " + getString(R.string.toast_pin_changed));
+                    } else {
+                        makeToast(R.string.toast_pins_dont_match);
                     }
+                    mode.finish();
                 });
 
-                builder.setNegativeButton(getString(R.string.button_text_cancel), new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        dialog.cancel();
-                        Toast.makeText(MainActivity.this, R.string.toast_change_pin_cancelled, Toast.LENGTH_SHORT).show();
-                        mode.finish();
-                    }
+                builder.setNegativeButton(getString(R.string.button_text_cancel), (dialog, whichButton) -> {
+                    dialog.cancel();
+                    makeToast(R.string.toast_change_pin_cancelled);
+                    mode.finish();
                 });
                 final AlertDialog alert = builder.create();
                 MainActivity.changeDialogFontColor(alert);
@@ -434,363 +551,246 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
 
         if (id == R.id.copy_clipboard) {
-            copyToClipboard(this, currToken.getCurrentOTP());
-            Toast.makeText(MainActivity.this, R.string.toast_otp_to_clipboard, Toast.LENGTH_SHORT).show();
+            copyToClipboard(this, presenterInterface.getCurrentSelectionOTP());
+            makeToast(R.string.toast_otp_to_clipboard);
         }
         return false;
     }
 
     @Override
     public void onDestroyActionMode(ActionMode mode) {
-        tokenlistadapter.setCurrentSelection(null);
-        tokenlistadapter.notifyDataSetChanged();
-        saveTokenlist();
+        presenterInterface.setCurrentSelection(-1); // equals null in the data model
+        tokenlistadapter.notifyChange();
+        presenterInterface.saveTokenlist();
     }
 
-    /**
-     * Creates a token with the parameters passed in KeyURI format
-     *
-     * @param content The URI String
-     * @return Token Object
-     * @throws Exception Invalid Protocol / Not HOTP or TOTP type of token
-     */
-    public Token makeTokenFromURI(String content) throws Exception {
-        content = content.replaceFirst("otpauth", "http");
-        Uri uri = Uri.parse(content);
-        URL url = new URL(content);
-
-        if (!url.getProtocol().equals("http")) {
-            throw new Exception("Invalid Protocol");
+    @Override
+    public PublicKey generatePublicKeyFor(String alias) {
+        try {
+            return SecretKeyWrapper.generateKeyPair(alias, this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableEntryException e) {
+            e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
         }
-        if (!url.getHost().equals(TOTP)) {
-            if (!url.getHost().equals(HOTP)) {
-                throw new Exception("No TOTP or HOTP Token");
-            }
-        }
-
-        String type = url.getHost();
-        String secret_string = uri.getQueryParameter(SECRET);
-        String label = uri.getPath().substring(1);
-        String issuer = uri.getQueryParameter(ISSUER);
-        if (issuer != null && !label.startsWith(issuer)) {
-            label = issuer + ": " + label;
-        }
-
-        int digits = 6;
-        if (uri.getQueryParameter(DIGITS) != null) {
-            digits = Integer.parseInt(uri.getQueryParameter(DIGITS));
-        }
-
-        byte[] secret = new Base32().decode(secret_string.toUpperCase());
-        Token tmp = new Token(secret, label, type, digits);
-
-        if (type.equals(TOTP)) {
-            if (uri.getQueryParameter(PERIOD) != null) {
-                tmp.setPeriod(Integer.parseInt(uri.getQueryParameter(PERIOD)));
-            } else {
-                tmp.setPeriod(30);
-            }
-        }
-        if (type.equals(HOTP)) {
-            if (uri.getQueryParameter(COUNTER) != null) {
-                tmp.setCounter(Integer.parseInt(uri.getQueryParameter(COUNTER)));
-            } else {
-                tmp.setCounter(1);
-            }
-        }
-        if (uri.getQueryParameter(ALGORITHM) != null) {
-            tmp.setAlgorithm(uri.getQueryParameter(ALGORITHM).toUpperCase());
-        }
-        if (uri.getBooleanQueryParameter(PIN, false)) {
-            tmp.setWithPIN(true);
-            tmp.setLocked(true);
-        }
-        if (uri.getBooleanQueryParameter(UNDELETABLE, false)) {
-            tmp.setUndeletable(true);
-        }
-
-        // if at least one parameter for 2step is set do 2step init
-        if (uri.getQueryParameter(TWOSTEP_SALT) != null ||
-                uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null ||
-                uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
-
-            int phonepartlength = 10; // default value
-            if (uri.getQueryParameter(TWOSTEP_SALT) != null) {
-                phonepartlength = Integer.parseInt(uri.getQueryParameter(TWOSTEP_SALT));
-            }
-            int iterations = 10000;
-            if (uri.getQueryParameter(TWOSTEP_DIFFICULTY) != null) {
-                iterations = Integer.parseInt(uri.getQueryParameter(TWOSTEP_DIFFICULTY));
-            }
-            // comes in bytes, need to be converted to bit as parameter for pbkdf2
-            int output_size = 160;
-
-            if (uri.getQueryParameter(TWOSTEP_OUTPUT) != null) {
-                output_size = Integer.parseInt(uri.getQueryParameter(TWOSTEP_OUTPUT)) * 8;
-            } else {
-                // if the output size is not specified, it is derived from the OTP algorithm
-                if (tmp.getAlgorithm().equals(HMACSHA1)) {
-                    // do nothing default is already 20bytes = 160bit
-                } else if (tmp.getAlgorithm().equals(HMACSHA256)) {
-                    output_size = 256;
-                } else if (tmp.getAlgorithm().equals(HMACSHA512)) {
-                    output_size = 512;
-                }
-            }
-            return do2StepInit(tmp, phonepartlength, iterations, output_size);
-        }
-        // tap to show is currently not used
-        if (uri.getBooleanQueryParameter(TAPTOSHOW, false)) {
-            tmp.setWithTapToShow(true);
-        }
-        return tmp;
+        return null;
     }
 
-    /**
-     * This method enhances the "usual" rollout process by combining the secret in the scanned QRCode
-     * with a randomly generated salt on the phone. The Phonepart has to be entered into
-     * PrivacyIDEA, then the first OTP values can be compared to ensure the rollout was successful
-     *
-     * @param token           The token after the normal rollout process, secret is only the QR-part
-     * @param phonepartlength Number of bytes which shall be generated by the phone (default is 10)
-     * @return A token with the combined secret (phone- and QR-part)
-     */
-    private Token do2StepInit(final Token token, final int phonepartlength,
-                              final int iterations, final int output_size) {
-        AsyncTask<Void, Void, Boolean> asyncTask = new SecretGenerator(util, token, phonepartlength, iterations, output_size, new SecretGenerator.Response() {
-            @Override
-            public void processFinished(Token t) {
-                tokenlistadapter.refreshOTPs();
-                tokenlistadapter.notifyDataSetChanged();
-                saveTokenlist();
-            }
+    @Override
+    public String getStringResource(int id) {
+        return getString(id);
+    }
+
+    @Override
+    public void makeToast(int resID) {
+        Toast.makeText(MainActivity.this, resID, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void makeToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void setStatusDialogText(String text) {
+        // if there is no dialog yet, inflate it
+        if (status_dialog == null) {
+            View view_pro_progress = getLayoutInflater().inflate(R.layout.pushrollout_loading, listview, false);
+            AlertDialog.Builder dialog_builder = new AlertDialog.Builder(this);
+            dialog_builder.setView(view_pro_progress);
+            dialog_builder.setCancelable(false);
+            status_dialog = dialog_builder.show();
+        }
+        MainActivity.changeDialogFontColor(status_dialog);
+        TextView tv_status;
+        if (status_dialog == null) {
+            logprint("cannot find status dialog");
+            return;
+        } else {
+            tv_status = status_dialog.findViewById(R.id.tv_status);
+        }
+        if (tv_status == null) {
+            logprint("cannot find status text view");
+            return;
+        }
+        tv_status.setText(text);
+    }
+
+    @Override
+    public void setStatusDialogText(int id) {
+        setStatusDialogText(getString(id));
+    }
+
+    @Override
+    public void cancelStatusDialog() {
+        if (status_dialog == null) return;
+        status_dialog.cancel();
+        status_dialog = null;
+    }
+
+    @Override
+    public String getFirebaseToken() {
+        logprint("Getting Firebase token...");
+        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(this, instanceIdResult -> {
+            logprint("Firebase Token: " + instanceIdResult.getToken());
+            firebase_token = instanceIdResult.getToken();
         });
-        asyncTask.execute();
-
-        return token;
+        return firebase_token;
     }
 
-    private Token makeTokenFromIntent(Intent data) {
-        String type = data.getStringExtra(TYPE);
-        byte[] secret = data.getByteArrayExtra(SECRET);
-        String label = data.getStringExtra(LABEL);
-        int digits = data.getIntExtra(DIGITS, 6);
-        String algorithm = data.getStringExtra(ALGORITHM);
-        Token tmp = new Token(secret, label, type, digits);
+    @Override
+    public String firebaseInit(FirebaseInitConfig firebaseInitConfig) {
+        logprint("Initializing Firebase...");
+        // Check if Firebase is already initalized
+        if (!FirebaseApp.getApps(this).isEmpty()) {
+            logprint("Firebase already initialized for: " + FirebaseApp.getApps(this).toString());
+        } else {
+            // INIT FIREBASE
+            String projID = firebaseInitConfig.projID;
+            String appID = firebaseInitConfig.appID;
+            String api_key = firebaseInitConfig.api_key;
+            String gcmSenderID = firebaseInitConfig.projNumber;
+            String database_url = "https://" + projID + ".firebaseio.com";
+            String storage_bucket = projID + ".appspot.com";
 
-        if (type.equals(TOTP)) {
-            int period = data.getIntExtra(PERIOD, 30);
-            tmp.setPeriod(period);
-        }
+            FirebaseOptions.Builder builder = new FirebaseOptions.Builder()
+                    .setApplicationId(appID)
+                    .setApiKey(api_key)
+                    .setDatabaseUrl(database_url)
+                    .setStorageBucket(storage_bucket)
+                    .setProjectId(projID)
+                    .setGcmSenderId(gcmSenderID);
+            FirebaseApp.initializeApp(this, builder.build());
 
-        if (algorithm != null) {
-            tmp.setAlgorithm(algorithm);
+            logprint("Firebase initialized!");
         }
-        if (data.getBooleanExtra(WITHPIN, false)) {
-            tmp.setWithPIN(true);
-        }
+        return getFirebaseToken();
+    }
 
-        return tmp;
+    @Override
+    public void removeFirebase() {
+        if(FirebaseApp.getApps(this).isEmpty()){
+            return;
+        }
+        FirebaseApp.getApps(this).clear();
+    }
+
+    @Override
+    public void startTimer() {
+        handler = new Handler();
+        timer = new Runnable() {
+            @Override
+            public void run() {
+                presenterInterface.timerProgress(((int) (System.currentTimeMillis() / 1000) % 60));
+                handler.postDelayed(this, 1000);
+            }
+        };
+        handler.post(timer);
+        handler.removeCallbacks(timer);
+    }
+
+    @Override
+    public void stopTimer() {
+        handler.removeCallbacks(timer);
+    }
+
+    @Override
+    public void resumeTimer() {
+        handler.post(timer);
+    }
+
+    @Override
+    public SecretKeyWrapper getWrapper() {
+        return secretKeyWrapper;
     }
 
     public static void changeDialogFontColor(final AlertDialog dialog) {
-        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
-            @Override
-            public void onShow(DialogInterface dialogInterface) {
-                doChangeDialogFontColor(dialog);
+        dialog.setOnShowListener(dialogInterface -> {
+            int piblue = dialog.getContext().getResources().getColor(PIBLUE);
+            if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null) {
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(piblue);
+            }
+
+            if (dialog.getButton(AlertDialog.BUTTON_NEUTRAL) != null) {
+                dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(piblue);
+            }
+
+            if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(piblue);
             }
         });
-
-    }
-
-    private static void doChangeDialogFontColor(AlertDialog dialog) {
-        int piblue = dialog.getContext().getResources().getColor(PIBLUE);
-        if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null) {
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(piblue);
-        }
-
-        if (dialog.getButton(AlertDialog.BUTTON_NEUTRAL) != null) {
-            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(piblue);
-        }
-
-        if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(piblue);
-        }
-    }
-
-    static class SecretGenerator extends AsyncTask<Void, Void, Boolean> {
-
-        private final Token token;
-        private final int phonepartlength;
-        private Util util;
-        private ProgressDialog pd;
-        private String output;
-        private int iterations;
-        private int output_size_bit;
-        Response delegate = null;
-        byte[] phonepartBytes;
-
-        public interface Response {
-            void processFinished(Token t);
-        }
-
-        SecretGenerator(Util util, Token t, int phonepartlength, int iterations, int output_size, Response delegate) {
-            this.util = util;
-            this.token = t;
-            this.phonepartlength = phonepartlength;
-            this.iterations = iterations;
-            this.output_size_bit = output_size;
-            this.delegate = delegate;
-            this.phonepartBytes = new byte[phonepartlength];
-            //Log.d(Util.TAG, "ppl: " + phonepartlength + ", it: " + iterations + " ,outs: " + output_size);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            pd = new ProgressDialog(util.getmActivity());
-            pd.setMessage("Please wait while the secret is generated");
-            pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-            pd.setCancelable(false);
-            pd.setIndeterminate(true);
-            pd.show();
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            // generate random bytes for the phonepartBytes
-            SecureRandom sr = new SecureRandom(); //Seeded by PRNGFixes
-            sr.nextBytes(phonepartBytes);
-
-            output = byteArrayToHexString(phonepartBytes);
-            //Log.d(Util.TAG, "client_part_hex: " + output);
-
-            // combine the phone- and QR-part
-            String server_secret_hex = byteArrayToHexString(token.getSecret());
-            //Log.d(Util.TAG, "server_secret_hex: "+server_secret_hex + " , server_secret_b32 "+ new Base32().encodeAsString(token.getSecret()));
-            char[] ch = server_secret_hex.toCharArray();
-            byte[] completesecretBytes = new byte[(output_size_bit / 8)];
-            //phonepartBytes = new Base32().decode("OF3XYLDSPTMWK===");
-            long startTime = SystemClock.elapsedRealtime();
-            try {
-                completesecretBytes = OTPGenerator.generatePBKDFKey(ch, phonepartBytes, iterations, output_size_bit);
-                //Log.d(Util.TAG, "complete_secret_hex : "+byteArrayToHexString(completesecretBytes));
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            } catch (InvalidKeySpecException e) {
-                e.printStackTrace();
-            }
-            long endTime = SystemClock.elapsedRealtime() - startTime;
-            token.setSecret(completesecretBytes);
-            //Log.d(Util.TAG, "time for PBKDF2 computation: " + endTime + "ms, with " + iterations + " Iterations");
-            //Log.d(Util.TAG, "complete secret HexString: " + completeSecretAsHexString);
-            return true;
-        }
-
-        @Override
-        protected void onPostExecute(final Boolean success) {
-            // display the phone-part of the secret and first OTP to verify
-            pd.dismiss();
-            AlertDialog.Builder builder = new AlertDialog.Builder(util.getmActivity());
-            builder.setCancelable(false);
-            builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dialog.cancel();
-                }
-            });
-            builder.setTitle("Phonepart");
-            builder.setMessage(buildResultMessage());
-            final AlertDialog alert = builder.create();
-            MainActivity.changeDialogFontColor(alert);
-            alert.show();
-            delegate.processFinished(token);
-        }
-
-        private String buildResultMessage() {
-            /*We use the first 4 characters of the sha1 hash of the client(phone) part as checksum.
-            client_part being the binary random value, that the client(phone) generated:
-            b32encode( sha1(client_part)[0:3] + client_part)*/
-            String result;
-            byte[] digest = new byte[20];
-            try {
-                MessageDigest md = MessageDigest.getInstance("SHA-1");
-                digest = md.digest(phonepartBytes);
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            }
-
-            byte[] checksumBytes = new byte[4];
-            System.arraycopy(digest, 0, checksumBytes, 0, 4);
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            try {
-                outputStream.write(checksumBytes);
-                outputStream.write(phonepartBytes);
-                //Log.d(Util.TAG, "checksumbytes_b32: " + new Base32().encodeAsString(checksumBytes) + " ,client_part_b32: " + new Base32().encodeAsString(phonepartBytes));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            byte completeOutputBytes[] = outputStream.toByteArray();
-            //Log.d(Util.TAG, "client_part_withCRC_b32: " + new Base32().encodeAsString(completeOutputBytes));
-            result = insertPeriodically(new Base32().encodeAsString(completeOutputBytes), " ", 4);
-            result = result.replaceAll("=", "");
-            return result;
-        }
-
-        @Override
-        protected void onCancelled() {
-        }
-
-        String insertPeriodically(String text, String insert, int period) {
-            StringBuilder builder = new StringBuilder(text.length() + insert.length() * (text.length() / period) + 1);
-            int index = 0;
-            String prefix = "";
-            while (index < text.length()) {
-                builder.append(prefix);
-                prefix = insert;
-                builder.append(text.substring(index,
-                        Math.min(index + period, text.length())));
-                index += period;
-            }
-            return builder.toString();
-        }
-    }
-
-    public void saveTokenlist() {
-        Util.saveTokens(this, tokenlist);
-        //Toast.makeText(this, "Tokens saved", Toast.LENGTH_SHORT).show();
     }
 
     private void scanQR() {
         try {
             IntentIntegrator ii = new IntentIntegrator(this);
+            ii.setBeepEnabled(false);
             ii.initiateScan();
         } catch (Exception e) {
             if (this.getCurrentFocus() != null) {
                 Snackbar.make(this.getCurrentFocus(), e.getMessage(), Snackbar.LENGTH_LONG).show();
             }
-
         }
     }
 
     private void copyToClipboard(Context context, String text) {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
-            android.text.ClipboardManager clipboard = (android.text.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-            if (clipboard != null)
-                clipboard.setText(text);
-        } else {
-            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-            android.content.ClipData clip = android.content.ClipData.newPlainText("Copied Text", text);
-            if (clipboard != null)
-                clipboard.setPrimaryClip(clip);
+        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+        android.content.ClipData clip = android.content.ClipData.newPlainText("Copied Text", text);
+        if (clipboard != null)
+            clipboard.setPrimaryClip(clip);
+    }
+
+    private void createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "privacyIDEAPush";
+            String description = "push for privacyIDEA";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
         }
     }
 
-    protected void clearTokenlist(){
-        if(tokenlist.size()>0){
-            tokenlist.clear();
-            saveTokenlist();
+    @Override
+    public void makeAlertDialog(String title, String message) {
+        if (status_dialog != null) {
+            cancelStatusDialog();
         }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("OK", (dialog, which) -> dialog.cancel());
+        final AlertDialog alert = builder.create();
+        MainActivity.changeDialogFontColor(alert);
+        alert.show();
     }
+
+    @Override
+    public void makeAlertDialog(int titleID, String message) {
+        makeAlertDialog(getStringResource(titleID), message);
+    }
+
+    @Override
+    public void makeAlertDialog(int titleID, int messageID) {
+        makeAlertDialog(getStringResource(titleID), getStringResource(messageID));
+    }
+
 }

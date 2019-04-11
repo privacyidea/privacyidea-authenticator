@@ -3,7 +3,7 @@
 
   Authors: Nils Behlen <nils.behlen@netknights.it>
 
-  Copyright (c) 2017 NetKnights GmbH
+  Copyright (c) 2017-2019 NetKnights GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ package it.netknights.piauthenticator;
 import org.apache.commons.codec.binary.Base32;
 
 import java.lang.reflect.UndeclaredThrowableException;
-import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -37,9 +36,11 @@ import javax.crypto.spec.SecretKeySpec;
 
 import static it.netknights.piauthenticator.AppConstants.HOTP;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
+import static it.netknights.piauthenticator.Util.byteArrayToHexString;
+import static it.netknights.piauthenticator.Util.hexStringToByteArray;
 
 
-public class OTPGenerator {
+class OTPGenerator {
 
     private OTPGenerator() {
     }
@@ -54,16 +55,18 @@ public class OTPGenerator {
      * @param token to generate the OTP value for
      * @return the current OTP value for the input token
      */
-    public static String generate(Token token) {
-        String secretAsHEX = byteArrayToHexString(token.getSecret());
-        String digits = String.valueOf(token.getDigits());
-        //Log.d(TAG, "generate: for: " + token.getLabel() + " with secret: " + secretAsHEX);
-        if (token.getType().equals(TOTP)) {
-            return String.format("%0" + token.getDigits() + "d", generateTOTP(secretAsHEX,
-                    (System.currentTimeMillis() / 1000), digits, token.getPeriod(), token.getAlgorithm()));
-        } else
-            return String.format("%0" + token.getDigits() + "d", generateHOTP(secretAsHEX,
-                    String.valueOf(token.getCounter()), digits, token.getAlgorithm()));
+    static String generate(Token token) {
+        if (token.getType().equals(HOTP) || token.getType().equals(TOTP)) {
+            String secretAsHEX = byteArrayToHexString(token.getSecret());
+            String digits = String.valueOf(token.getDigits());
+            if (token.getType().equals(TOTP)) {
+                return String.format("%0" + token.getDigits() + "d", generateTOTP(secretAsHEX,
+                        (System.currentTimeMillis() / 1000), digits, token.getPeriod(), token.getAlgorithm()));
+            } else {
+                return String.format("%0" + token.getDigits() + "d", generateHOTP(secretAsHEX,
+                        String.valueOf(token.getCounter()), digits, token.getAlgorithm()));
+            }
+        } else return "";
     }
 
     /**
@@ -74,9 +77,9 @@ public class OTPGenerator {
      * @param digits    The number of digits of the calculated OTP value. Would be usually either 6 or 8
      * @param period    The time step as defined in RFC. Usually 30 or 60
      * @param algorithm The hashing algorithm, "HmacSHA1", "HmacSHA256", "HmacSHA512"
-     * @return The OTP value for the TOTP Token
+     * @return The OTP value for the HOTP Token
      */
-    public static int generateTOTP(String key, long t, String digits, int period, String algorithm) {
+    static int generateTOTP(String key, long t, String digits, int period, String algorithm) {
          /*
         The unix system time is devided by the time step. This number of time slices is used as
         counter input for the normal HOTP algorithm
@@ -113,10 +116,10 @@ public class OTPGenerator {
      * @param crypto       the crypto function to use
      * @return a numeric String in base 10 that includes
      */
-    public static int generateHOTP(String key,
-                                   String counter,
-                                   String returnDigits,
-                                   String crypto) {
+    static int generateHOTP(String key,
+                            String counter,
+                            String returnDigits,
+                            String crypto) {
         int codeDigits = Integer.decode(returnDigits);
         String result;
 
@@ -175,37 +178,6 @@ public class OTPGenerator {
     }
 
     /**
-     * This method converts a byte array to a Hex String
-     *
-     * @param ba byte array to convert
-     * @return the Hex as String
-     */
-    public static String byteArrayToHexString(byte[] ba) {
-        StringBuilder str = new StringBuilder();
-        for (int i = 0; i < ba.length; i++)
-            str.append(String.format("%02x", ba[i]));
-        return str.toString();
-    }
-
-    /**
-     * This method converts a Hex string to a byte array
-     *
-     * @param hex: the Hex string to convert
-     * @return a byte array
-     */
-    public static byte[] hexStringToByteArray(String hex) {
-        // Adding one byte to get the right conversion
-        // Values starting with "0" can be converted
-        byte[] bArray = new BigInteger("10" + hex, 16).toByteArray();
-
-        // Copy all the REAL bytes, not the "first"
-        byte[] ret = new byte[bArray.length - 1];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = bArray[i + 1];
-        return ret;
-    }
-
-    /**
      * Generates a secret from a password and salt using PBKDF2WithHmacSHA1.
      * (passwort -> usual enrollment secret, salt -> phone-part)
      *
@@ -217,12 +189,11 @@ public class OTPGenerator {
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeySpecException
      */
-    public static byte[] generatePBKDFKey(char[] passphraseOrPin, byte[] salt, int iterations, int outputKeyLength) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    static byte[] generatePBKDFKey(char[] passphraseOrPin, byte[] salt, int iterations, int outputKeyLength) throws NoSuchAlgorithmException, InvalidKeySpecException {
         // Generate a outputKeyLength-bit key
         SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
         KeySpec keySpec = new PBEKeySpec(passphraseOrPin, salt, iterations, outputKeyLength);
-        byte[] bb = secretKeyFactory.generateSecret(keySpec).getEncoded();
-        return bb;
+        return secretKeyFactory.generateSecret(keySpec).getEncoded();
     }
 
 }

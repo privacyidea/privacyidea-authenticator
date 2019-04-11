@@ -12,6 +12,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="@string/textview"
+        android:textAlignment="center"
         android:textSize="21sp"
         android:textStyle="italic"
         app:layout_constraintStart_toStartOf="parent"

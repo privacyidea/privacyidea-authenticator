@@ -68,10 +68,10 @@
     <!--Strings for about-->
     <string name="version" translatable="false">Version </string>
     <string name="piauth_name_label" translatable="false">privacyIDEA Authenticator</string>
-    <string name="comany_label" translatable="false">\u00A9NetKnights GmbH 2017, Apache License 2.0</string>
+    <string name="company_label" translatable="false">\u00A9NetKnights GmbH 2017-2019</string>
 
     <!-- Strings for licenses-->
-    <string name="licenses_label">Licenses</string>
+    <string name="licenses_label">Licenses </string>
     <string name="license_apache_20" translatable="false">Apache License 2.0</string>
     <string name="license_otpauth" translatable="false">OTP Authenticator by Bruno Bierbaumer</string>
     <string name="license_zxing_embed" translatable="false">ZXing Embedded</string>
@@ -79,5 +79,30 @@
 
     <!--other-->
     <string name="textview" translatable="false">TextView</string>
+    <string name="PushRolloutStep1Status">(1/3) Preparing registration data...</string>
+    <string name="PushRolloutStep2Status">(2/3) Sending data to server...</string>
+    <string name="PushRolloutStep3Status">(3/3) Processing data from server...</string>
+    <string name="InitFirebaseStatus">Initializing Firebase...</string>
+    <string name="Allow">Allow</string>
+    <string name="Error">Error</string>
+    <string name="ResponseNotParsed">The response could not be parsed.</string>
+    <string name="ResponseNoKey">The response does not contain a key.</string>
+    <string name="RegistrationTimeExpired">Registration time expired.</string>
+    <string name="RolloutURLinvalid">Rollout URL is invalid.</string>
+    <string name="RolloutURLNotResolved">Rollout URL cannot be resolved.</string>
+    <string name="KeyFromServerWrongFormat">The key from the server was not in the correct format.</string>
+    <string name="WaitWhileSecretIsGenerated">Please wait while the secret is generated.</string>
+    <string name="IncompatiblePushVersion">Incompatible Version</string>
+    <string name="IncompatiblePushVersionMessage">The requested rollout version is higher than the supported one on this phone!</string>
+    <string name="TokenExpiredTitle">Token expired!</string>
+    <string name="TokenAddedToast">Token added:</string>
+    <string name="ServerResponseNotOk">Server does not allow the rollout.</string>
+    <string name="AuthenticationSuccessful">Authentication successful!</string>
+    <string name="AuthenticationFailed">Authentication failed!</string>
+    <string name="PushtokenLabel">Pushtoken</string>
+    <string name="RolloutButton">Rollout</string>
+    <string name="PushtokenLabelRolloutUnfinished">Pushtoken - Rollout unfinished</string>
+    <string name="AboutTitle">About the App</string>
+    <string name="apache_license_2_0Label" translatable="false">Apache License 2.0</string>
 
 </resources>

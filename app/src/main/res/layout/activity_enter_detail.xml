@@ -34,7 +34,10 @@
         android:inputType="textPersonName"
         android:selectAllOnFocus="true"
         android:text="@string/name"
+        android:textAlignment="center"
+        android:textAppearance="@style/TextAppearance.AppCompat.Display1"
         android:textCursorDrawable="@null"
+        android:textSize="28sp"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
@@ -44,14 +47,18 @@
         android:id="@+id/editText_secret"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="16dp"
         android:backgroundTint="@color/PIBLUE"
         android:backgroundTintMode="src_in"
         android:ems="10"
         android:inputType="textCapCharacters"
         android:selectAllOnFocus="true"
         android:text="@string/enterdetail_secret"
+        android:textAlignment="center"
+        android:textAppearance="@style/TextAppearance.AppCompat.Display1"
         android:textCursorDrawable="@null"
+        android:textSize="28sp"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editText_name" />
@@ -61,9 +68,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="24dp"
         android:text="@string/base32_encoded_secret"
-        android:textAppearance="@style/TextAppearance.AppCompat.Menu"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium.Inverse"
+        android:textSize="22sp"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editText_secret" />
 
@@ -71,11 +79,13 @@
         android:id="@+id/checkBox_pin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginRight="19dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
         android:text="@string/with_pin"
         android:textAppearance="@style/TextAppearance.AppCompat.Menu"
-        app:layout_constraintBaseline_toBaselineOf="@+id/checkBox_base32"
-        app:layout_constraintRight_toRightOf="parent" />
+        android:textSize="22sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/checkBox_base32" />
 
     <Button
         android:id="@+id/button_add"
@@ -99,13 +109,13 @@
         android:id="@+id/tableLayout"
         android:layout_width="368dp"
         android:layout_height="249dp"
-        android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="8dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintHorizontal_bias="0.296"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/checkBox_base32">
+        app:layout_constraintTop_toBottomOf="@+id/checkBox_pin">
 
         <TableRow
             android:layout_width="match_parent"

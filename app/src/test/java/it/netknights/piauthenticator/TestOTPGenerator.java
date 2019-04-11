@@ -1,55 +1,18 @@
 package it.netknights.piauthenticator;
 
-import android.os.Build;
-
-import org.apache.commons.codec.DecoderException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.robolectric.RobolectricTestRunner;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
-
-import androidx.test.platform.app.InstrumentationRegistry;
-
-import static it.netknights.piauthenticator.OTPGenerator.byteArrayToHexString;
 import static it.netknights.piauthenticator.OTPGenerator.generateHOTP;
 import static it.netknights.piauthenticator.OTPGenerator.generatePBKDFKey;
 import static it.netknights.piauthenticator.OTPGenerator.generateTOTP;
-import static it.netknights.piauthenticator.OTPGenerator.hexStringToByteArray;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.fail;
+import static it.netknights.piauthenticator.Util.byteArrayToHexString;
+import static org.junit.Assert.assertEquals;
 
-@RunWith(RobolectricTestRunner.class)
-public class UnitTests {
-
-    @Test
-    public void testRWFile() {
-        File f = new File(InstrumentationRegistry.getInstrumentation().getTargetContext().getFilesDir() + "/test");
-        String text = "testtext";
-        try {
-            Util.writeFile(f, text.getBytes());
-            byte[] retrieved = Util.readFile(f);
-            assertTrue(Arrays.equals(retrieved, text.getBytes()));
-        } catch (IOException e) {
-            fail("IOException");
-            e.printStackTrace();
-        }
-    }
+public class TestOTPGenerator {
 
     @Test
     public void testOTPGenerator() {
@@ -111,30 +74,20 @@ public class UnitTests {
         assertEquals(94287082, generateTOTP(seed, testTime[0], digits, 30, sha1));
         // Hash pin
         byte[] secret = "testtesttesttest".getBytes();
-        Token t = new Token(secret, "test", "hotp", 6);
+        Token t = new Token(secret, "serial", "test", "hotp", 6);
         assertEquals("4e25988118d7e38ef94c1f32d14d5de463f159fa34304bdc9acba6728a60b541cb948e75c75493705ee4e43e0d2d224f0f0fc0cd803bd707ba4b0acccf702ab7"
-                ,OTPGenerator.hashPIN(1234567890, t));
+                , OTPGenerator.hashPIN(1234567890, t));
 
         // Generate for token
         assertEquals("766082", OTPGenerator.generate(t));  // HOTP
         secret = "edb642c8348a20b6c2a19a65cc71bc2eb4c2b8fc29c42a00c489e57f9b8ed73b".getBytes();
-        Token t2 = new Token(secret, "test", "totp", 6); //TOTP
-        assertEquals(OTPGenerator.generateTOTP(byteArrayToHexString(secret), (System.currentTimeMillis() / 1000), "6", 30, sha1),
+        Token t2 = new Token(secret, "serial", "test", "totp", 6); //TOTP
+        assertEquals(generateTOTP(byteArrayToHexString(secret), (System.currentTimeMillis() / 1000), "6", 30, sha1),
                 Integer.parseInt(OTPGenerator.generate(t2)));
-    }
 
-    @Test
-    public void testEncryptionHelper() throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException,
-            IllegalBlockSizeException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
-
-        SecretKey key = KeyGenerator.getInstance("AES").generateKey();
-
-        String plaintext = "edb642c8348a20b6c2a19a65cc71bc2eb4c2b8fc29c42a00c489e57f9b8ed73b";
-        byte[] data = hexStringToByteArray(plaintext);
-
-        byte[] encrypted = EncryptionHelper.encrypt(key, data);
-        byte[] decrypted = EncryptionHelper.decrypt(key, encrypted);
-        assertEquals(plaintext, byteArrayToHexString(decrypted));
+        // Generating for Push token returns empty String
+        Token pushy = new Token("serial", "label");
+        assertEquals("", OTPGenerator.generate(pushy));
     }
 
     @Test
@@ -145,55 +98,21 @@ public class UnitTests {
 
         char[] p = "password".toCharArray();
         byte[] s = new byte[0];
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            s = "salt".getBytes(StandardCharsets.US_ASCII);
-        }
+        s = "salt".getBytes(StandardCharsets.US_ASCII);
+
         assertEquals("0c60c80f961f0e71f3a9b524af6012062fe037a6", byteArrayToHexString(generatePBKDFKey(p, s, 1, 160)));
         assertEquals("ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957", byteArrayToHexString(generatePBKDFKey(p, s, 2, 160)));
         assertEquals("4b007901b765489abead49d926f721d065a429c1", byteArrayToHexString(generatePBKDFKey(p, s, 4096, 160)));
         //assertEquals("eefe3d61cd4da4e4e9945b3d6ba2158c2634e984", byteArrayToHexString(generatePBKDFKey(p, s, 16777216, 160)));
 
         p = "passwordPASSWORDpassword".toCharArray();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            s = "saltSALTsaltSALTsaltSALTsaltSALTsalt".getBytes(StandardCharsets.US_ASCII);
-        }
+        s = "saltSALTsaltSALTsaltSALTsaltSALTsalt".getBytes(StandardCharsets.US_ASCII);
+
         assertEquals("3d2eec4fe41c849b80c8d83662c0e44a8b291a964cf2f07038", byteArrayToHexString(generatePBKDFKey(p, s, 4096, 200)));
 
         p = "pass\0word".toCharArray();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            s = "sa\0lt".getBytes(StandardCharsets.US_ASCII);
-        }
+        s = "sa\0lt".getBytes(StandardCharsets.US_ASCII);
+
         assertEquals("56fa6aa75548099dcc37d7f03425e0c3", byteArrayToHexString(generatePBKDFKey(p, s, 4096, 128)));
-    }
-
-    @Test
-    public void saveAndLoadTokenlist() {
-        /*Util util = new Util(activityRule.getActivity());
-
-        byte[] secret = "testtesttesttesttesttesttest".getBytes();
-        String label = "testtoken";
-        Token totp = new Token(secret, label, TOTP, 6);
-        Token hotp = new Token(secret, label, HOTP, 6);
-
-        ArrayList<Token> tokens = new ArrayList<>();
-        tokens.add(totp);
-        tokens.add(hotp);
-
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        util.saveTokens(context, tokens);
-
-        ArrayList<Token> loaded = util.loadTokens(context);
-        for (int i = 0; i < tokens.size(); i++) {
-            assertEquals(tokens.get(i) , loaded.get(i));
-
-            assertEquals(tokens.get(i).getType() , loaded.get(i).getType());
-            assertEquals(tokens.get(i).getAlgorithm() , loaded.get(i).getAlgorithm());
-            assertEquals(tokens.get(i).getDigits() , loaded.get(i).getDigits());
-            assertEquals(tokens.get(i).getPeriod() , loaded.get(i).getPeriod());
-            assertEquals(tokens.get(i).getSecret() , loaded.get(i).getSecret());
-            assertEquals(tokens.get(i).getLabel() , loaded.get(i).getLabel());
-
-
-    }*/
     }
 }

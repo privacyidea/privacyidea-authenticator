@@ -30,7 +30,7 @@
     <string name="toast_token_removed">Token entfernt</string>
     <string name="title_change_pin">PIN ändern</string>
     <string name="input_hint_repeat_new_pin">Neue PIN wiederholen</string>
-    <string name="input_hint_new_pin">neue PIN</string>
+    <string name="input_hint_new_pin">Neue PIN</string>
     <string name="set_new_pin">Neue PIN setzen</string>
     <string name="enter_pin_title">PIN eingeben</string>
     <string name="tap_to_set_pin">Berühren, um PIN zu setzen</string>
@@ -51,4 +51,28 @@
     <string name="period">Periode:</string>
     <string name="digits">Ziffern:</string>
     <string name="title_enter_details">Details angeben</string>
+    <string name="PushRolloutStep1Status">(1/3) Bereite Daten vor...</string>
+    <string name="PushRolloutStep2Status">(2/3) Sende Daten...</string>
+    <string name="PushRolloutStep3Status">(3/3) Verarbeite Antwort...</string>
+    <string name="InitFirebaseStatus">Initialisiere Firebase...</string>
+    <string name="Allow">Zulassen</string>
+    <string name="Error">Fehler</string>
+    <string name="ResponseNotParsed">Die Antwort konnte nicht verarbeitet werden.</string>
+    <string name="ResponseNoKey">Die Antwort enthielt keinen Schlüssel.</string>
+    <string name="RegistrationTimeExpired">Registrationszeit ausgelaufen.</string>
+    <string name="RolloutURLinvalid">Ausroll-URL ist ungültig.</string>
+    <string name="RolloutURLNotResolved">Ausroll-URL kann nicht aufgelöst werden.</string>
+    <string name="KeyFromServerWrongFormat">Der Schlüssel des Servers hat nicht das richtige Format.</string>
+    <string name="WaitWhileSecretIsGenerated">Bitte warten während das Geheimnis generiert wird.</string>
+    <string name="IncompatiblePushVersion">Inkompatible Version</string>
+    <string name="IncompatiblePushVersionMessage">The benötigte Ausrollversion ist höher als die von diesem Telefon unterstützte.</string>
+    <string name="TokenExpiredTitle">Token ausgelaufen!</string>
+    <string name="TokenAddedToast">Token hinzugefügt:</string>
+    <string name="ServerResponseNotOk">Server lässt das Ausrollen nicht zu.</string>
+    <string name="AuthenticationSuccessful">Authentifizierung erfolgreich!</string>
+    <string name="AuthenticationFailed">Authentifizierung fehlgeschlagen!</string>
+    <string name="PushtokenLabel">Pushtoken</string>
+    <string name="RolloutButton">Ausrollen</string>
+    <string name="PushtokenLabelRolloutUnfinished">Pushtoken - nicht ausgerollt</string>
+    <string name="AboutTitle">Über die App</string>
 </resources>

@@ -3,7 +3,7 @@
 
   Authors: Nils Behlen <nils.behlen@netknights.it>
 
-  Copyright (c) 2017 NetKnights GmbH
+  Copyright (c) 2017-2019 NetKnights GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -18,9 +18,12 @@
   limitations under the License.
 */
 
-
 package it.netknights.piauthenticator;
 
+
+import java.util.Date;
+
+import static it.netknights.piauthenticator.AppConstants.PUSH;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
 
 public class Token {
@@ -39,15 +42,33 @@ public class Token {
     private boolean withTapToShow = false;
     private boolean tapped = false;
     private boolean persistent = false;
+    private String serial;
 
+    String enrollment_credential;
+    boolean rollout_finished = true;
+    Date rollout_expiration;
+    String rollout_url;
+    boolean sslVerify = true;
 
-    Token(byte[] secret, String label, String type, int digits) {
-        this.label = label;
+    Token(byte[] secret, String serial, String label, String type, int digits) {
         this.secret = secret;
+        this.serial = serial;
+        this.label = label;
         this.type = type;
         this.digits = digits;
-        this.period = type.equals(TOTP) ? 30 : 0;
+        this.period = this.type.equals(TOTP) ? 30 : 0;
         this.counter = 0;
+    }
+
+    // A push token only contains the serial and a label
+    Token(String serial, String label) {
+        type = PUSH;
+        this.serial = serial;
+        this.label = label;
+    }
+
+    public String getSerial() {
+        return serial;
     }
 
     void setTapped(boolean tapped) {
@@ -83,6 +104,11 @@ public class Token {
     }
 
     void setWithPIN(boolean withPIN) {
+        if (withPIN) {
+            this.isLocked = true;
+        } else {
+            this.isLocked = false;
+        }
         this.withPIN = withPIN;
     }
 
@@ -118,10 +144,6 @@ public class Token {
         return label;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
     public String getType() {
         return type;
     }
@@ -155,11 +177,11 @@ public class Token {
         this.currentOTP = currentOTP;
     }
 
-    public boolean isUndeletable() {
+    public boolean isPersistent() {
         return persistent;
     }
 
-    public void setUndeletable(boolean val){
+    public void setPersistent(boolean val) {
         persistent = val;
     }
 }

@@ -1,3 +1,23 @@
+/*
+  privacyIDEA Authenticator
+
+  Authors: Nils Behlen <nils.behlen@netknights.it>
+
+  Copyright (c) 2017-2019 NetKnights GmbH
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+
 package it.netknights.piauthenticator;
 
 import android.app.Activity;
@@ -64,7 +84,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
 
         final int supportspinnerid = R.layout.support_simple_spinner_dropdown_item;
 
-        String[] types = {HOTP, TOTP};
+        String[] types = {"HOTP", "TOTP"};
         String[] periods = {PERIOD_30_STR, PERIOD_60_STR};
         String[] algorithms = {SHA1, SHA256, SHA512};
         String[] digits = {DIGITS_6_STR, DIGITS_8_STR};
@@ -72,20 +92,21 @@ public class EnterDetailsActivity extends AppCompatActivity {
         for (int i = 0; i < 4; i++) {
             ConstraintLayout tablerow = (ConstraintLayout) getLayoutInflater().inflate(R.layout.tablelayout, null);
             TextView tv = tablerow.findViewById(R.id.label);
-
+            tv.setTextSize(18);
+            Spinner spinner = tablerow.findViewById(R.id.spinner_row);
             switch (i) {
                 case 2: {
-                    spinner_type = tablerow.findViewById(R.id.spinner_row);
+                    spinner_type = spinner;
                     tv.setText(R.string.type);
                     ArrayAdapter<String> adapter_type = new ArrayAdapter<>(this, supportspinnerid, types);
                     spinner_type.setAdapter(adapter_type);
                     spinner_type.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                         @Override
                         public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                            if(position == 0){
+                            if (position == 0) {
                                 periodLabel.setVisibility(View.INVISIBLE);
                                 spinner_period.setVisibility(View.INVISIBLE);
-                            }else{
+                            } else {
                                 periodLabel.setVisibility(View.VISIBLE);
                                 spinner_period.setVisibility(View.VISIBLE);
                             }
@@ -102,7 +123,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
                 case 3: {
                     periodLabel = tv;
                     periodLabel.setText(R.string.period);
-                    spinner_period = tablerow.findViewById(R.id.spinner_row);
+                    spinner_period = spinner;
                     ArrayAdapter<String> adapter_period = new ArrayAdapter<>(this, supportspinnerid, periods);
                     spinner_period.setAdapter(adapter_period);
                     tl.addView(tablerow);
@@ -110,7 +131,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
                 }
                 case 1: {
                     tv.setText(R.string.algorithm);
-                    spinner_algorithm = tablerow.findViewById(R.id.spinner_row);
+                    spinner_algorithm = spinner;
                     ArrayAdapter<String> adapter_algorithm = new ArrayAdapter<>(this, supportspinnerid, algorithms);
                     spinner_algorithm.setAdapter(adapter_algorithm);
                     tl.addView(tablerow);
@@ -118,7 +139,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
                 }
                 case 0: {
                     tv.setText(R.string.digits);
-                    spinner_digits = tablerow.findViewById(R.id.spinner_row);
+                    spinner_digits = spinner;
                     ArrayAdapter<String> adapter_digits = new ArrayAdapter<>(this, supportspinnerid, digits);
                     spinner_digits.setAdapter(adapter_digits);
                     tl.addView(tablerow);
@@ -140,7 +161,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
     }
 
     public void paintStatusbar() {
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar3);
+        Toolbar toolbar = findViewById(R.id.toolbar3);
         toolbar.setVisibility(GONE);
         setTitle(getString(R.string.title_enter_details));
         //------------------ try to paint the statusbar -------------------------------
@@ -154,7 +175,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
     }
 
     private void setupButtons() {
-        Button addBtn = (Button) findViewById(R.id.button_add);
+        Button addBtn = findViewById(R.id.button_add);
         addBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -166,30 +187,11 @@ public class EnterDetailsActivity extends AppCompatActivity {
         });
     }
 
-    private void buildResult() {
-        Intent returnIntent = new Intent();
-        returnIntent.putExtra(LABEL, new_label);
-        returnIntent.putExtra(SECRET, new_secret);
-        returnIntent.putExtra(TYPE, new_type);
-        returnIntent.putExtra(DIGITS, new_digits);
-        if (new_type.equals(TOTP)) {
-            returnIntent.putExtra(PERIOD, new_period);
-        }
-        if (!new_algorithm.equals(SHA1)) {
-            // the default is SHA1, so it does not need to be set explicitly
-            returnIntent.putExtra(ALGORITHM, new_algorithm);
-        }
-        if (new_withpin) {
-            returnIntent.putExtra(WITHPIN, true);
-        }
-        setResult(Activity.RESULT_OK, returnIntent);
-    }
-
     private boolean evaluate() {
-        EditText editText_name = (EditText) findViewById(R.id.editText_name);
-        EditText editText_secret = (EditText) findViewById(R.id.editText_secret);
-        CheckBox check_base32 = (CheckBox) findViewById(R.id.checkBox_base32);
-        CheckBox check_pin = (CheckBox) findViewById(R.id.checkBox_pin);
+        EditText editText_name = findViewById(R.id.editText_name);
+        EditText editText_secret = findViewById(R.id.editText_secret);
+        CheckBox check_base32 = findViewById(R.id.checkBox_base32);
+        CheckBox check_pin = findViewById(R.id.checkBox_pin);
 
         if (check_pin.isChecked()) {
             new_withpin = true;
@@ -234,6 +236,25 @@ public class EnterDetailsActivity extends AppCompatActivity {
         new_digits = Integer.parseInt(tmp_digits);
         new_algorithm = (String) spinner_algorithm.getSelectedItem();
         return true;
+    }
+
+    private void buildResult() {
+        Intent returnIntent = new Intent();
+        returnIntent.putExtra(LABEL, new_label);
+        returnIntent.putExtra(SECRET, new_secret);
+        returnIntent.putExtra(TYPE, new_type);
+        returnIntent.putExtra(DIGITS, new_digits);
+        if (new_type.equals(TOTP)) {
+            returnIntent.putExtra(PERIOD, new_period);
+        }
+        if (!new_algorithm.equals(SHA1)) {
+            // the default is SHA1, so it does not need to be set explicitly
+            returnIntent.putExtra(ALGORITHM, new_algorithm);
+        }
+        if (new_withpin) {
+            returnIntent.putExtra(WITHPIN, true);
+        }
+        setResult(Activity.RESULT_OK, returnIntent);
     }
 
     public static Intent makeIntent(Context context) {
