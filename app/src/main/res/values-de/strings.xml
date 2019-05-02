@@ -75,4 +75,5 @@
     <string name="RolloutButton">Ausrollen</string>
     <string name="PushtokenLabelRolloutUnfinished">Pushtoken - nicht ausgerollt</string>
     <string name="AboutTitle">Über die App</string>
+    <string name="SSLHandshakeFailed">SSL Handshake fehlgeschlagen.</string>
 </resources>

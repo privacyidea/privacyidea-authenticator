@@ -38,6 +38,7 @@ import java.util.Map;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
@@ -47,6 +48,7 @@ import static it.netknights.piauthenticator.AppConstants.CONNECT_TIMEOUT;
 import static it.netknights.piauthenticator.AppConstants.READ_TIMEOUT;
 import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_ERROR;
 import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
+import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_SSL_ERROR;
 import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
 import static it.netknights.piauthenticator.Util.logprint;
 
@@ -64,6 +66,11 @@ class Endpoint {
         this.callback = callback;
     }
 
+    /**
+        Establishes a connection to the URL specified in the Constructor.
+        The data is sent as POST Parameters.
+        @return true if the request could be sent, false if not
+     */
     boolean connect() {
         logprint("Setting up connection to " + url);
         URL url;
@@ -102,6 +109,10 @@ class Endpoint {
         OutputStream os;
         try {
             os = con.getOutputStream();
+        } catch (SSLHandshakeException e) {
+            e.printStackTrace();
+            callback.updateStatus(STATUS_ENDPOINT_SSL_ERROR);
+            return false;
         } catch (IOException e) {
             e.printStackTrace();
             callback.updateStatus(STATUS_ENDPOINT_UNKNOWN_HOST);

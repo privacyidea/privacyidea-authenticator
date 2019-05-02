@@ -104,5 +104,6 @@
     <string name="PushtokenLabelRolloutUnfinished">Pushtoken - Rollout unfinished</string>
     <string name="AboutTitle">About the App</string>
     <string name="apache_license_2_0Label" translatable="false">Apache License 2.0</string>
+    <string name="SSLHandshakeFailed">SSL Handshake failed.</string>
 
 </resources>

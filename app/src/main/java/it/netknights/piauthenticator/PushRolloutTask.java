@@ -129,20 +129,15 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> implement
 
     @Override
     public void updateStatus(int statusCode) {
+        // Status from Endpoint
         switch (statusCode) {
+            // Special Cases
             case STATUS_ENDPOINT_SENDING_COMPLETE:
                 publishProgress(PRO_STATUS_STEP_3);
                 break;
-            case STATUS_ENDPOINT_MALFORMED_URL:
-                publishProgress(STATUS_ENDPOINT_MALFORMED_URL);
-                break;
-            case STATUS_ENDPOINT_UNKNOWN_HOST:
-                publishProgress(STATUS_ENDPOINT_UNKNOWN_HOST);
-                break;
-            case STATUS_ENDPOINT_ERROR:
-                publishProgress(STATUS_ENDPOINT_ERROR);
-                break;
             default:
+                // Other cases are just passed on
+                publishProgress(statusCode);
                 break;
         }
     }

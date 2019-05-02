@@ -49,6 +49,7 @@ import static it.netknights.piauthenticator.AppConstants.PUSH;
 import static it.netknights.piauthenticator.AppConstants.QUESTION;
 import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_ERROR;
 import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
+import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_SSL_ERROR;
 import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
 import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE;
 import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE_DONE;
@@ -539,7 +540,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 rolloutFinished(token);
                 mainActivityInterface.cancelStatusDialog();
                 break;
-            //----------- PUSH ROLLOUT ERRORS-----------
+            //----------- PUSH ROLLOUT ERRORS -----------
             case PRO_STATUS_BAD_BASE64:
                 token.rollout_finished = false;
                 rolloutFinished(token);
@@ -572,6 +573,11 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 token.rollout_finished = false;
                 rolloutFinished(token);
                 mainActivityInterface.makeAlertDialog(R.string.Error, R.string.ServerResponseNotOk);
+                break;
+            case STATUS_ENDPOINT_SSL_ERROR:
+                token.rollout_finished = false;
+                rolloutFinished(token);
+                mainActivityInterface.makeAlertDialog(R.string.Error, R.string.SSLHandshakeFailed);
                 break;
             default:
                 logprint("Unknown statusCode in updateTaskStatus: " + statusCode);

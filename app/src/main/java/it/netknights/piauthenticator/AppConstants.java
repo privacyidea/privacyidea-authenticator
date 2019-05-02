@@ -141,4 +141,5 @@ public class AppConstants {
     static final int STATUS_ENDPOINT_MALFORMED_URL = 4003;
     static final int STATUS_ENDPOINT_RESPONSE_RECEIVED = 4004;
     static final int STATUS_ENDPOINT_ERROR = 4005;
+    static final int STATUS_ENDPOINT_SSL_ERROR = 4006;
 }
