@@ -50,9 +50,9 @@ class Interfaces {
 
         void cancelStatusDialog();
 
-        String getFirebaseToken();
+        void getFirebaseTokenForPushRollout(Token token);
 
-        String firebaseInit(FirebaseInitConfig firebaseInitConfig);
+        void firebaseInit(FirebaseInitConfig firebaseInitConfig);
 
         void removeFirebase();
 
@@ -129,14 +129,14 @@ class Interfaces {
         void setPIN(String input, Token token);
 
         void timerProgress(int progress);
+
+        void firebaseTokenReceived(String fbtoken, Token token);
     }
 
     interface PresenterTaskInterface {
         void updateTaskStatus(int statusCode, Token token);
 
         void makeAlertDialog(String title, String message);
-
-        String getFirebaseToken();
 
         PublicKey generatePublicKeyFor(String serial);
 

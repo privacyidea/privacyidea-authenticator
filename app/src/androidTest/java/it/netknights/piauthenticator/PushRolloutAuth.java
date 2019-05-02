@@ -124,7 +124,7 @@ public class PushRolloutAuth {
         onView(withId(R.id.fab)).perform(click());
 
         intended(hasAction("com.google.zxing.client.android.SCAN"));
-        //sleep(5000);
+        sleep(5000);
 
         ViewInteraction appCompatButton3 = onView(
                 allOf(withId(android.R.id.button1),

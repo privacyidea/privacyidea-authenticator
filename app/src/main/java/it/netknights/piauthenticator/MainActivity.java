@@ -276,15 +276,21 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                         }
 
                     }
+                    // otpauth://TYPE/LABEL?PARAMETERS
                     // TOKEN TYPE
                     String type = url.getHost();
+                    // LABEL
+                    String label = uri.getPath().substring(1);
+
                     // SERIAL
-                    String serial = uri.getPath().substring(1);
+                    String serial = uri.getQueryParameter(SERIAL);
+                    if (serial == null) {
+                        serial = label;
+                    }
 
                     ScanResult scanResult = new ScanResult(type, serial);
 
-                    // LABEL = ISSUER + SERIAL
-                    String label = serial;
+                    // LABEL = ISSUER: LABEL
                     String issuer = uri.getQueryParameter(ISSUER);
                     if (issuer != null && !label.startsWith(issuer)) {
                         label = issuer + ": " + label;
@@ -639,17 +645,16 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
-    public String getFirebaseToken() {
+    public void getFirebaseTokenForPushRollout(Token token) {
         logprint("Getting Firebase token...");
         FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(this, instanceIdResult -> {
             logprint("Firebase Token: " + instanceIdResult.getToken());
-            firebase_token = instanceIdResult.getToken();
+            presenterInterface.firebaseTokenReceived(instanceIdResult.getToken(), token);
         });
-        return firebase_token;
     }
 
     @Override
-    public String firebaseInit(FirebaseInitConfig firebaseInitConfig) {
+    public void firebaseInit(FirebaseInitConfig firebaseInitConfig) {
         logprint("Initializing Firebase...");
         // Check if Firebase is already initalized
         if (!FirebaseApp.getApps(this).isEmpty()) {
@@ -674,7 +679,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
             logprint("Firebase initialized!");
         }
-        return getFirebaseToken();
     }
 
     @Override

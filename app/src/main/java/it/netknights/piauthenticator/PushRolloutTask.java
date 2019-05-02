@@ -59,11 +59,13 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> implement
     private Token token;
     private PresenterTaskInterface presenterTaskInterface;
     private String in_key;
+    private String fbtoken;
 
-    PushRolloutTask(Token t, PresenterTaskInterface presenterTaskInterface) {
+    PushRolloutTask(Token t, String fbtoken, PresenterTaskInterface presenterTaskInterface) {
         this.token = t;
         this.serial = t.getSerial();
         this.rollout_url = t.rollout_url;
+        this.fbtoken = fbtoken;
         this.presenterTaskInterface = presenterTaskInterface;
     }
 
@@ -87,10 +89,6 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> implement
         // 1. Generate a new keypair (RSA 4096bit), the private key is stored with the serial as alias
         PublicKey pubkey = presenterTaskInterface.generatePublicKeyFor(serial);
 
-        // Get the Firebase token
-        String fb_token = presenterTaskInterface.getFirebaseToken();
-        logprint("Token: " + fb_token);
-
         // 2. Send the pubkey and the firebase token to the rollout URL
         publishProgress(PRO_STATUS_STEP_2);
 
@@ -103,7 +101,7 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> implement
         Map<String, String> map = new LinkedHashMap<>();
         map.put(ENROLLMENT_CRED, token.enrollment_credential);
         map.put(SERIAL, token.getSerial());
-        map.put(FB_TOKEN, fb_token);
+        map.put(FB_TOKEN, fbtoken);
         if (key == null) return false;
         map.put(PUBKEY, key);
 
@@ -128,7 +126,6 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> implement
     protected void onPostExecute(Boolean aBoolean) {
         super.onPostExecute(aBoolean);
     }
-
 
     @Override
     public void updateStatus(int statusCode) {

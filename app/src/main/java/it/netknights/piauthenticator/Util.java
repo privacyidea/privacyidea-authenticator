@@ -90,13 +90,13 @@ import static it.netknights.piauthenticator.AppConstants.PUBKEYFILE;
 import static it.netknights.piauthenticator.AppConstants.PUSH;
 import static it.netknights.piauthenticator.AppConstants.ROLLOUT_EXPIRATION;
 import static it.netknights.piauthenticator.AppConstants.ROLLOUT_FINISHED;
-import static it.netknights.piauthenticator.AppConstants.TAG;
-import static it.netknights.piauthenticator.AppConstants.URL;
 import static it.netknights.piauthenticator.AppConstants.SECRET;
 import static it.netknights.piauthenticator.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.AppConstants.TAG;
 import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
 import static it.netknights.piauthenticator.AppConstants.TOTP;
 import static it.netknights.piauthenticator.AppConstants.TYPE;
+import static it.netknights.piauthenticator.AppConstants.URL;
 import static it.netknights.piauthenticator.AppConstants.WITHPIN;
 
 public class Util {
@@ -611,5 +611,4 @@ public class Util {
             return;
         Log.e(TAG, msg);
     }
-
 }

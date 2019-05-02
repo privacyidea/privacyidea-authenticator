@@ -20,8 +20,6 @@
 
 package it.netknights.piauthenticator;
 
-import android.os.AsyncTask;
-
 import org.apache.commons.codec.binary.Base32;
 
 import java.io.IOException;
@@ -84,9 +82,8 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     @Override
     public void init() {
         // Logic of onCreate
-
         if (model == null) {
-            model = new Model(util.loadTokens(), new ArrayList<PushAuthRequest>());
+            model = new Model(util.loadTokens(), new ArrayList<>());
         }
         FirebaseInitConfig firebaseInitConfig = util.loadFirebaseConfig();
         if (firebaseInitConfig != null) {
@@ -131,7 +128,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 token.rollout_expiration = now.getTime();
                 token.rollout_url = result.rollout_url;
                 token.enrollment_credential = result.enrollment_credential;
-                doPushRollout(token);
+                preparePushRollout(token);
                 break;
             }
             case HOTP:
@@ -396,8 +393,22 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     @Override
     public void startPushRolloutForPosition(int position) {
-        AsyncTask<Void, Integer, Boolean> pushrollout = new PushRolloutTask(model.tokens.get(position), this);
-        pushrollout.execute();
+        // This method is called from the Tokenlistadapter when the Rollout is retried,
+        // the adapter has only the position of the row
+        preparePushRollout(model.tokens.get(position));
+    }
+
+    private void preparePushRollout(Token token) {
+        // Start getting the Firebase Token from InstanceID
+        // When finished there will be call to firebaseTokenReceived to start the Rollout
+        mainActivityInterface.getFirebaseTokenForPushRollout(token);
+    }
+
+    @Override
+    public void firebaseTokenReceived(String fbtoken, Token token) {
+        // Called when InstanceID in MainActivity finished getting the Token
+        // Now the Rollout can be started
+        new PushRolloutTask(token, fbtoken,this).execute();
     }
 
     @Override
@@ -441,10 +452,6 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         new TwoStepRolloutTask(token, phonepartlength, iterations, output_size, this).execute();
     }
 
-    private void doPushRollout(Token token) {
-        new PushRolloutTask(token, this).execute();
-    }
-
     private void rolloutFinished(Token token) {
         if (token == null) return;
         if (!token.getType().equals(PUSH)) {
@@ -462,11 +469,6 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         model.tokens.add(token);
         saveTokenlist();
         tokenListInterface.notifyChange();
-    }
-
-    @Override
-    public String getFirebaseToken() {
-        return mainActivityInterface.getFirebaseToken();
     }
 
     @Override

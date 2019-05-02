@@ -328,12 +328,6 @@ public class TestPresenter {
     public void testDialogToast() {
         presenter.makeAlertDialog("test", "test");
         verify(mainActivityInterface).makeAlertDialog("test", "test");
-
-        String token = presenter.getFirebaseToken();
-        verify(mainActivityInterface).getFirebaseToken();
-        assertNull(token);
-
-
     }
 
     @Test
