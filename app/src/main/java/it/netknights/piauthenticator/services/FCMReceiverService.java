@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.services;
 
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -33,16 +33,19 @@ import java.util.Random;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
-import static it.netknights.piauthenticator.AppConstants.NONCE;
-import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_CHANNEL_ID;
-import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_ID;
-import static it.netknights.piauthenticator.AppConstants.QUESTION;
-import static it.netknights.piauthenticator.AppConstants.SERIAL;
-import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
-import static it.netknights.piauthenticator.AppConstants.SSL_VERIFY;
-import static it.netknights.piauthenticator.AppConstants.TITLE;
-import static it.netknights.piauthenticator.AppConstants.URL;
-import static it.netknights.piauthenticator.Util.logprint;
+import it.netknights.piauthenticator.R;
+import it.netknights.piauthenticator.viewcontroller.MainActivity;
+
+import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
+import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_CHANNEL_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.QUESTION;
+import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.utils.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.utils.AppConstants.SSL_VERIFY;
+import static it.netknights.piauthenticator.utils.AppConstants.TITLE;
+import static it.netknights.piauthenticator.utils.AppConstants.URL;
+import static it.netknights.piauthenticator.utils.Util.logprint;
 
 public class FCMReceiverService extends FirebaseMessagingService {
 

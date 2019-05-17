@@ -1,3 +1,22 @@
+/*
+  privacyIDEA Authenticator
+
+  Authors: Nils Behlen <nils.behlen@netknights.it>
+
+  Copyright (c) 2017-2019 NetKnights GmbH
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
 package it.netknights.piauthenticator;
 
 import org.apache.commons.codec.binary.Base32;
@@ -19,31 +38,42 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Map;
 
-import static it.netknights.piauthenticator.AppConstants.HMACSHA1;
-import static it.netknights.piauthenticator.AppConstants.HMACSHA256;
-import static it.netknights.piauthenticator.AppConstants.HOTP;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_BAD_BASE64;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_DONE;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_JSON;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_1;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_2;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_3;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
-import static it.netknights.piauthenticator.AppConstants.PUSH;
-import static it.netknights.piauthenticator.AppConstants.QUESTION;
-import static it.netknights.piauthenticator.AppConstants.SHA1;
-import static it.netknights.piauthenticator.AppConstants.SHA256;
-import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE;
-import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE_DONE;
-import static it.netknights.piauthenticator.AppConstants.STATUS_STANDARD_ROLLOUT_DONE;
-import static it.netknights.piauthenticator.AppConstants.STATUS_TWO_STEP_ROLLOUT;
-import static it.netknights.piauthenticator.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
-import static it.netknights.piauthenticator.AppConstants.TITLE;
-import static it.netknights.piauthenticator.AppConstants.TOTP;
+import it.netknights.piauthenticator.interfaces.MainActivityInterface;
+import it.netknights.piauthenticator.interfaces.TokenListViewInterface;
+import it.netknights.piauthenticator.model.FirebaseInitConfig;
+import it.netknights.piauthenticator.model.Model;
+import it.netknights.piauthenticator.model.PushAuthRequest;
+import it.netknights.piauthenticator.model.ScanResult;
+import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.presenter.Presenter;
+import it.netknights.piauthenticator.utils.SecretKeyWrapper;
+import it.netknights.piauthenticator.utils.Util;
+
+import static it.netknights.piauthenticator.utils.AppConstants.HMACSHA1;
+import static it.netknights.piauthenticator.utils.AppConstants.HMACSHA256;
+import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_BAD_BASE64;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_MALFORMED_JSON;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_1;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_2;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_3;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
+import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
+import static it.netknights.piauthenticator.utils.AppConstants.QUESTION;
+import static it.netknights.piauthenticator.utils.AppConstants.SHA1;
+import static it.netknights.piauthenticator.utils.AppConstants.SHA256;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREBASE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREBASE_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_STANDARD_ROLLOUT_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.TITLE;
+import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -63,8 +93,8 @@ import static org.mockito.Mockito.when;
 public class TestPresenter {
 
     private Presenter presenter;
-    private Interfaces.TokenListViewInterface tokenListViewInterface;
-    private Interfaces.MainActivityInterface mainActivityInterface;
+    private TokenListViewInterface tokenListViewInterface;
+    private MainActivityInterface mainActivityInterface;
     private Util util;
     private SecretKeyWrapper wrapper;
     private Model model;
@@ -73,8 +103,8 @@ public class TestPresenter {
     public void setup() {
         model = Mockito.spy(Model.class);
         wrapper = Mockito.mock(SecretKeyWrapper.class);
-        tokenListViewInterface = Mockito.mock(Interfaces.TokenListViewInterface.class);
-        mainActivityInterface = Mockito.mock(Interfaces.MainActivityInterface.class);
+        tokenListViewInterface = Mockito.mock(TokenListViewInterface.class);
+        mainActivityInterface = Mockito.mock(MainActivityInterface.class);
         util = Mockito.mock(Util.class);
 
         Presenter tmp = new Presenter(tokenListViewInterface, mainActivityInterface, util);
@@ -447,7 +477,7 @@ public class TestPresenter {
 
         presenter.startPushAuthForPosition(0);
 
-        assertTrue(model.pushAuthRequests.isEmpty());
+        assertTrue(model.getPushAuthRequests().isEmpty());
         verify(tokenListViewInterface).notifyChange();
     }
 

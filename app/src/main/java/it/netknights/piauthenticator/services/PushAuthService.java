@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.services;
 
 import android.app.Service;
 import android.content.Intent;
@@ -38,17 +38,24 @@ import java.security.cert.CertificateException;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationManagerCompat;
 
-import static it.netknights.piauthenticator.AppConstants.NONCE;
-import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_ID;
-import static it.netknights.piauthenticator.AppConstants.QUESTION;
-import static it.netknights.piauthenticator.AppConstants.SERIAL;
-import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
-import static it.netknights.piauthenticator.AppConstants.SSL_VERIFY;
-import static it.netknights.piauthenticator.AppConstants.TITLE;
-import static it.netknights.piauthenticator.AppConstants.URL;
-import static it.netknights.piauthenticator.Util.logprint;
+import it.netknights.piauthenticator.R;
+import it.netknights.piauthenticator.interfaces.PushAuthCallbackInterface;
+import it.netknights.piauthenticator.utils.SecretKeyWrapper;
+import it.netknights.piauthenticator.utils.Util;
+import it.netknights.piauthenticator.model.PushAuthRequest;
+import it.netknights.piauthenticator.tasks.PushAuthTask;
 
-public class PushAuthService extends Service implements Interfaces.PushAuthCallbackInterface {
+import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
+import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.QUESTION;
+import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.utils.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.utils.AppConstants.SSL_VERIFY;
+import static it.netknights.piauthenticator.utils.AppConstants.TITLE;
+import static it.netknights.piauthenticator.utils.AppConstants.URL;
+import static it.netknights.piauthenticator.utils.Util.logprint;
+
+public class PushAuthService extends Service implements PushAuthCallbackInterface {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {

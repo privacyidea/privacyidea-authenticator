@@ -18,24 +18,24 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.model;
 
 import java.util.ArrayList;
 import java.util.Date;
 
-import static it.netknights.piauthenticator.AppConstants.PUSH;
+import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
 
-class Model {
-    ArrayList<Token> tokens;
-    ArrayList<PushAuthRequest> pushAuthRequests;
-    Token currentSelection;
+public class Model {
+    private ArrayList<Token> tokens;
+    private Token currentSelection;
+    private ArrayList<PushAuthRequest> pushAuthRequests;
 
-    Model() {
+    public Model() {
         this.tokens = new ArrayList<>();
         this.pushAuthRequests = new ArrayList<>();
     }
 
-    Model(ArrayList<Token> tokenlist, ArrayList<PushAuthRequest> pushAuthRequests) {
+    public Model(ArrayList<Token> tokenlist, ArrayList<PushAuthRequest> pushAuthRequests) {
         if (tokenlist == null) {
             this.tokens = new ArrayList<>();
         } else {
@@ -48,7 +48,7 @@ class Model {
         }
     }
 
-    void setCurrentSelection(int position) {
+    public void setCurrentSelection(int position) {
         if (position == -1) this.currentSelection = null;
         else
             this.currentSelection = tokens.get(position);
@@ -59,7 +59,7 @@ class Model {
      *
      * @return String with the expired tokens serials or null if there are none
      */
-    String checkForExpiredTokens() {
+    public String checkForExpiredTokens() {
         ArrayList<Token> upForDeletion = new ArrayList<>();
         Date now = new Date();
         for (Token t : tokens) {
@@ -82,69 +82,24 @@ class Model {
         }
     }
 
-    boolean hasPushToken() {
-        for (Token t:tokens) {
-            if(t.getType().equals(PUSH)){
+    public boolean hasPushToken() {
+        for (Token t : tokens) {
+            if (t.getType().equals(PUSH)) {
                 return true;
             }
         }
         return false;
     }
-}
 
-class FirebaseInitConfig {
-    String projID;
-    String appID;
-    String api_key;
-    String projNumber;
-
-    FirebaseInitConfig(String projID, String appID, String api_key, String projNumber) {
-        this.projID = projID;
-        this.appID = appID;
-        this.api_key = api_key;
-        this.projNumber = projNumber;
+    public ArrayList<PushAuthRequest> getPushAuthRequests() {
+        return pushAuthRequests;
     }
-}
 
-class PushAuthRequest {
-    String nonce, url, serial, question, title, signature;
-    boolean sslVerify;
-
-    PushAuthRequest(String nonce, String url, String serial, String question, String title, String signature, boolean sslVerify) {
-        this.nonce = nonce;
-        this.url = url;
-        this.serial = serial;
-        this.question = question;
-        this.title = title;
-        this.signature = signature;
-        this.sslVerify = sslVerify;
+    public Token getCurrentSelection() {
+        return currentSelection;
     }
-}
 
-class ScanResult {
-    // BASE
-    String type, serial, label;
-
-    // NORMAL TOKEN
-    String secret, algorithm = "sha1";              // Default
-    int digits = 6, period = 30, counter = 1;       // Defaults
-    boolean pin = false, persistent = false, taptoshow = false;
-
-    // TWO STEP TOKEN (addition)
-    boolean do2Step = false;
-    int phonepartlength = 10;                       // in bytes
-    int iterations = 10000;
-    int output_size = 160;                          // in bits
-
-    // PUSH TOKEN
-    String rollout_url, enrollment_credential;
-    int ttl = 10;                                   // 10 Minutes is the default
-    FirebaseInitConfig firebaseInitConfig;
-    int push_version = 1;
-    boolean sslverify = true;
-
-    ScanResult(String type, String serial) {
-        this.type = type;
-        this.serial = serial;
+    public ArrayList<Token> getTokens() {
+        return tokens;
     }
 }

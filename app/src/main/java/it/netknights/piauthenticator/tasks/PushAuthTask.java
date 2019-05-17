@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.tasks;
 
 import android.os.AsyncTask;
 
@@ -33,36 +33,42 @@ import java.security.SignatureException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static it.netknights.piauthenticator.AppConstants.NONCE;
-import static it.netknights.piauthenticator.AppConstants.PA_AUTHENTICATION_FINISHED;
-import static it.netknights.piauthenticator.AppConstants.PA_INVALID_SIGNATURE;
-import static it.netknights.piauthenticator.AppConstants.PA_SIGNING_FAILURE;
-import static it.netknights.piauthenticator.AppConstants.RESPONSE_RESULT;
-import static it.netknights.piauthenticator.AppConstants.RESPONSE_VALUE;
-import static it.netknights.piauthenticator.AppConstants.SERIAL;
-import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
-import static it.netknights.piauthenticator.Util.logprint;
+import it.netknights.piauthenticator.interfaces.EndpointCallback;
+import it.netknights.piauthenticator.interfaces.PushAuthCallbackInterface;
+import it.netknights.piauthenticator.utils.Endpoint;
+import it.netknights.piauthenticator.utils.Util;
+import it.netknights.piauthenticator.model.PushAuthRequest;
 
-public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements Interfaces.EndpointCallback {
+import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
+import static it.netknights.piauthenticator.utils.AppConstants.PA_AUTHENTICATION_FINISHED;
+import static it.netknights.piauthenticator.utils.AppConstants.PA_INVALID_SIGNATURE;
+import static it.netknights.piauthenticator.utils.AppConstants.PA_SIGNING_FAILURE;
+import static it.netknights.piauthenticator.utils.AppConstants.RESPONSE_RESULT;
+import static it.netknights.piauthenticator.utils.AppConstants.RESPONSE_VALUE;
+import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.utils.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.utils.Util.logprint;
+
+public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements EndpointCallback {
 
     private String nonce, endpoint_url, serial, question, title, signature;
     private PublicKey piPublicKey;
     private PrivateKey appPrivateKey;
     private boolean sslVerify;
-    private Interfaces.PushAuthCallbackInterface pushAuthCallbackInterface;
+    private PushAuthCallbackInterface pushAuthCallbackInterface;
     private boolean success;
 
-    PushAuthTask(PushAuthRequest pushAuthRequest,
-                 PublicKey piPublicKey, PrivateKey appPrivateKey, Interfaces.PushAuthCallbackInterface pushAuthCallbackInterface) {
-        this.nonce = pushAuthRequest.nonce;
-        this.endpoint_url = pushAuthRequest.url;
-        this.serial = pushAuthRequest.serial;
-        this.question = pushAuthRequest.question;
-        this.title = pushAuthRequest.title;
-        this.signature = pushAuthRequest.signature;
+    public PushAuthTask(PushAuthRequest pushAuthRequest,
+                        PublicKey piPublicKey, PrivateKey appPrivateKey, PushAuthCallbackInterface pushAuthCallbackInterface) {
+        this.nonce = pushAuthRequest.getNonce();
+        this.endpoint_url = pushAuthRequest.getUrl();
+        this.serial = pushAuthRequest.getSerial();
+        this.question = pushAuthRequest.getQuestion();
+        this.title = pushAuthRequest.getTitle();
+        this.signature = pushAuthRequest.getSignature();
         this.appPrivateKey = appPrivateKey;
         this.piPublicKey = piPublicKey;
-        this.sslVerify = pushAuthRequest.sslVerify;
+        this.sslVerify = pushAuthRequest.isSslVerify();
         this.pushAuthCallbackInterface = pushAuthCallbackInterface;
     }
 

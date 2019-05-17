@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.utils;
 
 
 import org.apache.commons.codec.binary.Base32;
@@ -34,13 +34,15 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import static it.netknights.piauthenticator.AppConstants.HOTP;
-import static it.netknights.piauthenticator.AppConstants.TOTP;
-import static it.netknights.piauthenticator.Util.byteArrayToHexString;
-import static it.netknights.piauthenticator.Util.hexStringToByteArray;
+import it.netknights.piauthenticator.model.Token;
+
+import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
+import static it.netknights.piauthenticator.utils.Util.byteArrayToHexString;
+import static it.netknights.piauthenticator.utils.Util.hexStringToByteArray;
 
 
-class OTPGenerator {
+public class OTPGenerator {
 
     private OTPGenerator() {
     }
@@ -55,7 +57,7 @@ class OTPGenerator {
      * @param token to generate the OTP value for
      * @return the current OTP value for the input token
      */
-    static String generate(Token token) {
+    public static String generate(Token token) {
         if (token.getType().equals(HOTP) || token.getType().equals(TOTP)) {
             String secretAsHEX = byteArrayToHexString(token.getSecret());
             String digits = String.valueOf(token.getDigits());
@@ -79,7 +81,7 @@ class OTPGenerator {
      * @param algorithm The hashing algorithm, "HmacSHA1", "HmacSHA256", "HmacSHA512"
      * @return The OTP value for the HOTP Token
      */
-    static int generateTOTP(String key, long t, String digits, int period, String algorithm) {
+    public static int generateTOTP(String key, long t, String digits, int period, String algorithm) {
          /*
         The unix system time is devided by the time step. This number of time slices is used as
         counter input for the normal HOTP algorithm
@@ -96,7 +98,7 @@ class OTPGenerator {
      * @param token the token, whose secret is used to hash the pin
      * @return the hash as hex encoded String
      */
-    static String hashPIN(int pin, Token token) {
+    public static String hashPIN(int pin, Token token) {
         byte[] secretBytes = new Base32().decode(token.getSecret());
         if (secretBytes.length == 0) {
             secretBytes = token.getSecret();
@@ -116,10 +118,10 @@ class OTPGenerator {
      * @param crypto       the crypto function to use
      * @return a numeric String in base 10 that includes
      */
-    static int generateHOTP(String key,
-                            String counter,
-                            String returnDigits,
-                            String crypto) {
+    public static int generateHOTP(String key,
+                                   String counter,
+                                   String returnDigits,
+                                   String crypto) {
         int codeDigits = Integer.decode(returnDigits);
         String result;
 
@@ -189,7 +191,7 @@ class OTPGenerator {
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeySpecException
      */
-    static byte[] generatePBKDFKey(char[] passphraseOrPin, byte[] salt, int iterations, int outputKeyLength) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public static byte[] generatePBKDFKey(char[] passphraseOrPin, byte[] salt, int iterations, int outputKeyLength) throws NoSuchAlgorithmException, InvalidKeySpecException {
         // Generate a outputKeyLength-bit key
         SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
         KeySpec keySpec = new PBEKeySpec(passphraseOrPin, salt, iterations, outputKeyLength);

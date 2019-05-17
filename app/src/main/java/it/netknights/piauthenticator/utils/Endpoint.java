@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.utils;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -44,22 +44,25 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import static it.netknights.piauthenticator.AppConstants.CONNECT_TIMEOUT;
-import static it.netknights.piauthenticator.AppConstants.READ_TIMEOUT;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_ERROR;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_SSL_ERROR;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
-import static it.netknights.piauthenticator.Util.logprint;
 
-class Endpoint {
+import it.netknights.piauthenticator.interfaces.EndpointCallback;
+
+import static it.netknights.piauthenticator.utils.AppConstants.CONNECT_TIMEOUT;
+import static it.netknights.piauthenticator.utils.AppConstants.READ_TIMEOUT;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_ERROR;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_SSL_ERROR;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
+import static it.netknights.piauthenticator.utils.Util.logprint;
+
+public class Endpoint {
 
     private boolean sslVerify;
     private String url;
     private Map<String, String> data;
-    private Interfaces.EndpointCallback callback;
+    private EndpointCallback callback;
 
-    Endpoint(boolean sslVerify, String url, Map<String, String> data, Interfaces.EndpointCallback callback) {
+    public Endpoint(boolean sslVerify, String url, Map<String, String> data, EndpointCallback callback) {
         this.sslVerify = sslVerify;
         this.url = url;
         this.data = data;
@@ -67,11 +70,12 @@ class Endpoint {
     }
 
     /**
-        Establishes a connection to the URL specified in the Constructor.
-        The data is sent as POST Parameters.
-        @return true if the request could be sent, false if not
+     * Establishes a connection to the URL specified in the Constructor.
+     * The data is sent as POST Parameters.
+     *
+     * @return true if the request could be sent, false if not
      */
-    boolean connect() {
+    public boolean connect() {
         logprint("Setting up connection to " + url);
         URL url;
         try {

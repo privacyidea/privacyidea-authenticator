@@ -1,4 +1,4 @@
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.utils;
 
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;

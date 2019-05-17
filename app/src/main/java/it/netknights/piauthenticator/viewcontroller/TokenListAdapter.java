@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.viewcontroller;
 
 import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
@@ -44,15 +44,19 @@ import java.util.Map;
 
 import androidx.core.widget.TextViewCompat;
 
+import it.netknights.piauthenticator.interfaces.PresenterInterface;
+import it.netknights.piauthenticator.interfaces.TokenListViewInterface;
+import it.netknights.piauthenticator.utils.AppConstants;
+import it.netknights.piauthenticator.R;
+import it.netknights.piauthenticator.model.Token;
+
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
-import static it.netknights.piauthenticator.AppConstants.HOTP;
-import static it.netknights.piauthenticator.AppConstants.PUSH;
-import static it.netknights.piauthenticator.AppConstants.QUESTION;
-import static it.netknights.piauthenticator.AppConstants.TITLE;
-import static it.netknights.piauthenticator.AppConstants.TOTP;
-import static it.netknights.piauthenticator.Interfaces.PresenterInterface;
-import static it.netknights.piauthenticator.Interfaces.TokenListViewInterface;
+import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
+import static it.netknights.piauthenticator.utils.AppConstants.QUESTION;
+import static it.netknights.piauthenticator.utils.AppConstants.TITLE;
+import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 
 

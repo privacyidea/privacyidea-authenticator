@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.viewcontroller;
 
 import android.app.Activity;
 import android.content.Context;
@@ -47,8 +47,10 @@ import android.widget.Toast;
 
 import org.apache.commons.codec.binary.Base32;
 
+import it.netknights.piauthenticator.R;
+
 import static android.view.View.GONE;
-import static it.netknights.piauthenticator.AppConstants.*;
+import static it.netknights.piauthenticator.utils.AppConstants.*;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 
 public class EnterDetailsActivity extends AppCompatActivity {

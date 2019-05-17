@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.tasks;
 
 import android.os.AsyncTask;
 
@@ -30,29 +30,30 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import it.netknights.piauthenticator.Interfaces.PresenterTaskInterface;
+import it.netknights.piauthenticator.interfaces.EndpointCallback;
+import it.netknights.piauthenticator.interfaces.PresenterTaskInterface;
+import it.netknights.piauthenticator.utils.Endpoint;
+import it.netknights.piauthenticator.utils.Util;
+import it.netknights.piauthenticator.model.Token;
 
-import static it.netknights.piauthenticator.AppConstants.ENROLLMENT_CRED;
-import static it.netknights.piauthenticator.AppConstants.FB_TOKEN;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_DONE;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_KEY_RECEIVED;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_JSON;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_1;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_2;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_3;
-import static it.netknights.piauthenticator.AppConstants.PUBKEY;
-import static it.netknights.piauthenticator.AppConstants.RESPONSE_DETAIL;
-import static it.netknights.piauthenticator.AppConstants.RESPONSE_PUBLIC_KEY;
-import static it.netknights.piauthenticator.AppConstants.SERIAL;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_ERROR;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_SENDING_COMPLETE;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
-import static it.netknights.piauthenticator.Util.logprint;
+import static it.netknights.piauthenticator.utils.AppConstants.ENROLLMENT_CRED;
+import static it.netknights.piauthenticator.utils.AppConstants.FB_TOKEN;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_KEY_RECEIVED;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_MALFORMED_JSON;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_1;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_2;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_3;
+import static it.netknights.piauthenticator.utils.AppConstants.PUBKEY;
+import static it.netknights.piauthenticator.utils.AppConstants.RESPONSE_DETAIL;
+import static it.netknights.piauthenticator.utils.AppConstants.RESPONSE_PUBLIC_KEY;
+import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_SENDING_COMPLETE;
+import static it.netknights.piauthenticator.utils.Util.logprint;
 
-public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> implements Interfaces.EndpointCallback {
+public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> implements EndpointCallback {
 
     private String serial;
     private String rollout_url;
@@ -61,7 +62,7 @@ public class PushRolloutTask extends AsyncTask<Void, Integer, Boolean> implement
     private String in_key;
     private String fbtoken;
 
-    PushRolloutTask(Token t, String fbtoken, PresenterTaskInterface presenterTaskInterface) {
+    public PushRolloutTask(Token t, String fbtoken, PresenterTaskInterface presenterTaskInterface) {
         this.token = t;
         this.serial = t.getSerial();
         this.rollout_url = t.rollout_url;

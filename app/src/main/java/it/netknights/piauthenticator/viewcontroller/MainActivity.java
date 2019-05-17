@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.viewcontroller;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -69,44 +69,54 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
 import androidx.appcompat.widget.Toolbar;
 
-import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
-import static it.netknights.piauthenticator.AppConstants.API_KEY;
-import static it.netknights.piauthenticator.AppConstants.APP_ID;
-import static it.netknights.piauthenticator.AppConstants.COUNTER;
-import static it.netknights.piauthenticator.AppConstants.DIGITS;
-import static it.netknights.piauthenticator.AppConstants.ENROLLMENT_CRED;
-import static it.netknights.piauthenticator.AppConstants.HOTP;
-import static it.netknights.piauthenticator.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
-import static it.netknights.piauthenticator.AppConstants.ISSUER;
-import static it.netknights.piauthenticator.AppConstants.LABEL;
-import static it.netknights.piauthenticator.AppConstants.NONCE;
-import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_CHANNEL_ID;
-import static it.netknights.piauthenticator.AppConstants.PERIOD;
-import static it.netknights.piauthenticator.AppConstants.PERSISTENT;
-import static it.netknights.piauthenticator.AppConstants.PIN;
-import static it.netknights.piauthenticator.AppConstants.PROJECT_ID;
-import static it.netknights.piauthenticator.AppConstants.PROJECT_NUMBER;
-import static it.netknights.piauthenticator.AppConstants.PUSH;
-import static it.netknights.piauthenticator.AppConstants.PUSH_VERSION;
-import static it.netknights.piauthenticator.AppConstants.QUESTION;
-import static it.netknights.piauthenticator.AppConstants.SECRET;
-import static it.netknights.piauthenticator.AppConstants.SERIAL;
-import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
-import static it.netknights.piauthenticator.AppConstants.SSL_VERIFY;
-import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
-import static it.netknights.piauthenticator.AppConstants.TITLE;
-import static it.netknights.piauthenticator.AppConstants.TOTP;
-import static it.netknights.piauthenticator.AppConstants.TTL;
-import static it.netknights.piauthenticator.AppConstants.TWOSTEP_DIFFICULTY;
-import static it.netknights.piauthenticator.AppConstants.TWOSTEP_OUTPUT;
-import static it.netknights.piauthenticator.AppConstants.TWOSTEP_SALT;
-import static it.netknights.piauthenticator.AppConstants.TYPE;
-import static it.netknights.piauthenticator.AppConstants.URL;
-import static it.netknights.piauthenticator.AppConstants.WITHPIN;
-import static it.netknights.piauthenticator.Interfaces.MainActivityInterface;
-import static it.netknights.piauthenticator.Interfaces.PresenterInterface;
+import it.netknights.piauthenticator.interfaces.MainActivityInterface;
+import it.netknights.piauthenticator.interfaces.PresenterInterface;
+import it.netknights.piauthenticator.model.FirebaseInitConfig;
+import it.netknights.piauthenticator.model.PushAuthRequest;
+import it.netknights.piauthenticator.model.ScanResult;
+import it.netknights.piauthenticator.utils.AppConstants;
+import it.netknights.piauthenticator.presenter.Presenter;
+import it.netknights.piauthenticator.R;
+import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.utils.SecretKeyWrapper;
+import it.netknights.piauthenticator.utils.Util;
+
+import static it.netknights.piauthenticator.utils.AppConstants.ALGORITHM;
+import static it.netknights.piauthenticator.utils.AppConstants.API_KEY;
+import static it.netknights.piauthenticator.utils.AppConstants.APP_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.COUNTER;
+import static it.netknights.piauthenticator.utils.AppConstants.DIGITS;
+import static it.netknights.piauthenticator.utils.AppConstants.ENROLLMENT_CRED;
+import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
+import static it.netknights.piauthenticator.utils.AppConstants.ISSUER;
+import static it.netknights.piauthenticator.utils.AppConstants.LABEL;
+import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
+import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_CHANNEL_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.PERIOD;
+import static it.netknights.piauthenticator.utils.AppConstants.PERSISTENT;
+import static it.netknights.piauthenticator.utils.AppConstants.PIN;
+import static it.netknights.piauthenticator.utils.AppConstants.PROJECT_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.PROJECT_NUMBER;
+import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
+import static it.netknights.piauthenticator.utils.AppConstants.PUSH_VERSION;
+import static it.netknights.piauthenticator.utils.AppConstants.QUESTION;
+import static it.netknights.piauthenticator.utils.AppConstants.SECRET;
+import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.utils.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.utils.AppConstants.SSL_VERIFY;
+import static it.netknights.piauthenticator.utils.AppConstants.TAPTOSHOW;
+import static it.netknights.piauthenticator.utils.AppConstants.TITLE;
+import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.TTL;
+import static it.netknights.piauthenticator.utils.AppConstants.TWOSTEP_DIFFICULTY;
+import static it.netknights.piauthenticator.utils.AppConstants.TWOSTEP_OUTPUT;
+import static it.netknights.piauthenticator.utils.AppConstants.TWOSTEP_SALT;
+import static it.netknights.piauthenticator.utils.AppConstants.TYPE;
+import static it.netknights.piauthenticator.utils.AppConstants.URL;
+import static it.netknights.piauthenticator.utils.AppConstants.WITHPIN;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
-import static it.netknights.piauthenticator.Util.logprint;
+import static it.netknights.piauthenticator.utils.Util.logprint;
 
 
 public class MainActivity extends AppCompatActivity implements ActionMode.Callback, MainActivityInterface {
@@ -661,10 +671,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             logprint("Firebase already initialized for: " + FirebaseApp.getApps(this).toString());
         } else {
             // INIT FIREBASE
-            String projID = firebaseInitConfig.projID;
-            String appID = firebaseInitConfig.appID;
-            String api_key = firebaseInitConfig.api_key;
-            String gcmSenderID = firebaseInitConfig.projNumber;
+            String projID = firebaseInitConfig.getProjID();
+            String appID = firebaseInitConfig.getAppID();
+            String api_key = firebaseInitConfig.getApiKey();
+            String gcmSenderID = firebaseInitConfig.getProjNumber();
             String database_url = "https://" + projID + ".firebaseio.com";
             String storage_bucket = projID + ".appspot.com";
 

@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.viewcontroller;
 
 import android.app.AlertDialog;
 import android.view.LayoutInflater;
@@ -31,6 +31,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+
+import it.netknights.piauthenticator.R;
 
 public class AboutListAdapter extends BaseAdapter {
 

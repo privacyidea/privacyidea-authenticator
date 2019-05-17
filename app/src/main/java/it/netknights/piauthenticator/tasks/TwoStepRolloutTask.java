@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.tasks;
 
 import android.os.AsyncTask;
 
@@ -31,12 +31,14 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 
-import it.netknights.piauthenticator.Interfaces.PresenterTaskInterface;
+import it.netknights.piauthenticator.interfaces.PresenterTaskInterface;
+import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.utils.OTPGenerator;
 
-import static it.netknights.piauthenticator.AppConstants.STATUS_TWO_STEP_ROLLOUT;
-import static it.netknights.piauthenticator.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
-import static it.netknights.piauthenticator.Util.byteArrayToHexString;
-import static it.netknights.piauthenticator.Util.logprint;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
+import static it.netknights.piauthenticator.utils.Util.byteArrayToHexString;
+import static it.netknights.piauthenticator.utils.Util.logprint;
 
 public class TwoStepRolloutTask extends AsyncTask<Void, Void, Boolean> {
 
@@ -46,7 +48,7 @@ public class TwoStepRolloutTask extends AsyncTask<Void, Void, Boolean> {
     private byte[] phonepartBytes;
     private PresenterTaskInterface presenterTaskInterface;
 
-    TwoStepRolloutTask(Token t, int phonepartlength, int iterations, int output_size, PresenterTaskInterface presenterTaskInterface) {
+    public TwoStepRolloutTask(Token t, int phonepartlength, int iterations, int output_size, PresenterTaskInterface presenterTaskInterface) {
         this.token = t;
         this.iterations = iterations;
         this.output_size_bit = output_size;

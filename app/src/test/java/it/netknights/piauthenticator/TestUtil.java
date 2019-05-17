@@ -1,3 +1,22 @@
+/*
+  privacyIDEA Authenticator
+
+  Authors: Nils Behlen <nils.behlen@netknights.it>
+
+  Copyright (c) 2017-2019 NetKnights GmbH
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
 package it.netknights.piauthenticator;
 
 
@@ -10,7 +29,6 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.security.GeneralSecurityException;
@@ -27,10 +45,15 @@ import java.util.Date;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
-import static it.netknights.piauthenticator.AppConstants.HOTP;
-import static it.netknights.piauthenticator.AppConstants.KEYFILE;
-import static it.netknights.piauthenticator.AppConstants.PUBKEYFILE;
-import static it.netknights.piauthenticator.AppConstants.TOTP;
+import it.netknights.piauthenticator.model.FirebaseInitConfig;
+import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.utils.SecretKeyWrapper;
+import it.netknights.piauthenticator.utils.Util;
+
+import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.KEYFILE;
+import static it.netknights.piauthenticator.utils.AppConstants.PUBKEYFILE;
+import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -159,11 +182,6 @@ public class TestUtil {
     }
 
     @Test
-    public void fileError() {
-        assertNull(util.loadDataFromFile("notexisting"));
-    }
-
-    @Test
     public void removePublicKey() throws IOException {
         // create a "pubkey" file
         String serial = "serial";
@@ -195,10 +213,10 @@ public class TestUtil {
 
         FirebaseInitConfig loaded = util.loadFirebaseConfig();
         assertNotNull(loaded);
-        assertEquals(fbConf.api_key, loaded.api_key);
-        assertEquals(fbConf.appID, loaded.appID);
-        assertEquals(fbConf.projID, loaded.projID);
-        assertEquals(fbConf.projNumber, loaded.projNumber);
+        assertEquals(fbConf.getApiKey(), loaded.getApiKey());
+        assertEquals(fbConf.getAppID(), loaded.getAppID());
+        assertEquals(fbConf.getProjID(), loaded.getProjID());
+        assertEquals(fbConf.getProjNumber(), loaded.getProjNumber());
     }
 
     @Test
@@ -262,7 +280,7 @@ public class TestUtil {
         // wrong signature is rejected
         byte[] rndm = new byte[512];
         new SecureRandom().nextBytes(rndm);
-        assertFalse(Util.verifySignature(keyPair.getPublic(),new Base32().encodeAsString(rndm), message));
+        assertFalse(Util.verifySignature(keyPair.getPublic(), new Base32().encodeAsString(rndm), message));
 
         // signature which is not in b32 format is rejected
         assertFalse(Util.verifySignature(keyPair.getPublic(), "9999999", message));

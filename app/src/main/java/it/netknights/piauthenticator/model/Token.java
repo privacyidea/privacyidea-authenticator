@@ -18,13 +18,13 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.model;
 
 
 import java.util.Date;
 
-import static it.netknights.piauthenticator.AppConstants.PUSH;
-import static it.netknights.piauthenticator.AppConstants.TOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
+import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
 
 public class Token {
 
@@ -44,13 +44,13 @@ public class Token {
     private boolean persistent = false;
     private String serial;
 
-    String enrollment_credential;
-    boolean rollout_finished = true;
-    Date rollout_expiration;
-    String rollout_url;
-    boolean sslVerify = true;
+    public String enrollment_credential;
+    public boolean rollout_finished = true;
+    public Date rollout_expiration;
+    public String rollout_url;
+    public boolean sslVerify = true;
 
-    Token(byte[] secret, String serial, String label, String type, int digits) {
+    public Token(byte[] secret, String serial, String label, String type, int digits) {
         this.secret = secret;
         this.serial = serial;
         this.label = label;
@@ -61,7 +61,7 @@ public class Token {
     }
 
     // A push token only contains the serial and a label
-    Token(String serial, String label) {
+    public Token(String serial, String label) {
         type = PUSH;
         this.serial = serial;
         this.label = label;
@@ -71,19 +71,19 @@ public class Token {
         return serial;
     }
 
-    void setTapped(boolean tapped) {
+    public void setTapped(boolean tapped) {
         this.tapped = tapped;
     }
 
-    boolean isTapped() {
+    public boolean isTapped() {
         return tapped;
     }
 
-    boolean isWithTapToShow() {
+    public boolean isWithTapToShow() {
         return withTapToShow;
     }
 
-    void setWithTapToShow(boolean withTapToShow) {
+    public void setWithTapToShow(boolean withTapToShow) {
         this.withTapToShow = withTapToShow;
     }
 
@@ -95,15 +95,15 @@ public class Token {
         Pin = pin;
     }
 
-    boolean isLocked() {
+    public boolean isLocked() {
         return isLocked;
     }
 
-    void setLocked(boolean locked) {
+    public void setLocked(boolean locked) {
         isLocked = locked;
     }
 
-    void setWithPIN(boolean withPIN) {
+    public void setWithPIN(boolean withPIN) {
         if (withPIN) {
             this.isLocked = true;
         } else {
@@ -112,7 +112,7 @@ public class Token {
         this.withPIN = withPIN;
     }
 
-    boolean isWithPIN() {
+    public boolean isWithPIN() {
         return withPIN;
     }
 
@@ -120,11 +120,11 @@ public class Token {
         this.period = period;
     }
 
-    int getCounter() {
+    public int getCounter() {
         return counter;
     }
 
-    void setCounter(int counter) {
+    public void setCounter(int counter) {
         this.counter = counter;
     }
 
@@ -136,11 +136,11 @@ public class Token {
         return secret;
     }
 
-    void setLabel(String label) {
+    public void setLabel(String label) {
         this.label = label;
     }
 
-    String getLabel() {
+    public String getLabel() {
         return label;
     }
 
@@ -169,11 +169,11 @@ public class Token {
         return algorithm;
     }
 
-    String getCurrentOTP() {
+    public String getCurrentOTP() {
         return currentOTP;
     }
 
-    void setCurrentOTP(String currentOTP) {
+    public void setCurrentOTP(String currentOTP) {
         this.currentOTP = currentOTP;
     }
 

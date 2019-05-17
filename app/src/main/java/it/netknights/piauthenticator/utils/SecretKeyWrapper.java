@@ -21,7 +21,7 @@
  */
 
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.utils;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -53,8 +53,8 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.security.auth.x500.X500Principal;
 
-import static it.netknights.piauthenticator.AppConstants.KEY_WRAP_ALGORITHM;
-import static it.netknights.piauthenticator.Util.logprint;
+import static it.netknights.piauthenticator.utils.AppConstants.KEY_WRAP_ALGORITHM;
+import static it.netknights.piauthenticator.utils.Util.logprint;
 
 /**
  * Wraps {@link SecretKey} instances using a public/private key pair stored in
@@ -66,7 +66,7 @@ import static it.netknights.piauthenticator.Util.logprint;
  * <p>
  * Not inherently thread safe.
  */
-class SecretKeyWrapper {
+public class SecretKeyWrapper {
     private final Cipher mCipher;
     private final KeyPair mPair;
 
@@ -75,7 +75,7 @@ class SecretKeyWrapper {
      * If no pair with that alias exists, it will be generated.
      */
     @SuppressLint("GetInstance")
-    SecretKeyWrapper(Context context)
+    public SecretKeyWrapper(Context context)
             throws GeneralSecurityException, IOException {
         mCipher = Cipher.getInstance(KEY_WRAP_ALGORITHM);
 
@@ -130,7 +130,7 @@ class SecretKeyWrapper {
      * @return a wrapped push_version of the given {@link SecretKey} that can be
      * safely stored on untrusted storage.
      */
-    byte[] wrap(SecretKey key) throws GeneralSecurityException {
+    public byte[] wrap(SecretKey key) throws GeneralSecurityException {
         mCipher.init(Cipher.WRAP_MODE, mPair.getPublic());
         return mCipher.wrap(key);
     }
@@ -142,7 +142,7 @@ class SecretKeyWrapper {
      * @param blob a wrapped {@link SecretKey} as previously returned by
      *             {@link #wrap(SecretKey)}.
      */
-    SecretKey unwrap(byte[] blob) throws GeneralSecurityException {
+    public SecretKey unwrap(byte[] blob) throws GeneralSecurityException {
         mCipher.init(Cipher.UNWRAP_MODE, mPair.getPrivate());
 
         return (SecretKey) mCipher.unwrap(blob, "AES", Cipher.SECRET_KEY);
@@ -157,7 +157,7 @@ class SecretKeyWrapper {
      * @return the PublicKey of the just generated KeyPair
      */
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    static PublicKey generateKeyPair(String alias, Context context) throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException,
+    public static PublicKey generateKeyPair(String alias, Context context) throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException,
             NoSuchProviderException, InvalidAlgorithmParameterException, UnrecoverableEntryException {
         final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
         keyStore.load(null);
@@ -196,7 +196,7 @@ class SecretKeyWrapper {
      * @param alias the alias to load the key for
      * @return the PrivateKey
      */
-    PrivateKey getPrivateKeyFor(String alias) throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException, UnrecoverableEntryException {
+    public PrivateKey getPrivateKeyFor(String alias) throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException, UnrecoverableEntryException {
         final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
         keyStore.load(null);
         if (!keyStore.containsAlias(alias)) {
@@ -220,7 +220,7 @@ class SecretKeyWrapper {
      *
      * @param alias the serial is the alias of the privateKey in the Keystore
      */
-    void removePrivateKeyFor(String alias) {
+    public void removePrivateKeyFor(String alias) {
         try {
             final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);

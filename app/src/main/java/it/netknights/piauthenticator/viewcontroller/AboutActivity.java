@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.viewcontroller;
 
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -33,6 +33,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+
+import it.netknights.piauthenticator.utils.AppConstants;
+import it.netknights.piauthenticator.R;
 
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 

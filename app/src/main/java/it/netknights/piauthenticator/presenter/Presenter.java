@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.presenter;
 
 import org.apache.commons.codec.binary.Base32;
 
@@ -35,46 +35,59 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
-import static it.netknights.piauthenticator.AppConstants.HOTP;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_BAD_BASE64;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_DONE;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_JSON;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_1;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_2;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_3;
-import static it.netknights.piauthenticator.AppConstants.PUSH;
-import static it.netknights.piauthenticator.AppConstants.QUESTION;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_ERROR;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_SSL_ERROR;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
-import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE;
-import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE_DONE;
-import static it.netknights.piauthenticator.AppConstants.STATUS_STANDARD_ROLLOUT_DONE;
-import static it.netknights.piauthenticator.AppConstants.STATUS_TWO_STEP_ROLLOUT;
-import static it.netknights.piauthenticator.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
-import static it.netknights.piauthenticator.AppConstants.TITLE;
-import static it.netknights.piauthenticator.AppConstants.TOTP;
-import static it.netknights.piauthenticator.Interfaces.MainActivityInterface;
-import static it.netknights.piauthenticator.Interfaces.PresenterInterface;
-import static it.netknights.piauthenticator.Interfaces.PresenterTaskInterface;
-import static it.netknights.piauthenticator.Interfaces.PresenterUtilInterface;
-import static it.netknights.piauthenticator.Interfaces.TokenListViewInterface;
-import static it.netknights.piauthenticator.OTPGenerator.generate;
-import static it.netknights.piauthenticator.OTPGenerator.hashPIN;
-import static it.netknights.piauthenticator.Util.logprint;
+import it.netknights.piauthenticator.R;
+import it.netknights.piauthenticator.interfaces.MainActivityInterface;
+import it.netknights.piauthenticator.interfaces.PresenterInterface;
+import it.netknights.piauthenticator.interfaces.PresenterTaskInterface;
+import it.netknights.piauthenticator.interfaces.PresenterUtilInterface;
+import it.netknights.piauthenticator.interfaces.PushAuthCallbackInterface;
+import it.netknights.piauthenticator.interfaces.TokenListViewInterface;
+import it.netknights.piauthenticator.model.FirebaseInitConfig;
+import it.netknights.piauthenticator.model.Model;
+import it.netknights.piauthenticator.model.PushAuthRequest;
+import it.netknights.piauthenticator.model.ScanResult;
+import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.tasks.PushAuthTask;
+import it.netknights.piauthenticator.tasks.PushRolloutTask;
+import it.netknights.piauthenticator.tasks.TwoStepRolloutTask;
+import it.netknights.piauthenticator.utils.SecretKeyWrapper;
+import it.netknights.piauthenticator.utils.Util;
 
-public class Presenter implements PresenterInterface, PresenterTaskInterface, PresenterUtilInterface, Interfaces.PushAuthCallbackInterface {
+import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_BAD_BASE64;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_MALFORMED_JSON;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_1;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_2;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_3;
+import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
+import static it.netknights.piauthenticator.utils.AppConstants.QUESTION;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_ERROR;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_SSL_ERROR;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREBASE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREBASE_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_STANDARD_ROLLOUT_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.TITLE;
+import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
+import static it.netknights.piauthenticator.utils.OTPGenerator.generate;
+import static it.netknights.piauthenticator.utils.OTPGenerator.hashPIN;
+import static it.netknights.piauthenticator.utils.Util.logprint;
+
+public class Presenter implements PresenterInterface, PresenterTaskInterface, PresenterUtilInterface, PushAuthCallbackInterface {
 
     private TokenListViewInterface tokenListInterface;
     private MainActivityInterface mainActivityInterface;
     private Model model;
     private Util util;
 
-    Presenter(TokenListViewInterface tokenListViewInterface, MainActivityInterface mainActivityInterface, Util util) {
+    public Presenter(TokenListViewInterface tokenListViewInterface, MainActivityInterface mainActivityInterface, Util util) {
         this.tokenListInterface = tokenListViewInterface;
         this.mainActivityInterface = mainActivityInterface;
         this.util = util;
@@ -154,7 +167,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         }
     }
 
-    void setModel(Model model) {
+    public void setModel(Model model) {
         this.model = model;
     }
 
@@ -180,13 +193,13 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     @Override
     public void addPushAuthRequest(PushAuthRequest request) {
         // Requests for token that are not enrolled yet are not allowed
-        for (Token token : model.tokens) {
-            if (token.getSerial().equals(request.serial)) {
+        for (Token token : model.getTokens()) {
+            if (token.getSerial().equals(request.getSerial())) {
                 if (!token.rollout_finished) {
                     return;
                 } else {
-                    logprint("Push Auth Request for " + request.serial + " added.");
-                    model.pushAuthRequests.add(request);
+                    logprint("Push Auth Request for " + request.getSerial() + " added.");
+                    model.getPushAuthRequests().add(request);
                 }
             }
         }
@@ -210,7 +223,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     @Override
     public void saveTokenlist() {
-        util.saveTokens(model.tokens);
+        util.saveTokens(model.getTokens());
     }
 
     @Override
@@ -220,75 +233,75 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     @Override
     public boolean isCurrentSelectionWithPin() {
-        if (model.currentSelection == null) return false;
-        return model.currentSelection.isWithPIN();
+        if (model.getCurrentSelection() == null) return false;
+        return model.getCurrentSelection().isWithPIN();
     }
 
     @Override
     public boolean isCurrentSelectionPersistent() {
-        if (model.currentSelection == null) return false;
-        return model.currentSelection.isPersistent();
+        if (model.getCurrentSelection() == null) return false;
+        return model.getCurrentSelection().isPersistent();
     }
 
     @Override
     public boolean isCurrentSelectionLocked() {
-        if (model.currentSelection == null) return false;
-        return model.currentSelection.isLocked();
+        if (model.getCurrentSelection() == null) return false;
+        return model.getCurrentSelection().isLocked();
     }
 
     @Override
     public void removeCurrentSelection() {
         // callback from ActionMode delete
-        if (model.currentSelection == null) return;
-        this.removeToken(model.currentSelection);
+        if (model.getCurrentSelection() == null) return;
+        this.removeToken(model.getCurrentSelection());
     }
 
     @Override
     public String getCurrentSelectionLabel() {
-        if (model.currentSelection == null) return null;
-        return model.currentSelection.getLabel();
+        if (model.getCurrentSelection() == null) return null;
+        return model.getCurrentSelection().getLabel();
     }
 
     @Override
     public String getCurrentSelectionOTP() {
-        if (model.currentSelection == null) return null;
-        return model.currentSelection.getCurrentOTP();
+        if (model.getCurrentSelection() == null) return null;
+        return model.getCurrentSelection().getCurrentOTP();
     }
 
     @Override
     public Token getCurrentSelection() {
-        return model.currentSelection;
+        return model.getCurrentSelection();
     }
 
     @Override
     public void setCurrentSelectionLabel(String label) {
-        if (model.currentSelection == null) return;
-        model.currentSelection.setLabel(label);
+        if (model.getCurrentSelection() == null) return;
+        model.getCurrentSelection().setLabel(label);
     }
 
     @Override
     public void changeCurrentSelectionPIN(int pin) {
-        if (model.currentSelection == null) return;
-        String hashedPIN = OTPGenerator.hashPIN(pin, model.currentSelection);
-        model.currentSelection.setPin(hashedPIN);
+        if (model.getCurrentSelection() == null) return;
+        String hashedPIN = hashPIN(pin, model.getCurrentSelection());
+        model.getCurrentSelection().setPin(hashedPIN);
         tokenListInterface.notifyChange();
         saveTokenlist();
     }
 
     @Override
     public Token getTokenAtPosition(int position) {
-        return model.tokens.get(position);
+        return model.getTokens().get(position);
     }
 
     @Override
     public int getTokenCount() {
-        if (model.tokens == null) return 0;
-        return model.tokens.size();
+        if (model.getTokens() == null) return 0;
+        return model.getTokens().size();
     }
 
     @Override
     public void addTokenAt(int position, Token token) {
-        model.tokens.add(position, token);
+        model.getTokens().add(position, token);
     }
 
     @Override
@@ -298,35 +311,35 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 token.setCurrentOTP(generate(token));
             }
         }
-        model.tokens.add(token);
+        model.getTokens().add(token);
     }
 
     @Override
     //This is only used for swapping when changing position in the list
     public Token removeTokenAtPosition(int position) {
-        return model.tokens.remove(position);
+        return model.getTokens().remove(position);
     }
 
     /**
-     * Remove a token from the list. This includes Pub/Priv Keys for Pushtoken
+     * Remove a token from the list. This includes public and private keys for Pushtoken
      *
      * @param currToken the token to remove
      */
-    protected void removeToken(Token currToken) {
+    public void removeToken(Token currToken) {
         if (currToken == null) return;
 
-        int position = model.tokens.indexOf(currToken);
+        int position = model.getTokens().indexOf(currToken);
         tokenListInterface.removeProgressbar(position);
 
-        if (model.tokens.size() >= position && position >= 0 && !model.tokens.isEmpty()) {
-            model.tokens.remove(position);
+        if (model.getTokens().size() >= position && position >= 0 && !model.getTokens().isEmpty()) {
+            model.getTokens().remove(position);
         }
 
         if (currToken.getType().equals(PUSH)) {
             util.removePubkeyFor(currToken.getSerial());
             getWrapper().removePrivateKeyFor(currToken.getSerial());
             // if the removed token was the last push token, remove the firebase config
-            if(!model.hasPushToken()){
+            if (!model.hasPushToken()) {
                 util.removeFirebaseConfig();
                 mainActivityInterface.removeFirebase();
             }
@@ -347,11 +360,11 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     public Map<String, String> getPushAuthRequestInfo(Token token) {
         if (!token.getType().equals(PUSH)) return null;
         String t_serial = token.getSerial();
-        for (PushAuthRequest req : model.pushAuthRequests) {
-            if (req.serial.equals(t_serial)) {
+        for (PushAuthRequest req : model.getPushAuthRequests()) {
+            if (req.getSerial().equals(t_serial)) {
                 Map<String, String> map = new HashMap<>();
-                map.put(TITLE, req.title);
-                map.put(QUESTION, req.question);
+                map.put(TITLE, req.getTitle());
+                map.put(QUESTION, req.getQuestion());
                 return map;
             }
         }
@@ -361,22 +374,22 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     @Override
     public void startPushAuthForPosition(int position) {
         // onclick from token in list
-        Token t = model.tokens.get(position);
+        Token t = model.getTokens().get(position);
         if (!t.getType().equals(PUSH)) return;
         PushAuthRequest req = null;
         String t_serial = t.getSerial();
-        for (PushAuthRequest request : model.pushAuthRequests) {
-            if (request.serial.equals(t_serial)) {
+        for (PushAuthRequest request : model.getPushAuthRequests()) {
+            if (request.getSerial().equals(t_serial)) {
                 req = request;
             }
         }
         if (req == null) return; // none found
         try {
             PrivateKey appPrivateKey = getWrapper().getPrivateKeyFor(t_serial);
-            PublicKey piPublicKey = util.getPIPubkey(req.serial);
+            PublicKey piPublicKey = util.getPIPubkey(req.getSerial());
             if (appPrivateKey != null && piPublicKey != null) {
                 new PushAuthTask(req, piPublicKey, appPrivateKey, this).execute();
-                model.pushAuthRequests.remove(req);
+                model.getPushAuthRequests().remove(req);
                 tokenListInterface.notifyChange();
             }
         } catch (CertificateException e) {
@@ -396,7 +409,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     public void startPushRolloutForPosition(int position) {
         // This method is called from the Tokenlistadapter when the Rollout is retried,
         // the adapter has only the position of the row
-        preparePushRollout(model.tokens.get(position));
+        preparePushRollout(model.getTokens().get(position));
     }
 
     private void preparePushRollout(Token token) {
@@ -409,13 +422,13 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     public void firebaseTokenReceived(String fbtoken, Token token) {
         // Called when InstanceID in MainActivity finished getting the Token
         // Now the Rollout can be started
-        new PushRolloutTask(token, fbtoken,this).execute();
+        new PushRolloutTask(token, fbtoken, this).execute();
     }
 
     @Override
     public void increaseHOTPCounter(Token token) {
         token.setCounter((token.getCounter() + 1));
-        token.setCurrentOTP(OTPGenerator.generate(token));
+        token.setCurrentOTP(generate(token));
         tokenListInterface.notifyChange();
     }
 
@@ -441,9 +454,9 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     private void refreshOTPs() {
-        for (int i = 0; i < model.tokens.size(); i++) {
-            if (!model.tokens.get(i).getType().equals(PUSH)) {
-                model.tokens.get(i).setCurrentOTP(OTPGenerator.generate(model.tokens.get(i)));
+        for (int i = 0; i < model.getTokens().size(); i++) {
+            if (!model.getTokens().get(i).getType().equals(PUSH)) {
+                model.getTokens().get(i).setCurrentOTP(generate(model.getTokens().get(i)));
             }
         }
         tokenListInterface.notifyChange();
@@ -459,7 +472,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             token.setCurrentOTP(generate(token));
         } else {
             // Do not add token twice
-            for (Token t : model.tokens) {
+            for (Token t : model.getTokens()) {
                 if (t.getSerial().equals(token.getSerial()) && t.getType().equals(PUSH)) {
                     saveTokenlist();
                     tokenListInterface.notifyChange();
@@ -467,7 +480,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 }
             }
         }
-        model.tokens.add(token);
+        model.getTokens().add(token);
         saveTokenlist();
         tokenListInterface.notifyChange();
     }
