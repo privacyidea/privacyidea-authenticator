@@ -20,13 +20,16 @@
 
 package it.netknights.piauthenticator.viewcontroller;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.PorterDuff;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -68,6 +71,7 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.NotificationManagerCompat;
 
 import it.netknights.piauthenticator.interfaces.MainActivityInterface;
 import it.netknights.piauthenticator.interfaces.PresenterInterface;
@@ -89,10 +93,12 @@ import static it.netknights.piauthenticator.utils.AppConstants.DIGITS;
 import static it.netknights.piauthenticator.utils.AppConstants.ENROLLMENT_CRED;
 import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
 import static it.netknights.piauthenticator.utils.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
+import static it.netknights.piauthenticator.utils.AppConstants.INTENT_FILTER;
 import static it.netknights.piauthenticator.utils.AppConstants.ISSUER;
 import static it.netknights.piauthenticator.utils.AppConstants.LABEL;
 import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
 import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_CHANNEL_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_ID;
 import static it.netknights.piauthenticator.utils.AppConstants.PERIOD;
 import static it.netknights.piauthenticator.utils.AppConstants.PERSISTENT;
 import static it.netknights.piauthenticator.utils.AppConstants.PIN;
@@ -126,11 +132,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private AlertDialog status_dialog;
     private Handler handler;
     private Runnable timer;
+    private MainActivityBroadcastReceiver receiver;
+
 
     // getting the firebase token requires the Activity
-    String firebase_token;
     private SecretKeyWrapper secretKeyWrapper;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,9 +163,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
         // init the model before the adapter is set
         presenterInterface.init();
-
         listview.setAdapter(tokenlistadapter);
-
+        receiver = new MainActivityBroadcastReceiver(this);
+        registerReceiver(receiver, receiver.intentFilter);
 
         createNotificationChannel();
 
@@ -168,27 +174,31 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
 
         // Check for intent (=Pending auth requests)
-
         Intent intent = getIntent();
         if (intent.getExtras() == null) {
             logprint("No intent found onCreate.");
         } else {
-            // intent contain push auth info
-            logprint("Intent Found onCreate:");
-            logprint(intent.getExtras().toString());
-            String serial = intent.getStringExtra(SERIAL);
-            String nonce = intent.getStringExtra(NONCE);
-            String title = intent.getStringExtra(TITLE);
-            String url = intent.getStringExtra(URL);
-            String signature = intent.getStringExtra(SIGNATURE);
-            String question = intent.getStringExtra(QUESTION);
-            boolean sslVerify = intent.getBooleanExtra(SSL_VERIFY, true);
-            if (serial != null && nonce != null && title != null && url != null && signature != null && question != null) {
-                logprint("Intent data: " + intent.getExtras().toString());
-                presenterInterface.addPushAuthRequest(new PushAuthRequest(nonce, url, serial, question, title, signature, sslVerify));
-            } else {
-                logprint("Not all data for PushAuth available");
-            }
+            pushAuthRequestReceived(intent);
+        }
+    }
+
+    void pushAuthRequestReceived(Intent intent) {
+        // intent contain push auth info
+        logprint("Intent Found onCreate:");
+        logprint(intent.getExtras().toString());
+        String serial = intent.getStringExtra(SERIAL);
+        String nonce = intent.getStringExtra(NONCE);
+        String title = intent.getStringExtra(TITLE);
+        String url = intent.getStringExtra(URL);
+        String signature = intent.getStringExtra(SIGNATURE);
+        String question = intent.getStringExtra(QUESTION);
+        int notificationID = intent.getIntExtra(NOTIFICATION_ID, 654321);
+        boolean sslVerify = intent.getBooleanExtra(SSL_VERIFY, true);
+        if (serial != null && nonce != null && title != null && url != null && signature != null && question != null) {
+            logprint("Intent data: " + intent.getExtras().toString());
+            presenterInterface.addPushAuthRequest(new PushAuthRequest(nonce, url, serial, question, title, signature, notificationID, sslVerify));
+        } else {
+            logprint("Not all data for PushAuth available");
         }
     }
 
@@ -284,7 +294,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-
                     }
                     // otpauth://TYPE/LABEL?PARAMETERS
                     // TOKEN TYPE
@@ -405,12 +414,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     public void onResume() {
         super.onResume();
+        registerReceiver(receiver, receiver.intentFilter);
         presenterInterface.onResume();
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        unregisterReceiver(receiver);
         presenterInterface.onPause();
     }
 
@@ -608,6 +619,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
+    public void cancelNotification(int notificationID) {
+        NotificationManagerCompat.from(this).cancel(notificationID);
+    }
+
+    @Override
     public void makeToast(int resID) {
         Toast.makeText(MainActivity.this, resID, Toast.LENGTH_SHORT).show();
     }
@@ -693,9 +709,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     @Override
     public void removeFirebase() {
-        if(FirebaseApp.getApps(this).isEmpty()){
-            return;
-        }
         FirebaseApp.getApps(this).clear();
     }
 

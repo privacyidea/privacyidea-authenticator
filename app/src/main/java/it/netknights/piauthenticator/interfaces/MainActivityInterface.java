@@ -60,4 +60,6 @@ public interface MainActivityInterface {
     PublicKey generatePublicKeyFor(String alias);
 
     String getStringResource(int id);
+
+    void cancelNotification(int notificationID);
 }

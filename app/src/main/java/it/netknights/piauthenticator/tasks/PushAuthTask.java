@@ -35,6 +35,7 @@ import java.util.Map;
 
 import it.netknights.piauthenticator.interfaces.EndpointCallback;
 import it.netknights.piauthenticator.interfaces.PushAuthCallbackInterface;
+import it.netknights.piauthenticator.model.Token;
 import it.netknights.piauthenticator.utils.Endpoint;
 import it.netknights.piauthenticator.utils.Util;
 import it.netknights.piauthenticator.model.PushAuthRequest;
@@ -57,8 +58,9 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements E
     private boolean sslVerify;
     private PushAuthCallbackInterface pushAuthCallbackInterface;
     private boolean success;
+    private Token token;
 
-    public PushAuthTask(PushAuthRequest pushAuthRequest,
+    public PushAuthTask(Token token, PushAuthRequest pushAuthRequest,
                         PublicKey piPublicKey, PrivateKey appPrivateKey, PushAuthCallbackInterface pushAuthCallbackInterface) {
         this.nonce = pushAuthRequest.getNonce();
         this.endpoint_url = pushAuthRequest.getUrl();
@@ -70,6 +72,7 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements E
         this.piPublicKey = piPublicKey;
         this.sslVerify = pushAuthRequest.isSslVerify();
         this.pushAuthCallbackInterface = pushAuthCallbackInterface;
+        this.token = token;
     }
 
     @Override
@@ -149,10 +152,10 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements E
             case PA_AUTHENTICATION_FINISHED:
                 if (success) {
                     logprint("authentication successful :)");
-                    pushAuthCallbackInterface.authenticationFinished(true);
+                    pushAuthCallbackInterface.authenticationFinished(true, token);
                 } else {
                     logprint("authentication failed :(");
-                    pushAuthCallbackInterface.authenticationFinished(false);
+                    pushAuthCallbackInterface.authenticationFinished(false, token);
                 }
             default:
                 break;

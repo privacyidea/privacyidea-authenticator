@@ -25,24 +25,16 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.UnrecoverableEntryException;
-import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Map;
 
 import it.netknights.piauthenticator.interfaces.MainActivityInterface;
 import it.netknights.piauthenticator.interfaces.TokenListViewInterface;
 import it.netknights.piauthenticator.model.FirebaseInitConfig;
 import it.netknights.piauthenticator.model.Model;
-import it.netknights.piauthenticator.model.PushAuthRequest;
 import it.netknights.piauthenticator.model.ScanResult;
 import it.netknights.piauthenticator.model.Token;
 import it.netknights.piauthenticator.presenter.Presenter;
@@ -55,29 +47,30 @@ import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_BAD_BASE64;
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_DONE;
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_MALFORMED_JSON;
-import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_1;
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_2;
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_3;
-import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
 import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
-import static it.netknights.piauthenticator.utils.AppConstants.QUESTION;
 import static it.netknights.piauthenticator.utils.AppConstants.SHA1;
 import static it.netknights.piauthenticator.utils.AppConstants.SHA256;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREBASE;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREBASE_DONE;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_STANDARD_ROLLOUT_DONE;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
-import static it.netknights.piauthenticator.utils.AppConstants.TITLE;
+import static it.netknights.piauthenticator.utils.AppConstants.State.FINISHED;
+import static it.netknights.piauthenticator.utils.AppConstants.State.UNFINISHED;
 import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -195,8 +188,8 @@ public class TestPresenter {
         verify(wrapper).removePrivateKeyFor("serial");
     }
 
-    @Test
-    public void pushAuthRequests() {
+    /*  @Test
+  public void pushAuthRequests() {
         // Add a push token, which gets a PushAuthRequest
         Token t2 = new Token("PUSHserial", "testlabel");
         presenter.addToken(t2);
@@ -212,7 +205,7 @@ public class TestPresenter {
         presenter.addToken(t3);
         map = presenter.getPushAuthRequestInfo(t3);
         assertNull(map);
-    }
+    } */
 
     @Test
     public void increaseHOTPCounter() {
@@ -244,7 +237,6 @@ public class TestPresenter {
         assertEquals(0, toCompare.getCounter());
         assertTrue(toCompare.isWithPIN());
         Assert.assertArrayEquals("test".getBytes(), toCompare.getSecret());
-
     }
 
     @Test
@@ -311,25 +303,25 @@ public class TestPresenter {
         Token t2 = new Token("pushy", "pushy");
         presenter.updateTaskStatus(PRO_STATUS_DONE, t2); // t2 should be added
         assertEquals(t2, presenter.getTokenAtPosition(2));
-        assertTrue(presenter.getTokenAtPosition(2).rollout_finished);
+        assertThat(presenter.getTokenAtPosition(2).state, is(FINISHED));
         assertEquals(3, presenter.getTokenCount());
 
         // t3 should be added, but unfinished
         Token t3 = new Token("pushyfail", "pushyfail");
         presenter.updateTaskStatus(PRO_STATUS_BAD_BASE64, t3);
-        assertFalse(presenter.getTokenAtPosition(3).rollout_finished);
+        assertThat(presenter.getTokenAtPosition(3).state, is(UNFINISHED));
         assertEquals(4, presenter.getTokenCount());
 
         // t4 should be added, but unfinished
         Token t4 = new Token("pushyfail2", "pushyfail");
         presenter.updateTaskStatus(PRO_STATUS_MALFORMED_JSON, t4);
-        assertFalse(presenter.getTokenAtPosition(4).rollout_finished);
+        assertThat(presenter.getTokenAtPosition(4).state, is(UNFINISHED));
         assertEquals(5, presenter.getTokenCount());
 
         // t5 should be added, but unfinished
         Token t5 = new Token("pushyfail3", "pushyfail");
         presenter.updateTaskStatus(PRO_STATUS_RESPONSE_NO_KEY, t5);
-        assertFalse(presenter.getTokenAtPosition(5).rollout_finished);
+        assertThat(presenter.getTokenAtPosition(5).state, is(UNFINISHED));
         assertEquals(6, presenter.getTokenCount());
 
         // t3 should be removed if registration time is expired
@@ -342,7 +334,7 @@ public class TestPresenter {
 
         // t3 should be added again, but unfinished
         presenter.updateTaskStatus(STATUS_ENDPOINT_UNKNOWN_HOST, t3);
-        assertFalse(presenter.getTokenAtPosition(5).rollout_finished);
+        assertThat(presenter.getTokenAtPosition(5).state, is(UNFINISHED));
         assertEquals(6, presenter.getTokenCount());
 
         // t3 should not be added again
@@ -386,13 +378,13 @@ public class TestPresenter {
 
         presenter.receivePublicKey("test", pushy);
         verify(presenter).updateTaskStatus(PRO_STATUS_RESPONSE_NO_KEY, pushy);
-        assertFalse(pushy.rollout_finished);
+        assertEquals(pushy.state, UNFINISHED);
 
         doThrow(IllegalArgumentException.class).when(util).storePIPubkey(anyString(), anyString());
 
         presenter.receivePublicKey("test", pushy);
         verify(presenter).updateTaskStatus(PRO_STATUS_BAD_BASE64, pushy);
-        assertFalse(pushy.rollout_finished);
+        assertEquals(pushy.state, UNFINISHED);
     }
 
     /*
@@ -458,7 +450,7 @@ public class TestPresenter {
         presenter.scanQRfinished(res);
         verify(mainActivityInterface).makeAlertDialog(anyInt(), anyInt());
     }
-
+/*
     @Test
     public void startPushAuth() throws CertificateException, UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException, IOException {
         clearTokenlist();
@@ -479,7 +471,7 @@ public class TestPresenter {
 
         assertTrue(model.getPushAuthRequests().isEmpty());
         verify(tokenListViewInterface).notifyChange();
-    }
+    } */
 
     @Test
     public void lastPushToken() {

@@ -20,11 +20,16 @@
 
 package it.netknights.piauthenticator.model;
 
+import java.util.Calendar;
+import java.util.Date;
+
 public class PushAuthRequest {
     private String nonce, url, serial, question, title, signature;
     private boolean sslVerify;
+    private Date expiration;
+    private int notificationID;
 
-    public PushAuthRequest(String nonce, String url, String serial, String question, String title, String signature, boolean sslVerify) {
+    public PushAuthRequest(String nonce, String url, String serial, String question, String title, String signature, int notificationID, boolean sslVerify) {
         this.nonce = nonce;
         this.url = url;
         this.serial = serial;
@@ -32,14 +37,23 @@ public class PushAuthRequest {
         this.title = title;
         this.signature = signature;
         this.sslVerify = sslVerify;
+        // Add expiration time which is +3 Minutes
+        Calendar now = Calendar.getInstance();
+        now.add(Calendar.MINUTE, 3);
+        this.expiration = now.getTime();
+        this.notificationID = notificationID;
+    }
+
+    public int getNotificationID() {
+        return notificationID;
+    }
+
+    public Date getExpiration() {
+        return expiration;
     }
 
     public String getNonce() {
         return nonce;
-    }
-
-    public void setNonce(String nonce) {
-        this.nonce = nonce;
     }
 
     public String getUrl() {
@@ -62,10 +76,6 @@ public class PushAuthRequest {
         return question;
     }
 
-    public void setQuestion(String question) {
-        this.question = question;
-    }
-
     public String getTitle() {
         return title;
     }
@@ -78,15 +88,8 @@ public class PushAuthRequest {
         return signature;
     }
 
-    public void setSignature(String signature) {
-        this.signature = signature;
-    }
-
     public boolean isSslVerify() {
         return sslVerify;
     }
 
-    public void setSslVerify(boolean sslVerify) {
-        this.sslVerify = sslVerify;
-    }
 }

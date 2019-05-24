@@ -34,12 +34,14 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
+import java.util.ArrayList;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationManagerCompat;
 
 import it.netknights.piauthenticator.R;
 import it.netknights.piauthenticator.interfaces.PushAuthCallbackInterface;
+import it.netknights.piauthenticator.model.Token;
 import it.netknights.piauthenticator.utils.SecretKeyWrapper;
 import it.netknights.piauthenticator.utils.Util;
 import it.netknights.piauthenticator.model.PushAuthRequest;
@@ -56,6 +58,9 @@ import static it.netknights.piauthenticator.utils.AppConstants.URL;
 import static it.netknights.piauthenticator.utils.Util.logprint;
 
 public class PushAuthService extends Service implements PushAuthCallbackInterface {
+
+    private PushAuthRequest req;
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -83,7 +88,7 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
         String question = intent.getStringExtra(QUESTION);
         boolean sslVerify = intent.getBooleanExtra(SSL_VERIFY, true);
 
-
+        Token token = null;
         PrivateKey appPrivateKey = null;
         PublicKey publicKey = null;
         try {
@@ -91,6 +96,14 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
             appPrivateKey = skw.getPrivateKeyFor(serial);
             Util util = new Util(skw, getApplicationContext().getFilesDir().getAbsolutePath());
             publicKey = util.getPIPubkey(serial);
+
+            // Load the token (App is not necessarily running)
+            ArrayList<Token> list = util.loadTokens();
+            for (Token t : list) {
+                if (t.getSerial().equals(serial)) {
+                    token = t;
+                }
+            }
         } catch (IOException e) {
             e.printStackTrace();
         } catch (CertificateException e) {
@@ -104,28 +117,35 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
         } catch (GeneralSecurityException e) {
             e.printStackTrace();
         }
-        if(appPrivateKey == null) {
+        if (appPrivateKey == null) {
             logprint("PushAuthService: appPrivateKey is null, Authentication is not started.");
             return Service.START_NOT_STICKY;    // Restart the Service in case of being killed, but don't redeliver the intent
         }
-        if(publicKey == null) {
+        if (publicKey == null) {
             logprint("PushAuthService: appPrivateKey is null, Authentication is not started.");
-            return Service.START_NOT_STICKY;    // Restart the Service in case of being killed, but don't redeliver the intent
+            return Service.START_NOT_STICKY;
+        }
+        if (token == null) {
+            logprint("PushAuthService: Token is null, Authentication is not started.");
+            return Service.START_NOT_STICKY;
         }
 
-            // start the authentication
-            AsyncTask<Void, Integer, Boolean> pushAuth = new PushAuthTask(
-                    new PushAuthRequest(nonce, url, serial, question, title, signature, sslVerify),
-                    publicKey, appPrivateKey, this);
+        // Add the pendingAuth to the token
+        req = new PushAuthRequest(nonce, url, serial, question, title, signature, notificationID, sslVerify);
+        token.getPendingAuths().add(req);
+
+        // start the authentication
+        AsyncTask<Void, Integer, Boolean> pushAuth = new PushAuthTask(token, req, publicKey, appPrivateKey, this);
         pushAuth.execute();
-        //return Service.START_REDELIVER_INTENT;
         return Service.START_NOT_STICKY;
     }
 
     @Override
-    public void authenticationFinished(boolean success) {
+    public void authenticationFinished(boolean success, Token token) {
         if (success) {
             Toast.makeText(getApplicationContext(), R.string.AuthenticationSuccessful, Toast.LENGTH_SHORT).show();
+            // In case of success, remove the pendingAuth from the token (the one the auth was started with)
+            token.getPendingAuths().remove(req);
         } else {
             Toast.makeText(getApplicationContext(), R.string.AuthenticationFailed, Toast.LENGTH_SHORT).show();
         }

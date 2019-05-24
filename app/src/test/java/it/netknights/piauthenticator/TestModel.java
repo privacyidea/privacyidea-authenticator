@@ -30,9 +30,12 @@ import it.netknights.piauthenticator.model.PushAuthRequest;
 import it.netknights.piauthenticator.model.Token;
 
 import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.State.UNFINISHED;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class TestModel {
@@ -42,7 +45,6 @@ public class TestModel {
         // Empty init
         Model m = new Model();
         assertTrue(m.getTokens().isEmpty());
-        assertTrue(m.getPushAuthRequests().isEmpty());
 
         // Init with elements
         ArrayList<Token> tokens = new ArrayList<>();
@@ -53,24 +55,21 @@ public class TestModel {
         PushAuthRequest req = Mockito.mock(PushAuthRequest.class);
         requests.add(req);
 
-        Model m2 = new Model(tokens, requests);
+        Model m2 = new Model(tokens);
         assertEquals(token, m2.getTokens().get(0));
-        assertEquals(req, m2.getPushAuthRequests().get(0));
 
-        Model m3 = new Model(null, null);
+        Model m3 = new Model(null);
         assertTrue(m3.getTokens().isEmpty());
-        assertTrue(m3.getPushAuthRequests().isEmpty());
-
     }
 
     @Test
     public void checkForExpired() {
         Token token = new Token("serial", "label");
-        token.rollout_finished = false;
+        assertThat(token.state, is(UNFINISHED));
         token.rollout_expiration = new Date();
         ArrayList<Token> list = new ArrayList<>();
         list.add(token);
-        Model m3 = new Model(list, null);
+        Model m3 = new Model(list);
 
         try {
             Thread.sleep(10000);
@@ -93,7 +92,7 @@ public class TestModel {
         Token token = new Token("lfknsw".getBytes(), "serial", "label", HOTP, 6);
         ArrayList<Token> list = new ArrayList<>();
         list.add(token);
-        Model m = new Model(list, null);
+        Model m = new Model(list);
         m.setCurrentSelection(0);
         assertEquals(token, m.getCurrentSelection());
         m.setCurrentSelection(-1);
@@ -105,7 +104,7 @@ public class TestModel {
         Token token = new Token("serial", "label");
         ArrayList<Token> list = new ArrayList<>();
         list.add(token);
-        Model m = new Model(list, null);
+        Model m = new Model(list);
 
         assertTrue(m.hasPushToken());
 

@@ -129,7 +129,6 @@ public class TestUtil {
 
         Token pushy = new Token("PUSHYSERIAL", "PUSHYLABEL");
         pushy.enrollment_credential = "enrollmentcred";
-        pushy.rollout_finished = false;
         pushy.rollout_url = "https://test.com/roll/out";
         pushy.rollout_expiration = new Date();
 
@@ -239,7 +238,7 @@ public class TestUtil {
         assertNull(key);
     }
 
-    // FIXME include
+    @Test
     public void testLoadingOldToken() {
         // Older token did not have the serial attribute.
         // Upon loading them, their label should be set as their serial
@@ -284,6 +283,5 @@ public class TestUtil {
 
         // signature which is not in b32 format is rejected
         assertFalse(Util.verifySignature(keyPair.getPublic(), "9999999", message));
-
     }
 }

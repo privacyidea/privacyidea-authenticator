@@ -79,10 +79,10 @@
 
     <!--other-->
     <string name="textview" translatable="false">TextView</string>
-    <string name="PushRolloutStep1Status">(1/3) Preparing registration data...</string>
-    <string name="PushRolloutStep2Status">(2/3) Sending data to server...</string>
-    <string name="PushRolloutStep3Status">(3/3) Processing data from server...</string>
-    <string name="InitFirebaseStatus">Initializing Firebase...</string>
+    <string name="PushRolloutStep1Status">(1/3) Preparing registration data…</string>
+    <string name="PushRolloutStep2Status">(2/3) Sending data to server…</string>
+    <string name="PushRolloutStep3Status">(3/3) Processing data from server…</string>
+    <string name="InitFirebaseStatus">Initializing Firebase…</string>
     <string name="Allow">Allow</string>
     <string name="Error">Error</string>
     <string name="ResponseNotParsed">The response could not be parsed.</string>
@@ -105,5 +105,9 @@
     <string name="AboutTitle">About the App</string>
     <string name="apache_license_2_0Label" translatable="false">Apache License 2.0</string>
     <string name="SSLHandshakeFailed">SSL Handshake failed.</string>
+    <string name="PushtokenRollingOut">Rolling out…</string>
+    <string name="ResetFirebaseInfoMsg">To reset Firebase, restart the App.</string>
+    <string name="PushtokenRetryLabel">Retry rollout</string>
+    <string name="PushtokenAuthenticating">Authenticating…</string>
 
 </resources>

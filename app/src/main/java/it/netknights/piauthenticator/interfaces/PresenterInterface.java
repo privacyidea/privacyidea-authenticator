@@ -73,9 +73,7 @@ public  interface PresenterInterface {
 
     Token removeTokenAtPosition(int position);
 
-    Map<String, String> getPushAuthRequestInfo(Token token);
-
-    void startPushAuthForPosition(int position);
+    void startPushAuthForPosition(Token token);
 
     void startPushRolloutForPosition(int position);
 

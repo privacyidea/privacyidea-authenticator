@@ -76,4 +76,8 @@
     <string name="PushtokenLabelRolloutUnfinished">Pushtoken - nicht ausgerollt</string>
     <string name="AboutTitle">Über die App</string>
     <string name="SSLHandshakeFailed">SSL Handshake fehlgeschlagen.</string>
+    <string name="ResetFirebaseInfoMsg">Starte die App neu um Firebase zurückzusetzen</string>
+    <string name="PushtokenRollingOut">Ausrollen...</string>
+    <string name="PushtokenRetryLabel">Ausrollen erneut versuchen</string>
+    <string name="PushtokenAuthenticating">Authentifizierung...</string>
 </resources>

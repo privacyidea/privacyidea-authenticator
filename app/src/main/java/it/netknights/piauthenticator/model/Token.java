@@ -21,10 +21,14 @@
 package it.netknights.piauthenticator.model;
 
 
+import java.util.ArrayList;
 import java.util.Date;
 
+import static it.netknights.piauthenticator.utils.AppConstants.*;
 import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
+import static it.netknights.piauthenticator.utils.AppConstants.State.*;
 import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
+import static it.netknights.piauthenticator.utils.Util.logprint;
 
 public class Token {
 
@@ -45,10 +49,12 @@ public class Token {
     private String serial;
 
     public String enrollment_credential;
-    public boolean rollout_finished = true;
     public Date rollout_expiration;
     public String rollout_url;
     public boolean sslVerify = true;
+
+    private ArrayList<PushAuthRequest> pendingAuths = new ArrayList<>();
+    public State state = UNFINISHED;
 
     public Token(byte[] secret, String serial, String label, String type, int digits) {
         this.secret = secret;
@@ -58,6 +64,26 @@ public class Token {
         this.digits = digits;
         this.period = this.type.equals(TOTP) ? 30 : 0;
         this.counter = 0;
+    }
+
+    public void setPendingAuths(ArrayList<PushAuthRequest> pendingAuths) {
+        this.pendingAuths = pendingAuths;
+    }
+
+    public ArrayList<PushAuthRequest> getPendingAuths() {
+        return pendingAuths;
+    }
+
+    public void addPushAuthRequest(PushAuthRequest request) {
+        for (PushAuthRequest req : pendingAuths) {
+            if (req.getNotificationID() == request.getNotificationID()
+                    && req.getSignature().equals(request.getSignature())) {
+                // don't add duplicates
+                logprint("Duplicate PushAuthRequest was not added");
+                return;
+            }
+        }
+        pendingAuths.add(request);
     }
 
     // A push token only contains the serial and a label

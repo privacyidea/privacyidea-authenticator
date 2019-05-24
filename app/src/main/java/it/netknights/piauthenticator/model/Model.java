@@ -24,27 +24,21 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
+import static it.netknights.piauthenticator.utils.AppConstants.State.UNFINISHED;
 
 public class Model {
     private ArrayList<Token> tokens;
     private Token currentSelection;
-    private ArrayList<PushAuthRequest> pushAuthRequests;
 
     public Model() {
         this.tokens = new ArrayList<>();
-        this.pushAuthRequests = new ArrayList<>();
     }
 
-    public Model(ArrayList<Token> tokenlist, ArrayList<PushAuthRequest> pushAuthRequests) {
+    public Model(ArrayList<Token> tokenlist) {
         if (tokenlist == null) {
             this.tokens = new ArrayList<>();
         } else {
             this.tokens = tokenlist;
-        }
-        if (pushAuthRequests == null) {
-            this.pushAuthRequests = new ArrayList<>();
-        } else {
-            this.pushAuthRequests = pushAuthRequests;
         }
     }
 
@@ -64,7 +58,7 @@ public class Model {
         Date now = new Date();
         for (Token t : tokens) {
             if (t.getType().equals(PUSH)) {
-                if (!t.rollout_finished && t.rollout_expiration.before(now)) {
+                if (t.state.equals(UNFINISHED) && t.rollout_expiration.before(now)) {
                     upForDeletion.add(t);
                 }
             }
@@ -89,10 +83,6 @@ public class Model {
             }
         }
         return false;
-    }
-
-    public ArrayList<PushAuthRequest> getPushAuthRequests() {
-        return pushAuthRequests;
     }
 
     public Token getCurrentSelection() {

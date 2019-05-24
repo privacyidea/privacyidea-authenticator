@@ -36,6 +36,7 @@ import androidx.core.app.NotificationManagerCompat;
 import it.netknights.piauthenticator.R;
 import it.netknights.piauthenticator.viewcontroller.MainActivity;
 
+import static it.netknights.piauthenticator.utils.AppConstants.INTENT_FILTER;
 import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
 import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_CHANNEL_ID;
 import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_ID;
@@ -84,6 +85,11 @@ public class FCMReceiverService extends FirebaseMessagingService {
         // Generate a random notification ID
         Random random = new Random();
         int notificationID = random.nextInt(9999 - 1000) + 1000;
+
+        // Build an intent which will update the running app
+        Intent update_intent = new Intent(INTENT_FILTER);
+        update_intent = packIntent(update_intent, notificationID);
+        sendBroadcast(update_intent);
 
         // Start the service with the data from the push when the button in the notification is pressed
         Intent service_intent = new Intent(this, PushAuthService.class);

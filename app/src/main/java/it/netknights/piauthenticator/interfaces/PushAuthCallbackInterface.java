@@ -20,6 +20,8 @@
 
 package it.netknights.piauthenticator.interfaces;
 
+import it.netknights.piauthenticator.model.Token;
+
 public interface PushAuthCallbackInterface {
-    void authenticationFinished(boolean success);
+    void authenticationFinished(boolean success, Token token);
 }

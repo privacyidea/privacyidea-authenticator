@@ -163,7 +163,7 @@ public class SecretKeyWrapper {
         keyStore.load(null);
         logprint("generateKeyPair for alias: " + alias);
         if (keyStore.containsAlias(alias)) {
-            // TODO double entry -> overwrite?
+            // TODO double entry_normal -> overwrite?
         }
         final Calendar start = new GregorianCalendar();
         final Calendar end = new GregorianCalendar();

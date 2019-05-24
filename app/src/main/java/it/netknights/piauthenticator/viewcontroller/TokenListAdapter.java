@@ -40,7 +40,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.Map;
 
 import androidx.core.widget.TextViewCompat;
 
@@ -54,8 +53,7 @@ import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
 import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
-import static it.netknights.piauthenticator.utils.AppConstants.QUESTION;
-import static it.netknights.piauthenticator.utils.AppConstants.TITLE;
+import static it.netknights.piauthenticator.utils.AppConstants.State.*;
 import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 
@@ -74,100 +72,151 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
 
     @Override
     public View getView(final int position, View v, ViewGroup parent) {
+        final Token token = getItem(position);
+
         if (v == null) {
             final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-            v = inflater.inflate(R.layout.entry, parent, false);
+            if (token.getType().equals(PUSH)) {
+                v = inflater.inflate(R.layout.entry_push, parent, false);
+            } else {
+                v = inflater.inflate(R.layout.entry_normal, parent, false);
+            }
         }
         v.setTag(position);
-
+        // COMMON VIEWS
         final View mView = v;
         final TextView otptext = v.findViewById(R.id.textViewToken);
         final TextView labeltext = v.findViewById(R.id.textViewLabel);
-        final Token token = getItem(position);
+        final Button nextbtn = v.findViewById(R.id.next_button);
 
-        Button nextbtn = v.findViewById(R.id.next_button);
+        // Progressbar for Normal or Push
+        ProgressBar progressBar;
+        if (token.getType().equals(PUSH)) {
+            progressBar = v.findViewById(R.id.progressBar_push);
+            if (progressBar != null) {
+                progressBar.setIndeterminate(true);
+                progressBar.getIndeterminateDrawable().setColorFilter(
+                        Color.rgb(0x83, 0xc9, 0x27), PorterDuff.Mode.SRC_IN);
+            }
+        } else {
+            progressBar = v.findViewById(R.id.progressBar);
+            if (progressBar != null) {
+                progressBar.getProgressDrawable().setColorFilter(
+                        Color.rgb(0x83, 0xc9, 0x27), PorterDuff.Mode.SRC_IN);
+                if (token.getType().equals(TOTP)) {
+                    if (token.getPeriod() == 60) {
+                        progressBar.setMax(60 * 100);
+                    } else {
+                        progressBar.setMax(30 * 100);
+                    }
+                    nextbtn.setVisibility(GONE);
+                } else {
+                    progressBar.setVisibility(GONE);
+                }
+            }
+        }
 
-        ProgressBar progressBar = v.findViewById(R.id.progressBar);
-        progressBar.getProgressDrawable().setColorFilter(
-                Color.rgb(0x83, 0xc9, 0x27), PorterDuff.Mode.SRC_IN);
         progressBars.add(position, progressBar);
 
-        if (token.getType().equals(TOTP)) {
-            if (token.getPeriod() == 60) {
-                progressBar.setMax(60 * 100);
-            } else {
-                progressBar.setMax(30 * 100);
-            }
-            nextbtn.setVisibility(GONE);
-        } else {
-            progressBar.setVisibility(GONE);
-        }
-
-        otptext.setText(token.getCurrentOTP());
-        labeltext.setText(token.getLabel());
-
         // Make the TextViews autoscale the textsize
-        enableAutoSizeText(otptext, labeltext);
-
-        if (token.isWithPIN() && token.getPin().equals("")) {
-            //----------------------- Pin not set yet ----------------------
-            setupPinNotSet(v, mView, otptext, token, nextbtn, progressBar);
-        } else if (token.isWithPIN() && token.isLocked()) {
-            //------------------- show dialog for PIN input -------------------------------------
-            setupPinRequired(v, mView, otptext, token, nextbtn, progressBar);
-        } else if (!token.isLocked() && token.isWithTapToShow() && !token.isTapped()) {
-            setupTapRequired(v, otptext, token, nextbtn, progressBar);
-        }/*else if (!token.isLocked() && token.isWithTapToShow() && token.isTapped()){
+        enableAutoSizeText(otptext);
+        enableAutoSizeText(labeltext);
+        // Normal token row setup
+        if (!token.getType().equals(PUSH)) {
+            if (token.isWithPIN() && token.getPin().equals("")) {
+                //----------------------- Pin not set yet ----------------------
+                setupPinNotSet(mView, otptext, token, nextbtn, progressBar);
+            } else if (token.isWithPIN() && token.isLocked()) {
+                //------------------- show dialog for PIN input -------------------------------------
+                setupPinRequired(mView, otptext, token, nextbtn, progressBar);
+            } else if (!token.isLocked() && token.isWithTapToShow() && !token.isTapped()) {
+                setupTapRequired(v, otptext, token, nextbtn, progressBar);
+            }/*else if (!token.isLocked() && token.isWithTapToShow() && token.isTapped()){
         }*/ else {
-            //--------------- no PIN protection or token is unlocked ---------------------------
-            v.setLongClickable(true);
-            v.setOnClickListener(null);
-            //------------------ differenciate hotp, totp and push ---------------------------
-            switch (token.getType()) {
-                case HOTP:
-                    setupHOTP(token, nextbtn, progressBar);
-                    break;
-                case TOTP:
-                    setupTOTP(nextbtn, progressBar);
-                    break;
-                case PUSH:
-                    setupPUSH(position, v, otptext, labeltext, token, nextbtn, progressBar);
-                    break;
+                //--------------- no PIN protection or token is unlocked ---------------------------
+                v.setLongClickable(true);
+                v.setOnClickListener(null);
+                switch (token.getType()) {
+                    case HOTP:
+                        setupHOTP(token, nextbtn, progressBar);
+                        break;
+                    case TOTP:
+                        setupTOTP(nextbtn, progressBar);
+                        break;
+                }
+                otptext.setText(token.getCurrentOTP());
+                labeltext.setText(token.getLabel());
             }
+        } else {
+            // PUSH SETUP
+            TextView pushStatus = mView.findViewById(R.id.textView_pushStatus);
+            enableAutoSizeText(pushStatus);
+            setupPUSH(position, v, otptext, labeltext, token, nextbtn, progressBar, pushStatus);
         }
-        setupOnDrags(v, position);
+
+
+        setupOnDrags(v, position); // Position change
         return v;
     }
 
-    private void setupPUSH(final int position, View v, TextView otptext, TextView labeltext, Token token, Button nextbtn, ProgressBar progressBar) {
-        Map<String, String> map = presenterInterface.getPushAuthRequestInfo(token);
-        if (map != null && token.rollout_finished) {
-            nextbtn.setLongClickable(false);
-            progressBar.setVisibility(GONE);
-            labeltext.setText(map.get(QUESTION));
-            otptext.setText(map.get(TITLE));
+    private void setupPUSH(final int position, View v, TextView bigText, TextView smallText, Token token, Button nextbtn, ProgressBar progressBar, TextView subTextStatus) {
+        v.setClickable(false);
+        v.setOnClickListener(null);
+        v.setLongClickable(true);
+        // big and small Text are visible by default, bigText = Label
+        bigText.setVisibility(VISIBLE);
+        smallText.setVisibility(VISIBLE);
+        bigText.setText(token.getLabel());
+
+        // By default all additional elements are GONE
+        subTextStatus.setVisibility(GONE);
+        subTextStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        progressBar.setVisibility(GONE);
+        nextbtn.setVisibility(GONE);
+
+        if (!token.getPendingAuths().isEmpty() && (token.state.equals(FINISHED))) {
+            // If there is a pending Authentication, set the question as label and title as otp
+            // Only the first pending Authentication is displayed.
+            smallText.setText(token.getPendingAuths().get(0).getTitle());
+            subTextStatus.setVisibility(VISIBLE);
+            subTextStatus.setText(token.getPendingAuths().get(0).getQuestion());
+
             nextbtn.setVisibility(VISIBLE);
             nextbtn.setClickable(true);
             nextbtn.setText(v.getContext().getString(R.string.Allow));
-            nextbtn.setOnClickListener(view -> presenterInterface.startPushAuthForPosition(position));
-        } else if (token.rollout_finished) {
-            nextbtn.setVisibility(GONE);
-            nextbtn.setClickable(false);
-            nextbtn.setLongClickable(false);
-            progressBar.setVisibility(GONE);
-            labeltext.setText(v.getContext().getString(R.string.PushtokenLabel));
-            otptext.setText(token.getLabel());
+            nextbtn.setOnClickListener(view -> presenterInterface.startPushAuthForPosition(token));
+        } else if (!token.getPendingAuths().isEmpty() && (token.state.equals(AUTHENTICATING))) {
+            smallText.setText(token.getPendingAuths().get(0).getTitle());
+            subTextStatus.setVisibility(VISIBLE);
+            subTextStatus.setText(v.getContext().getString(R.string.PushtokenAuthenticating));
+
+            progressBar.setVisibility(VISIBLE);
+        } else if (token.state.equals(FINISHED)) {
+            // Normal push token appearance
+            smallText.setText(v.getContext().getString(R.string.PushtokenLabel));
         } else {
-            nextbtn.setVisibility(GONE);
-            nextbtn.setClickable(false);
-            nextbtn.setLongClickable(false);
-            progressBar.setVisibility(GONE);
-            labeltext.setText(v.getContext().getString(R.string.PushtokenLabelRolloutUnfinished));
-            otptext.setText(token.getLabel());
-            nextbtn.setVisibility(VISIBLE);
-            nextbtn.setText("");
-            nextbtn.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_retry_rollout, 0);
-            nextbtn.setOnClickListener(view -> presenterInterface.startPushRolloutForPosition(position));
+            // Rollout state
+            if (token.state.equals(UNFINISHED)) {
+                // Retry state
+                nextbtn.setVisibility(VISIBLE);
+                nextbtn.setText("");
+                nextbtn.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_retry_rollout, 0);
+                nextbtn.setOnClickListener(view -> presenterInterface.startPushRolloutForPosition(position));
+                nextbtn.setLongClickable(false);
+                subTextStatus.setVisibility(VISIBLE);
+                subTextStatus.setText(v.getContext().getString(R.string.PushtokenRetryLabel));
+                subTextStatus.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+
+                smallText.setText(v.getContext().getString(R.string.PushtokenLabelRolloutUnfinished));
+            } else {
+                // Rollout in progress
+                smallText.setVisibility(GONE);
+
+                progressBar.setVisibility(VISIBLE);
+
+                subTextStatus.setVisibility(VISIBLE);
+                subTextStatus.setText(R.string.PushtokenRollingOut);
+            }
         }
     }
 
@@ -192,12 +241,12 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         });
     }
 
-    private void setupPinRequired(View v, final View mView, TextView otptext, final Token token, Button nextbtn, ProgressBar progressBar) {
-        v.setLongClickable(true);
+    private void setupPinRequired(final View mView, TextView otptext, final Token token, Button nextbtn, ProgressBar progressBar) {
+        mView.setLongClickable(true);
         progressBar.setVisibility(GONE);
         nextbtn.setVisibility(GONE);
         otptext.setText(R.string.tap_to_unlock);
-        v.setOnClickListener(v1 -> {
+        mView.setOnClickListener(v1 -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(v1.getContext());
             builder.setTitle(R.string.enter_pin_title);
             final EditText input = new EditText(v1.getContext());
@@ -226,11 +275,11 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         });
     }
 
-    private void setupPinNotSet(View v, final View mView, TextView otptext, final Token token, Button nextbtn, ProgressBar progressBar) {
+    private void setupPinNotSet(final View mView, TextView otptext, final Token token, Button nextbtn, ProgressBar progressBar) {
         nextbtn.setVisibility(GONE);
         progressBar.setVisibility(GONE);
         otptext.setText(R.string.tap_to_set_pin);
-        v.setOnClickListener(v1 -> {
+        mView.setOnClickListener(v1 -> {
             final EditText input = new EditText(v1.getContext());
             input.getBackground().setColorFilter(input.getContext().getResources().getColor(PIBLUE), PorterDuff.Mode.SRC_IN);
             AlertDialog.Builder builder = new AlertDialog.Builder(v1.getContext());
@@ -253,21 +302,8 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         });
     }
 
-    private void enableAutoSizeText(TextView otptext, TextView labeltext) {
-       /* if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            otptext.setAutoSizeTextTypeUniformWithConfiguration(12, 36,
-                    1, TypedValue.COMPLEX_UNIT_SP);
-            labeltext.setAutoSizeTextTypeUniformWithConfiguration(8, 28,
-                    1, TypedValue.COMPLEX_UNIT_SP);
-        } else {
-            TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(otptext, 12, 36,
-                    1, TypedValue.COMPLEX_UNIT_SP);
-            TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(labeltext, 8, 28,
-                    1, TypedValue.COMPLEX_UNIT_SP);
-        } */
-
-        TextViewCompat.setAutoSizeTextTypeWithDefaults(otptext, TextViewCompat.AUTO_SIZE_TEXT_TYPE_UNIFORM);
-        TextViewCompat.setAutoSizeTextTypeWithDefaults(labeltext, TextViewCompat.AUTO_SIZE_TEXT_TYPE_UNIFORM);
+    private void enableAutoSizeText(TextView tv) {
+        TextViewCompat.setAutoSizeTextTypeWithDefaults(tv, TextViewCompat.AUTO_SIZE_TEXT_TYPE_UNIFORM);
     }
 
     private void setupOnDrags(View v, final int position) {
