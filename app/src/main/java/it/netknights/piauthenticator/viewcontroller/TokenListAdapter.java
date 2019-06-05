@@ -35,6 +35,7 @@ import android.view.animation.LinearInterpolator;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -150,16 +151,16 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         } else {
             // PUSH SETUP
             TextView pushStatus = mView.findViewById(R.id.textView_pushStatus);
+            ImageView cancelImage = mView.findViewById(R.id.imageView_cancel);
             enableAutoSizeText(pushStatus);
-            setupPUSH(position, v, otptext, labeltext, token, nextbtn, progressBar, pushStatus);
+            setupPUSH(position, v, otptext, labeltext, token, nextbtn, progressBar, pushStatus, cancelImage);
         }
-
 
         setupOnDrags(v, position); // Position change
         return v;
     }
 
-    private void setupPUSH(final int position, View v, TextView bigText, TextView smallText, Token token, Button nextbtn, ProgressBar progressBar, TextView subTextStatus) {
+    private void setupPUSH(final int position, View v, TextView bigText, TextView smallText, Token token, Button nextbtn, ProgressBar progressBar, TextView subTextStatus, ImageView cancelImage) {
         v.setClickable(false);
         v.setOnClickListener(null);
         v.setLongClickable(true);
@@ -173,6 +174,7 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         subTextStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         progressBar.setVisibility(GONE);
         nextbtn.setVisibility(GONE);
+        cancelImage.setVisibility(GONE);
 
         if (!token.getPendingAuths().isEmpty() && (token.state.equals(FINISHED))) {
             // If there is a pending Authentication, set the question as label and title as otp
@@ -184,11 +186,15 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
             nextbtn.setVisibility(VISIBLE);
             nextbtn.setClickable(true);
             nextbtn.setText(v.getContext().getString(R.string.Allow));
-            nextbtn.setOnClickListener(view -> presenterInterface.startPushAuthForPosition(token));
+            nextbtn.setOnClickListener(__ -> presenterInterface.startPushAuthentication(token));
         } else if (!token.getPendingAuths().isEmpty() && (token.state.equals(AUTHENTICATING))) {
             smallText.setText(token.getPendingAuths().get(0).getTitle());
             subTextStatus.setVisibility(VISIBLE);
             subTextStatus.setText(v.getContext().getString(R.string.PushtokenAuthenticating));
+
+            cancelImage.setVisibility(VISIBLE);
+            cancelImage.setClickable(true);
+            cancelImage.setOnClickListener(__ -> presenterInterface.cancelAuthentication(token));
 
             progressBar.setVisibility(VISIBLE);
         } else if (token.state.equals(FINISHED)) {
@@ -201,7 +207,7 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
                 nextbtn.setVisibility(VISIBLE);
                 nextbtn.setText("");
                 nextbtn.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_retry_rollout, 0);
-                nextbtn.setOnClickListener(view -> presenterInterface.startPushRolloutForPosition(position));
+                nextbtn.setOnClickListener(__ -> presenterInterface.startPushRolloutForPosition(position));
                 nextbtn.setLongClickable(false);
                 subTextStatus.setVisibility(VISIBLE);
                 subTextStatus.setText(v.getContext().getString(R.string.PushtokenRetryLabel));
@@ -213,7 +219,7 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
                 smallText.setVisibility(GONE);
 
                 progressBar.setVisibility(VISIBLE);
-
+                // TODO ROLLOUT CANCELLABLE?
                 subTextStatus.setVisibility(VISIBLE);
                 subTextStatus.setText(R.string.PushtokenRollingOut);
             }

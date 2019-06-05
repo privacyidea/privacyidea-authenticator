@@ -28,7 +28,6 @@ import static it.netknights.piauthenticator.utils.AppConstants.*;
 import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
 import static it.netknights.piauthenticator.utils.AppConstants.State.*;
 import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
-import static it.netknights.piauthenticator.utils.Util.logprint;
 
 public class Token {
 
@@ -42,7 +41,7 @@ public class Token {
     private int counter;
     private boolean withPIN = false;
     private boolean isLocked = false;
-    private String Pin = "";
+    private String pin = "";
     private boolean withTapToShow = false;
     private boolean tapped = false;
     private boolean persistent = false;
@@ -66,24 +65,29 @@ public class Token {
         this.counter = 0;
     }
 
-    public void setPendingAuths(ArrayList<PushAuthRequest> pendingAuths) {
-        this.pendingAuths = pendingAuths;
-    }
-
     public ArrayList<PushAuthRequest> getPendingAuths() {
         return pendingAuths;
     }
 
-    public void addPushAuthRequest(PushAuthRequest request) {
+    /**
+     * Add the request if it is not yet present. Comparison is by notificationID and signature.
+     *
+     * @param request Request that should be added
+     * @return true if successful, false if not (duplicate)
+     */
+    public boolean addPushAuthRequest(PushAuthRequest request) {
         for (PushAuthRequest req : pendingAuths) {
             if (req.getNotificationID() == request.getNotificationID()
                     && req.getSignature().equals(request.getSignature())) {
-                // don't add duplicates
-                logprint("Duplicate PushAuthRequest was not added");
-                return;
+                return false;
             }
         }
         pendingAuths.add(request);
+        return true;
+    }
+
+    public void setPendingAuths(ArrayList<PushAuthRequest> pendingAuths) {
+        this.pendingAuths = pendingAuths;
     }
 
     // A push token only contains the serial and a label
@@ -114,11 +118,11 @@ public class Token {
     }
 
     public String getPin() {
-        return Pin;
+        return pin;
     }
 
     public void setPin(String pin) {
-        Pin = pin;
+        this.pin = pin;
     }
 
     public boolean isLocked() {
@@ -130,11 +134,7 @@ public class Token {
     }
 
     public void setWithPIN(boolean withPIN) {
-        if (withPIN) {
-            this.isLocked = true;
-        } else {
-            this.isLocked = false;
-        }
+        this.isLocked = withPIN;
         this.withPIN = withPIN;
     }
 

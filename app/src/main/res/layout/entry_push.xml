@@ -50,22 +50,22 @@
         android:layout_below="@+id/textViewLabel"
         android:layout_alignParentEnd="true"
         android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginEnd="8dp"
         android:backgroundTint="@color/PIBLUE"
-        android:text="@string/button_text_next"
+        android:text="@string/Allow"
         android:textColor="@color/zxing_status_text" />
 
     <TextView
         android:id="@+id/textView_pushStatus"
-        android:layout_width="281dp"
+        android:layout_width="241dp"
         android:layout_height="wrap_content"
         android:layout_below="@+id/textViewLabel"
         android:layout_alignParentStart="true"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="24dp"
-        android:layout_marginEnd="18dp"
+        android:layout_marginStart="64dp"
+        android:layout_marginTop="29dp"
+        android:layout_marginEnd="3dp"
         android:layout_toStartOf="@+id/next_button"
-        android:text="@string/PushRolloutStep1Status"
+        android:text="@string/PushtokenRollingOut"
         android:textAlignment="center"
         android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
@@ -79,5 +79,15 @@
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
         android:indeterminate="true" />
+
+    <ImageView
+        android:id="@+id/imageView_cancel"
+        android:layout_width="54dp"
+        android:layout_height="49dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="9dp"
+        android:layout_marginTop="103dp"
+        app:srcCompat="@drawable/ic_cancel_blue" />
 
 </RelativeLayout>

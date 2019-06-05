@@ -44,28 +44,28 @@ public class AboutListAdapter extends BaseAdapter {
             final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
             v = inflater.inflate(R.layout.about_row, parent, false);
         }
-        final TextView about_title = (TextView) v.findViewById(R.id.about_row_title);
+        final TextView about_title = v.findViewById(R.id.about_row_title);
         about_title.setText(acknowledgements.get(position));
 
-        v.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String text;
-                if (position == 0) {
-                    text = readAcknowledgement(R.raw.apache2license, v);
-                } else if (position == 1) {
-                    text = readAcknowledgement(R.raw.otpauthenticator, v);
-                } else if (position == 2) {
-                    text = readAcknowledgement(R.raw.zxingandroidembedded, v);
-                } else if (position == 3) {
-                    text = readAcknowledgement(R.raw.androidcodesamples, v);
-                } else {
-                    return;
-                }
-                AlertDialog.Builder alert = new AlertDialog.Builder(v.getContext());
-                alert.setMessage(text);
-                alert.show();
+        v.setOnClickListener(v1 -> {
+            String text;
+            if (position == 0) {
+                text = readAcknowledgement(R.raw.apache2license, v1);
+            } else if (position == 1) {
+                text = readAcknowledgement(R.raw.otpauthenticator, v1);
+            } else if (position == 2) {
+                text = readAcknowledgement(R.raw.zxingandroidembedded, v1);
+            } else if (position == 3) {
+                text = readAcknowledgement(R.raw.androidcodesamples, v1);
+            } else if (position == 4) {
+                text = readAcknowledgement(R.raw.apache2license, v1);
             }
+            else {
+                return;
+            }
+            AlertDialog.Builder alert = new AlertDialog.Builder(v1.getContext());
+            alert.setMessage(text);
+            alert.show();
         });
         return v;
     }
@@ -112,6 +112,4 @@ public class AboutListAdapter extends BaseAdapter {
     public long getItemId(int position) {
         return position;
     }
-
-
 }

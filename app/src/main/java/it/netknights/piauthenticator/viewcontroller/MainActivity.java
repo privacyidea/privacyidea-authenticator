@@ -202,6 +202,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
     }
 
+    void pushAuthFinishedFor(int notificationID, String signature) {
+        presenterInterface.removePushAuthFor(notificationID, signature);
+    }
+
     private void setupFab() {
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setBackgroundColor(getResources().getColor(PIBLUE));

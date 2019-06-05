@@ -55,10 +55,13 @@ public class AboutActivity extends AppCompatActivity {
 
     private void setupList() {
         ArrayList<String> acknowledgements = new ArrayList<>();
+
         acknowledgements.add(getString(R.string.license_apache_20));
         acknowledgements.add(getString(R.string.license_otpauth));
         acknowledgements.add(getString(R.string.license_zxing_embed));
         acknowledgements.add(getString(R.string.license_android_code_sample));
+        acknowledgements.add(getString(R.string.license_gson));
+
         AboutListAdapter adapter = new AboutListAdapter();
         listView.setAdapter(adapter);
         adapter.setAcknowledgements(acknowledgements);

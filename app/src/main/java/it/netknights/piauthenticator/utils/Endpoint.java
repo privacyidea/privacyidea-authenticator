@@ -169,7 +169,6 @@ public class Endpoint {
     }
 
     private HttpsURLConnection turnOffSSLVerification(HttpsURLConnection con) {
-        logprint("Turning SSL verification off...");
         final TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager() {
                     @Override
@@ -197,13 +196,8 @@ public class Endpoint {
         }
         final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
         con.setSSLSocketFactory(sslSocketFactory);
-        con.setHostnameVerifier(new HostnameVerifier() {
-            @Override
-            public boolean verify(String hostname, SSLSession session) {
-                return true;
-            }
-        });
-        logprint("Done.");
+        con.setHostnameVerifier((hostname, session) -> true);
+        logprint("SSL Verification is off.");
         return con;
     }
 }

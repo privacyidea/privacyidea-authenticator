@@ -20,7 +20,9 @@
 
 package it.netknights.piauthenticator.services;
 
+import android.app.Notification;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 
@@ -30,6 +32,7 @@ import com.google.firebase.messaging.RemoteMessage;
 import java.util.Map;
 import java.util.Random;
 
+import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -99,34 +102,61 @@ public class FCMReceiverService extends FirebaseMessagingService {
         Intent activity_intent = new Intent(this, MainActivity.class);
         activity_intent = packIntent(activity_intent, notificationID);
 
+        Notification notification = buildNotificationFromPush(getApplicationContext(), notificationID, service_intent,
+                activity_intent, title, question, "Token: " + activity_intent.getStringExtra(SERIAL), getApplicationContext().getString(R.string.Allow));
+        if (notification != null) {
+            NotificationManagerCompat.from(this).notify(notificationID, notification);
+        }
+    }
+
+    /**
+     * Build the default notification for a Push Authentication Request.
+     * Showing the title, question, an optional subtext and a button.
+     * Pressing the button will the start the sepcified service.
+     * The intents for the activity and the service need to be filled beforehand.
+     *
+     * @param context           app context
+     * @param notificationID    notification ID
+     * @param service_intent    intent to start the service with, getService will be called on this
+     * @param activity_intent   intent to start the activity with, getActivity will be called on this
+     * @param title             notification title
+     * @param contextText       notification text
+     * @param subText           notification subtext, optional
+     * @param buttonText        button text
+     * @return                  notification
+     */
+    static Notification buildNotificationFromPush(Context context, int notificationID, Intent service_intent, Intent activity_intent,
+                                                  String title, String contextText, @Nullable String subText, String buttonText) {
+        if (context == null || service_intent.getExtras() == null || activity_intent.getExtras() == null) {
+            logprint("Building default notification failed - missing parameters");
+            return null;
+        }
+
         // Build the PendingIntents with the random notificationID as request code so multiple PendingIntents can live simultaneously
-        PendingIntent pActivity_intent = PendingIntent.getActivity(this, notificationID, activity_intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        PendingIntent pService_intent = PendingIntent.getService(this, notificationID, service_intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pActivity_intent = PendingIntent.getActivity(context, notificationID, activity_intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pService_intent = PendingIntent.getService(context, notificationID, service_intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
+        NotificationCompat.Action action = new NotificationCompat.Action.Builder(0, buttonText, pService_intent).build();
 
-        NotificationCompat.Action action = new NotificationCompat.Action.Builder(0, "Allow", pService_intent).build();
-
-        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this,
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context,
                 NOTIFICATION_CHANNEL_ID)                                // Android 8+ uses notification channels
                 .setSmallIcon(R.drawable.ic_pi_notification)
                 .setContentTitle(title)
-                .setContentText(question)
-                .setSubText("Token: " + serial)                        // TODO Maybe add a service name field?
+                .setContentText(contextText)
                 .setPriority(NotificationCompat.PRIORITY_MAX)          // 7.1 and lower
                 .addAction(action)                                     // Add the allow Button
                 .setAutoCancel(true)                                   // Remove the notification after tabbing it
                 .setWhen(0)
                 .setContentIntent(pActivity_intent);                   // Intent for opening activity with the request
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            mBuilder.setColor(getResources().getColor(R.color.PIBLUE, null));
+        if (subText != null) {
+            mBuilder.setSubText(subText);
         }
 
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-        notificationManager.notify(notificationID, mBuilder.build());
-        logprint("Notification sent with id: " + notificationID);
-        logprint("Service data: " + service_intent.getExtras().toString());
-        logprint("Activity data: " + activity_intent.getExtras().toString());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            mBuilder.setColor(context.getResources().getColor(R.color.PIBLUE, null));
+        }
+        return mBuilder.build();
     }
 
     /**

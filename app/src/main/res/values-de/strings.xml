@@ -80,4 +80,7 @@
     <string name="PushtokenRollingOut">Ausrollen...</string>
     <string name="PushtokenRetryLabel">Ausrollen erneut versuchen</string>
     <string name="PushtokenAuthenticating">Authentifizierung...</string>
+    <string name="NotificationWithToken">"Mit Token "</string>
+    <string name="ERR_SERVER_UNREACHABLE">Server war nicht erreichbar.</string>
+    <string name="retry_authentication">Erneut Versuchen</string>
 </resources>

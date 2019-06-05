@@ -46,13 +46,17 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
 import it.netknights.piauthenticator.model.FirebaseInitConfig;
+import it.netknights.piauthenticator.model.PushAuthRequest;
 import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.utils.AppConstants;
 import it.netknights.piauthenticator.utils.SecretKeyWrapper;
 import it.netknights.piauthenticator.utils.Util;
 
 import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
 import static it.netknights.piauthenticator.utils.AppConstants.KEYFILE;
 import static it.netknights.piauthenticator.utils.AppConstants.PUBKEYFILE;
+import static it.netknights.piauthenticator.utils.AppConstants.State.AUTHENTICATING;
+import static it.netknights.piauthenticator.utils.AppConstants.State.FINISHED;
 import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
@@ -127,17 +131,32 @@ public class TestUtil {
         Token t2 = new Token("testetststest".getBytes(), "SERIALSERIAL2", "LABEL", TOTP, 6);
         list.add(t2);
 
+        // Test for rollout data
         Token pushy = new Token("PUSHYSERIAL", "PUSHYLABEL");
         pushy.enrollment_credential = "enrollmentcred";
         pushy.rollout_url = "https://test.com/roll/out";
-        pushy.rollout_expiration = new Date();
-
+        Date expiration = new Date();
+        pushy.rollout_expiration = expiration;
         list.add(pushy);
+        // Test for rolled out push token
+        Token pushy2 = new Token("serial2", "label2");
+        pushy2.state = AUTHENTICATING;
+        pushy2.addPushAuthRequest(new PushAuthRequest("nonce", "url", "serial", "question", "title", "AAAAAAAA", 654321, true));
+        list.add(pushy2);
 
         util.saveTokens(list);
-
         ArrayList<Token> list_loaded = util.loadTokens();
+
         assertEquals(list.size(), list_loaded.size());
+        // expiration variable has trailing whitespace...
+        assertEquals(expiration.toString().trim(), list_loaded.get(2).rollout_expiration.toString().trim());
+        assertEquals("enrollmentcred", list_loaded.get(2).enrollment_credential);
+        assertEquals("https://test.com/roll/out", list_loaded.get(2).rollout_url);
+
+        // Loading the Pushtoken restores the PushAuthRequest
+        assertFalse(list_loaded.get(3).getPendingAuths().isEmpty());
+        // The token's state is reset when saving in AUTHENTICATING STATE
+        assertEquals(FINISHED, list_loaded.get(3).state);
     }
 
     @Test
@@ -197,7 +216,7 @@ public class TestUtil {
     }
 
     @Test
-    public void saveAndLoadFirebaseConfig() {
+    public void saveLoadDeleteFirebaseConfig() {
         // there is none
         assertNull(util.loadFirebaseConfig());
 
@@ -216,6 +235,10 @@ public class TestUtil {
         assertEquals(fbConf.getAppID(), loaded.getAppID());
         assertEquals(fbConf.getProjID(), loaded.getProjID());
         assertEquals(fbConf.getProjNumber(), loaded.getProjNumber());
+
+        // Delete the file
+        util.removeFirebaseConfig();
+        assertNull(util.loadFirebaseConfig());
     }
 
     @Test

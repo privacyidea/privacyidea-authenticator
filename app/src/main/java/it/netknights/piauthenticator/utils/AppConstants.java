@@ -30,10 +30,12 @@ public class AppConstants {
     public static final int INTENT_ABOUT = 102;
     public static final int PERMISSIONS_REQUEST_CAMERA = 103;
 
+    // ----- CRYPTO CONSTANTS -----
     public static final String CRYPT_ALGORITHM = "AES/GCM/NoPadding";
     public static final String KEY_WRAP_ALGORITHM = "RSA/ECB/PKCS1Padding";
     public static final int KEY_LENGTH = 16;
     public static final int IV_LENGTH = 12;
+    public static final String SIGNING_ALGORITHM = "SHA256withRSA";
 
     // ----- FILE NAMES -----
     public static final String DATAFILE = "data.dat";
@@ -124,6 +126,7 @@ public class AppConstants {
 
     public static final String NOTIFICATION_CHANNEL_ID = "privacyIDEAPush";
     public static final String INTENT_FILTER = "privacyIDEAAuthenticator";
+
     // Status codes
     public static final int PRO_STATUS_STEP_1 = 1001;
     public static final int PRO_STATUS_STEP_2 = 1002;

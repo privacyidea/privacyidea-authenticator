@@ -27,7 +27,6 @@ import org.mockito.Mockito;
 
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 
@@ -57,6 +56,7 @@ import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
 import static it.netknights.piauthenticator.utils.AppConstants.SHA1;
 import static it.netknights.piauthenticator.utils.AppConstants.SHA256;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_SSL_ERROR;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREBASE;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREBASE_DONE;
@@ -260,7 +260,6 @@ public class TestPresenter {
         verify(tokenListViewInterface).updateProgressbars(1);
         assertNotEquals(oldOTP_hotp, t1.getCurrentOTP());
         assertNotEquals(oldOTP_totp, t2.getCurrentOTP());
-
     }
 
     @Test
@@ -274,7 +273,7 @@ public class TestPresenter {
         verify(mainActivityInterface).resumeTimer();
 
         presenter.saveTokenlist();  // saves tokenlist
-        verify(util, times(2)).saveTokens((ArrayList<Token>) any());
+        verify(util, times(2)).saveTokens(any());
     }
 
     @Test
@@ -295,33 +294,33 @@ public class TestPresenter {
         assertEquals(t1, presenter.getTokenAtPosition(1));
         assertEquals(2, presenter.getTokenCount());
 
-        presenter.updateTaskStatus(PRO_STATUS_STEP_1, t1); // setStatusDialogText
-        presenter.updateTaskStatus(PRO_STATUS_STEP_2, t1); // setStatusDialogText
-        presenter.updateTaskStatus(PRO_STATUS_STEP_3, t1); // setStatusDialogText
+        presenter.updateTaskStatus(PRO_STATUS_STEP_1, t1);
+        presenter.updateTaskStatus(PRO_STATUS_STEP_2, t1);
+        presenter.updateTaskStatus(PRO_STATUS_STEP_3, t1);
 
-        // t2 should be added, but unfinished
+        // t2 should be added and state is FINISHED
         Token t2 = new Token("pushy", "pushy");
         presenter.updateTaskStatus(PRO_STATUS_DONE, t2); // t2 should be added
         assertEquals(t2, presenter.getTokenAtPosition(2));
-        assertThat(presenter.getTokenAtPosition(2).state, is(FINISHED));
+        assertEquals(FINISHED, presenter.getTokenAtPosition(2).state);
         assertEquals(3, presenter.getTokenCount());
 
         // t3 should be added, but unfinished
         Token t3 = new Token("pushyfail", "pushyfail");
         presenter.updateTaskStatus(PRO_STATUS_BAD_BASE64, t3);
-        assertThat(presenter.getTokenAtPosition(3).state, is(UNFINISHED));
+        assertEquals(UNFINISHED, presenter.getTokenAtPosition(3).state);
         assertEquals(4, presenter.getTokenCount());
 
         // t4 should be added, but unfinished
         Token t4 = new Token("pushyfail2", "pushyfail");
         presenter.updateTaskStatus(PRO_STATUS_MALFORMED_JSON, t4);
-        assertThat(presenter.getTokenAtPosition(4).state, is(UNFINISHED));
+        assertEquals(UNFINISHED, presenter.getTokenAtPosition(4).state);
         assertEquals(5, presenter.getTokenCount());
 
         // t5 should be added, but unfinished
         Token t5 = new Token("pushyfail3", "pushyfail");
         presenter.updateTaskStatus(PRO_STATUS_RESPONSE_NO_KEY, t5);
-        assertThat(presenter.getTokenAtPosition(5).state, is(UNFINISHED));
+        assertEquals(UNFINISHED, presenter.getTokenAtPosition(5).state);
         assertEquals(6, presenter.getTokenCount());
 
         // t3 should be removed if registration time is expired
@@ -334,16 +333,20 @@ public class TestPresenter {
 
         // t3 should be added again, but unfinished
         presenter.updateTaskStatus(STATUS_ENDPOINT_UNKNOWN_HOST, t3);
-        assertThat(presenter.getTokenAtPosition(5).state, is(UNFINISHED));
+        assertEquals(UNFINISHED, presenter.getTokenAtPosition(5).state);
         assertEquals(6, presenter.getTokenCount());
 
         // t3 should not be added again
         presenter.updateTaskStatus(PRO_STATUS_RESPONSE_NOT_OK, t3);
         assertEquals(6, presenter.getTokenCount());
 
+        // t3 is added but unfinished
+        presenter.updateTaskStatus(STATUS_ENDPOINT_SSL_ERROR, t3);
+        assertEquals(UNFINISHED, presenter.getTokenAtPosition(5).state);
+
         verify(mainActivityInterface, times(3)).cancelStatusDialog();
-        verify(mainActivityInterface, times(7)).makeAlertDialog(anyInt(), anyInt());
-        verify(mainActivityInterface, times(5)).setStatusDialogText(anyInt());
+        verify(mainActivityInterface, times(8)).makeAlertDialog(anyInt(), anyInt());
+        verify(mainActivityInterface, times(1)).setStatusDialogText(anyInt());
     }
 
     @Test
@@ -457,7 +460,7 @@ public class TestPresenter {
 
         Token pushy = new Token("serial", "label");
         presenter.addToken(pushy);
-        presenter.startPushAuthForPosition(0);
+        presenter.startPushAuthentication(0);
 
         presenter.addPushAuthRequest(new PushAuthRequest("asdnflsnf", "https://test.org", "serial",
                 "TESTquestion?", "TESTtitle", "slkdfns", false));
@@ -467,7 +470,7 @@ public class TestPresenter {
         when(wrapper.getPrivateKeyFor(anyString())).thenReturn(privateKey);
         when(util.getPIPubkey(anyString())).thenReturn(publicKey);
 
-        presenter.startPushAuthForPosition(0);
+        presenter.startPushAuthentication(0);
 
         assertTrue(model.getPushAuthRequests().isEmpty());
         verify(tokenListViewInterface).notifyChange();

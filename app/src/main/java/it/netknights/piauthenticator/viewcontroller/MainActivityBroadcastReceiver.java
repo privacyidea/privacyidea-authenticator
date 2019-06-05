@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 
 import static it.netknights.piauthenticator.utils.AppConstants.INTENT_FILTER;
+import static it.netknights.piauthenticator.utils.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.utils.Util.logprint;
 
 public class MainActivityBroadcastReceiver extends BroadcastReceiver {
     private MainActivity main;
@@ -18,7 +20,14 @@ public class MainActivityBroadcastReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (main != null) {
-            main.pushAuthRequestReceived(intent);
+            if (intent.hasExtra("finished")) {
+                main.pushAuthFinishedFor(intent.getIntExtra("finished", 654321),
+                        intent.getStringExtra(SIGNATURE));
+            } else {
+                main.pushAuthRequestReceived(intent);
+            }
+        } else {
+            logprint("Received Broadcast for MainActivity but the Activity is not present.");
         }
     }
 }

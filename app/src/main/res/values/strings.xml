@@ -68,7 +68,7 @@
     <!--Strings for about-->
     <string name="version" translatable="false">Version </string>
     <string name="piauth_name_label" translatable="false">privacyIDEA Authenticator</string>
-    <string name="company_label" translatable="false">\u00A9NetKnights GmbH 2017-2019</string>
+    <string name="company_label" translatable="false">NetKnights GmbH 2017-2019</string>
 
     <!-- Strings for licenses-->
     <string name="licenses_label">Licenses </string>
@@ -109,5 +109,9 @@
     <string name="ResetFirebaseInfoMsg">To reset Firebase, restart the App.</string>
     <string name="PushtokenRetryLabel">Retry rollout</string>
     <string name="PushtokenAuthenticating">Authenticating…</string>
+    <string name="license_gson" translatable="false">Gson</string>
+    <string name="NotificationWithToken">With token</string>
+    <string name="ERR_SERVER_UNREACHABLE">Server was unreachable.</string>
+    <string name="retry_authentication">Retry Authentication</string>
 
 </resources>

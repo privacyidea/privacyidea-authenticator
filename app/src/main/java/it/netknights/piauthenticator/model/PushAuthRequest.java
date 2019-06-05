@@ -37,9 +37,9 @@ public class PushAuthRequest {
         this.title = title;
         this.signature = signature;
         this.sslVerify = sslVerify;
-        // Add expiration time which is +3 Minutes
+        // Add expiration time which is +2 Minutes
         Calendar now = Calendar.getInstance();
-        now.add(Calendar.MINUTE, 3);
+        now.add(Calendar.MINUTE, 2);
         this.expiration = now.getTime();
         this.notificationID = notificationID;
     }
@@ -91,5 +91,4 @@ public class PushAuthRequest {
     public boolean isSslVerify() {
         return sslVerify;
     }
-
 }

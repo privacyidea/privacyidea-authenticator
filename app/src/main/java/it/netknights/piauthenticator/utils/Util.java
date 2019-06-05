@@ -99,6 +99,7 @@ import static it.netknights.piauthenticator.utils.AppConstants.PUBKEYFILE;
 import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
 import static it.netknights.piauthenticator.utils.AppConstants.ROLLOUT_EXPIRATION;
 import static it.netknights.piauthenticator.utils.AppConstants.ROLLOUT_STATE;
+import static it.netknights.piauthenticator.utils.AppConstants.SIGNING_ALGORITHM;
 import static it.netknights.piauthenticator.utils.AppConstants.State;
 import static it.netknights.piauthenticator.utils.AppConstants.State.AUTHENTICATING;
 import static it.netknights.piauthenticator.utils.AppConstants.State.FINISHED;
@@ -205,9 +206,8 @@ public class Util {
                 String pendingAuths = o.getString(PENDING_AUTHS);
                 t.setPendingAuths(new Gson().fromJson(pendingAuths, new TypeToken<ArrayList<PushAuthRequest>>() {
                 }.getType()));
-                logprint("loaded auths:" + t.getPendingAuths().toString());
             } catch (JSONException e) {
-                // there were none
+                // there were none and that's ok
             }
             return t;
         }
@@ -246,7 +246,9 @@ public class Util {
 
         if (t.getType().equals(PUSH)) {
             State state = t.state;
-            if (state.equals(AUTHENTICATING)) { // Don't save authenticating state
+            if (state.equals(AUTHENTICATING)) {
+                // Don't save authenticating state, has to be finished
+                // Unfinished token cannot authenticate
                 state = FINISHED;
             }
             o.put(ROLLOUT_STATE, state);
@@ -262,7 +264,6 @@ public class Util {
             // Check for pending Authentication Requests
             if (!t.getPendingAuths().isEmpty()) {
                 String pendingAuths = new Gson().toJson(t.getPendingAuths());
-                logprint("Saving auths " + pendingAuths);
                 o.put(PENDING_AUTHS, pendingAuths);
             }
             return o;
@@ -552,7 +553,6 @@ public class Util {
         return secretKeyWrapper.unwrap(wrapped);
     }
 
-
     /**
      * @param privateKey privateKey to sign the message with
      * @param message    message to sign
@@ -562,10 +562,9 @@ public class Util {
      * @throws SignatureException
      */
     public static String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        logprint("message to sign: " + message);
         byte[] bMessage = message.getBytes(StandardCharsets.UTF_8);
 
-        Signature s = Signature.getInstance("SHA256withRSA");
+        Signature s = Signature.getInstance(SIGNING_ALGORITHM);
         s.initSign(privateKey);
         s.update(bMessage);
 
@@ -584,8 +583,6 @@ public class Util {
      */
     public static boolean verifySignature(PublicKey publicKey, String signature, String payload) throws InvalidKeyException,
             NoSuchAlgorithmException, SignatureException {
-        logprint("signature to verify (b32): " + signature);
-        logprint("message to verify signature for: " + payload);
         if (!new Base32().isInAlphabet(signature)) {
             logprint("verifySignature: The given signature is not Base32 encoded!");
             return false;
@@ -593,7 +590,7 @@ public class Util {
 
         byte[] message = payload.getBytes(StandardCharsets.UTF_8);
         byte[] bSignature = new Base32().decode(signature);
-        Signature sig = Signature.getInstance("SHA256withRSA");
+        Signature sig = Signature.getInstance(SIGNING_ALGORITHM);
 
         sig.initVerify(publicKey);
         sig.update(message);

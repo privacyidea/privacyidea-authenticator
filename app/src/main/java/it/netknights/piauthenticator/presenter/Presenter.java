@@ -20,6 +20,10 @@
 
 package it.netknights.piauthenticator.presenter;
 
+import android.util.Pair;
+
+import androidx.core.app.NotificationManagerCompat;
+
 import org.apache.commons.codec.binary.Base32;
 
 import java.io.IOException;
@@ -30,6 +34,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -84,6 +89,9 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     private Model model;
     private Util util;
 
+    private ArrayList<Pair<Token, PushAuthTask>> runningAuthentications = new ArrayList<>();
+    private ArrayList<Pair<Token, PushAuthRequest>> toDelete = new ArrayList<>();;
+
     public Presenter(TokenListViewInterface tokenListViewInterface, MainActivityInterface mainActivityInterface, Util util) {
         this.tokenListInterface = tokenListViewInterface;
         this.mainActivityInterface = mainActivityInterface;
@@ -109,6 +117,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             mainActivityInterface.makeAlertDialog(R.string.TokenExpiredTitle, expired.trim());
             tokenListInterface.notifyChange();
         }
+        checkForExpiredAuths();
     }
 
     @Override
@@ -130,9 +139,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                     util.storeFirebaseConfig(result.firebaseInitConfig);
                     mainActivityInterface.firebaseInit(result.firebaseInitConfig);
                 }
-                if (!result.sslverify) {
-                    token.sslVerify = false;
-                }
+                token.sslVerify = result.sslverify;
                 token.state = UNFINISHED;
                 Calendar now = Calendar.getInstance();
                 now.add(Calendar.MINUTE, result.ttl);
@@ -189,6 +196,14 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     @Override
+    public void cancelAuthentication(Token token) {
+        // Reset the token's state and cancel the task
+        token.state = FINISHED;
+        deleteRunningAuthenticationFor(token);
+        tokenListInterface.notifyChange();
+    }
+
+    @Override
     public void addPushAuthRequest(PushAuthRequest request) {
         // Requests for token that are not enrolled yet are not allowed
         for (Token token : model.getTokens()) {
@@ -197,8 +212,8 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                     return;
                 } else {
                     logprint("Push Auth Request for " + request.getSerial() + " added.");
-                    token.addPushAuthRequest(request);
-                    tokenListInterface.notifyChange();
+                    if (token.addPushAuthRequest(request))
+                        tokenListInterface.notifyChange();
                 }
             }
         }
@@ -314,7 +329,6 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     @Override
-    //This is only used for swapping when changing position in the list
     public Token removeTokenAtPosition(int position) {
         return model.getTokens().remove(position);
     }
@@ -351,19 +365,27 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     @Override
-    public void startPushAuthForPosition(Token token) {
+    public void startPushAuthentication(Token token) {
         // onclick from token in list
         if (!token.getType().equals(PUSH)) return;
         // Always the first pendingAuth
         PushAuthRequest req = token.getPendingAuths().get(0);
         if (req == null || !req.getSerial().equals(token.getSerial()))
             return;
+        if (req.getExpiration().compareTo(new Date()) < 1) {
+            // Expired
+            token.getPendingAuths().remove(req);
+            tokenListInterface.notifyChange();
+            return;
+        }
         try {
             PrivateKey appPrivateKey = getWrapper().getPrivateKeyFor(req.getSerial());
             PublicKey piPublicKey = util.getPIPubkey(req.getSerial());
             if (appPrivateKey != null && piPublicKey != null) {
                 token.state = AUTHENTICATING;
-                new PushAuthTask(token, req, piPublicKey, appPrivateKey, this).execute();
+                PushAuthTask task = new PushAuthTask(token, req, piPublicKey, appPrivateKey, this);
+                runningAuthentications.add(new Pair<>(token, task));
+                task.execute();
                 tokenListInterface.notifyChange();
             }
         } catch (CertificateException e) {
@@ -410,6 +432,23 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     @Override
+    public void removePushAuthFor(int notificationID, String signature) {
+        boolean changed = false;
+        for (Token token : model.getTokens()) {
+            for (PushAuthRequest req : token.getPendingAuths()) {
+                if (req.getSignature().equals(signature) && req.getNotificationID() == notificationID) {
+                    logprint("Removing PushAuthReq");
+                    token.getPendingAuths().remove(req);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            tokenListInterface.notifyChange();
+        }
+    }
+
+    @Override
     public void increaseHOTPCounter(Token token) {
         token.setCounter((token.getCounter() + 1));
         token.setCurrentOTP(generate(token));
@@ -437,25 +476,28 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         }
         // Check for expired pendingAuths every 30s
         if (progress == 30 || progress == 0) {
-            checkForExpiredAuths();
         }
+        checkForExpiredAuths();
     }
 
     private void checkForExpiredAuths() {
-        boolean changed = false;
         for (Token token : model.getTokens()) {
             if (token.getType().equals(PUSH)) {
                 for (PushAuthRequest req : token.getPendingAuths()) {
                     if (new Date().after(req.getExpiration())) {
                         // Expired
-                        token.getPendingAuths().remove(req);
-                        changed = true;
+                        toDelete.add(new Pair<>(token, req));
                     }
                 }
             }
         }
-        if (changed) {
+        for (Pair<Token, PushAuthRequest> pair : toDelete) {
+            pair.first.getPendingAuths().remove(pair.second);
+            mainActivityInterface.cancelNotification(pair.second.getNotificationID());
+        }
+        if (!toDelete.isEmpty()) {
             tokenListInterface.notifyChange();
+            toDelete.clear();
         }
     }
 
@@ -498,7 +540,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     /**
      * Store the received key with the serial as alias. If there is an error when storing the key,
-     * the rollout will be marked as unfinished and can be repeated.
+     * the Token state will stay marked as unfinished and can be repeated.
      *
      * @param key   the received key as raw String
      * @param token token to save the key for
@@ -627,6 +669,48 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             tokenListInterface.notifyChange();
         } else {
             mainActivityInterface.makeToast(R.string.AuthenticationFailed);
+        }
+        // Regardless of success, remove the token from runningAuthentications
+        deleteRunningAuthenticationFor(token);
+    }
+
+    /**
+     * Cancel the running Authentication Task and remove the pair from the runningAuthentications List
+     *
+     * @param token token of the pair
+     */
+    private void deleteRunningAuthenticationFor(Token token) {
+        Pair<Token, PushAuthTask> toDelete = null;
+        for (Pair<Token, PushAuthTask> pair :
+                runningAuthentications) {
+            if (pair.first.getSerial().equals(token.getSerial())) {
+                toDelete = pair;
+            }
+        }
+        if (toDelete != null) {
+            toDelete.second.cancel(true);
+            runningAuthentications.remove(toDelete);
+        }
+        token.state = FINISHED;
+    }
+
+    @Override
+    public void handleError(int statusCode, Token token) {
+        switch (statusCode) {
+            case STATUS_ENDPOINT_UNKNOWN_HOST: {
+                // Network unreachable
+                cancelAuthentication(token);
+                mainActivityInterface.makeToast(R.string.ERR_SERVER_UNREACHABLE);
+                break;
+            }
+            case STATUS_ENDPOINT_SSL_ERROR: {
+                cancelAuthentication(token);
+                mainActivityInterface.makeToast(R.string.SSLHandshakeFailed);
+                break;
+            }
+            default:
+                logprint("No handling for errorcode " + statusCode + " in presenter.");
+                break;
         }
     }
 }

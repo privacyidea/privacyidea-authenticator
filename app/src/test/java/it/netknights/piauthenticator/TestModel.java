@@ -112,4 +112,13 @@ public class TestModel {
 
         assertFalse(m.hasPushToken());
     }
+
+    @Test
+    public void addingPushAuthRequests() {
+        Token t = new Token("serial", "label");
+        PushAuthRequest req = new PushAuthRequest("nonce", "url", "serial", "question", "title", "AAAAAAAA", 654321, true);
+
+        assertTrue(t.addPushAuthRequest(req)); // Works the first time
+        assertFalse(t.addPushAuthRequest(req)); // Adding duplicate does not work
+    }
 }

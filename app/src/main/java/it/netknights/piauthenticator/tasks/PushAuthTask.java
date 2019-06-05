@@ -48,6 +48,7 @@ import static it.netknights.piauthenticator.utils.AppConstants.RESPONSE_RESULT;
 import static it.netknights.piauthenticator.utils.AppConstants.RESPONSE_VALUE;
 import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.utils.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
 import static it.netknights.piauthenticator.utils.Util.logprint;
 
 public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements EndpointCallback {
@@ -84,8 +85,6 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements E
     @Override
     protected Boolean doInBackground(Void... voids) {
         // 0. Split data
-        // TODO convert key-value pairs to the map that was signed in the server
-        // TODO how does the payload look like?
         String strSSLVerify = sslVerify ? "1" : "0";
 
         String toVerify = nonce + "|" + endpoint_url + "|" + serial + "|" + question +
@@ -107,8 +106,6 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements E
             logprint("Signature invalid.");
             publishProgress(PA_INVALID_SIGNATURE);
             return false;
-        } else {
-            logprint("Signature valid.");
         }
 
         // 2. Sign the nonce
@@ -140,11 +137,12 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements E
         return true;
     }
 
+    // Progress from THIS task and statusCodes from Endpoint
     @Override
     protected void onProgressUpdate(Integer... values) {
         super.onProgressUpdate(values);
-
-        switch (values[0]) {
+        int code = values[0];
+        switch (code) {
             case PA_INVALID_SIGNATURE:
                 break;
             case PA_SIGNING_FAILURE:
@@ -157,17 +155,22 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements E
                     logprint("authentication failed :(");
                     pushAuthCallbackInterface.authenticationFinished(false, token);
                 }
-            default:
                 break;
+            default: {
+                pushAuthCallbackInterface.handleError(code, token);
+                break;
+            }
         }
-
     }
 
     @Override
     public void updateStatus(int statusCode) {
-
+        // Status Codes from the Endpoint are directed to onProgressUpdate to run on UI Thread
+        logprint("Statuscode in PushAuthTask from Endpoint: " + statusCode);
+        publishProgress(statusCode);
     }
 
+    // Successful request callback from Endpoint
     @Override
     public void responseReceived(String response, int responseCode) {
         if (responseCode == 200) {
