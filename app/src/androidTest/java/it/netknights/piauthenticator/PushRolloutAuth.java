@@ -190,8 +190,9 @@ public class PushRolloutAuth {
         mActivityTestRule.launchActivity(intent);
 
         // Now there should be a pending Auth request, the next button should be visible to allow the authentication
-        onView(withId(R.id.textViewToken)).check(matches(withText(title)));
-        onView(withId(R.id.textViewLabel)).check(matches(withText(question)));
+        onView(withId(R.id.textViewToken)).check(matches(withText("privacyIDEA: PIPU0001D07B")));
+        onView(withId(R.id.textViewLabel)).check(matches(withText(title)));
+        onView(withId(R.id.textView_pushStatus)).check(matches(withText(question)));
         onView(withId(R.id.next_button)).check(matches(allOf(withEffectiveVisibility(VISIBLE),
                 withText(R.string.Allow))));
 

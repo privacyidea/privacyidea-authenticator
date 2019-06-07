@@ -365,9 +365,9 @@ public class DetailAndMenuTest {
 
         onView(withText((R.string.tap_to_set_pin))).check(matches(isDisplayed()));
 
-        ViewInteraction textView10 = onView(
+      /*  ViewInteraction textView10 = onView(
                 allOf(withId(R.id.textViewLabel), withText("Nam")));
-        textView10.check(matches(withText("Nam")));
+        textView10.check(matches(withText("Nam")));*/
 
         sleep();
 
