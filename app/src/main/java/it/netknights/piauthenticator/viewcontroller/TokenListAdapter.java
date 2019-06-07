@@ -76,13 +76,23 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         final Token token = getItem(position);
 
         if (v == null) {
+            // New list entry is generated
             final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
             if (token.getType().equals(PUSH)) {
                 v = inflater.inflate(R.layout.entry_push, parent, false);
             } else {
                 v = inflater.inflate(R.layout.entry_normal, parent, false);
             }
+        } else {
+            // If view is recycled, check if it is the correct layout for the token (in case of changing positions)
+            if ((v.findViewById(R.id.textView_pushStatus) == null) && token.getType().equals(PUSH)) {
+                // wrong layout
+                v = LayoutInflater.from(parent.getContext()).inflate(R.layout.entry_push, parent, false);
+            } else if ((v.findViewById(R.id.textView_pushStatus) != null) && !token.getType().equals(PUSH)) {
+                v = LayoutInflater.from(parent.getContext()).inflate(R.layout.entry_normal, parent, false);
+            }
         }
+
         v.setTag(position);
         // COMMON VIEWS
         final View mView = v;
