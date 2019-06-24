@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.viewcontroller;
 
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -33,6 +33,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+
+import it.netknights.piauthenticator.utils.AppConstants;
+import it.netknights.piauthenticator.R;
 
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 
@@ -52,10 +55,13 @@ public class AboutActivity extends AppCompatActivity {
 
     private void setupList() {
         ArrayList<String> acknowledgements = new ArrayList<>();
+
         acknowledgements.add(getString(R.string.license_apache_20));
         acknowledgements.add(getString(R.string.license_otpauth));
         acknowledgements.add(getString(R.string.license_zxing_embed));
         acknowledgements.add(getString(R.string.license_android_code_sample));
+        acknowledgements.add(getString(R.string.license_gson));
+
         AboutListAdapter adapter = new AboutListAdapter();
         listView.setAdapter(adapter);
         adapter.setAcknowledgements(acknowledgements);

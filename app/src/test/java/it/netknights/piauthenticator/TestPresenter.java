@@ -1,3 +1,22 @@
+/*
+  privacyIDEA Authenticator
+
+  Authors: Nils Behlen <nils.behlen@netknights.it>
+
+  Copyright (c) 2017-2019 NetKnights GmbH
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
 package it.netknights.piauthenticator;
 
 import org.apache.commons.codec.binary.Base32;
@@ -6,48 +25,52 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.UnrecoverableEntryException;
-import java.security.cert.CertificateException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Map;
 
-import static it.netknights.piauthenticator.AppConstants.HMACSHA1;
-import static it.netknights.piauthenticator.AppConstants.HMACSHA256;
-import static it.netknights.piauthenticator.AppConstants.HOTP;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_BAD_BASE64;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_DONE;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_JSON;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_1;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_2;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_3;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
-import static it.netknights.piauthenticator.AppConstants.PUSH;
-import static it.netknights.piauthenticator.AppConstants.QUESTION;
-import static it.netknights.piauthenticator.AppConstants.SHA1;
-import static it.netknights.piauthenticator.AppConstants.SHA256;
-import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE;
-import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE_DONE;
-import static it.netknights.piauthenticator.AppConstants.STATUS_STANDARD_ROLLOUT_DONE;
-import static it.netknights.piauthenticator.AppConstants.STATUS_TWO_STEP_ROLLOUT;
-import static it.netknights.piauthenticator.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
-import static it.netknights.piauthenticator.AppConstants.TITLE;
-import static it.netknights.piauthenticator.AppConstants.TOTP;
+import it.netknights.piauthenticator.interfaces.MainActivityInterface;
+import it.netknights.piauthenticator.interfaces.TokenListViewInterface;
+import it.netknights.piauthenticator.model.FirebaseInitConfig;
+import it.netknights.piauthenticator.model.Model;
+import it.netknights.piauthenticator.model.ScanResult;
+import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.presenter.Presenter;
+import it.netknights.piauthenticator.utils.SecretKeyWrapper;
+import it.netknights.piauthenticator.utils.Util;
+
+import static it.netknights.piauthenticator.utils.AppConstants.HMACSHA1;
+import static it.netknights.piauthenticator.utils.AppConstants.HMACSHA256;
+import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_BAD_BASE64;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_MALFORMED_JSON;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_1;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_2;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_3;
+import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
+import static it.netknights.piauthenticator.utils.AppConstants.SHA1;
+import static it.netknights.piauthenticator.utils.AppConstants.SHA256;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_SSL_ERROR;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREBASE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREBASE_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_STANDARD_ROLLOUT_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.State.FINISHED;
+import static it.netknights.piauthenticator.utils.AppConstants.State.UNFINISHED;
+import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -63,8 +86,8 @@ import static org.mockito.Mockito.when;
 public class TestPresenter {
 
     private Presenter presenter;
-    private Interfaces.TokenListViewInterface tokenListViewInterface;
-    private Interfaces.MainActivityInterface mainActivityInterface;
+    private TokenListViewInterface tokenListViewInterface;
+    private MainActivityInterface mainActivityInterface;
     private Util util;
     private SecretKeyWrapper wrapper;
     private Model model;
@@ -73,8 +96,8 @@ public class TestPresenter {
     public void setup() {
         model = Mockito.spy(Model.class);
         wrapper = Mockito.mock(SecretKeyWrapper.class);
-        tokenListViewInterface = Mockito.mock(Interfaces.TokenListViewInterface.class);
-        mainActivityInterface = Mockito.mock(Interfaces.MainActivityInterface.class);
+        tokenListViewInterface = Mockito.mock(TokenListViewInterface.class);
+        mainActivityInterface = Mockito.mock(MainActivityInterface.class);
         util = Mockito.mock(Util.class);
 
         Presenter tmp = new Presenter(tokenListViewInterface, mainActivityInterface, util);
@@ -165,8 +188,8 @@ public class TestPresenter {
         verify(wrapper).removePrivateKeyFor("serial");
     }
 
-    @Test
-    public void pushAuthRequests() {
+    /*  @Test
+  public void pushAuthRequests() {
         // Add a push token, which gets a PushAuthRequest
         Token t2 = new Token("PUSHserial", "testlabel");
         presenter.addToken(t2);
@@ -182,7 +205,7 @@ public class TestPresenter {
         presenter.addToken(t3);
         map = presenter.getPushAuthRequestInfo(t3);
         assertNull(map);
-    }
+    } */
 
     @Test
     public void increaseHOTPCounter() {
@@ -214,7 +237,6 @@ public class TestPresenter {
         assertEquals(0, toCompare.getCounter());
         assertTrue(toCompare.isWithPIN());
         Assert.assertArrayEquals("test".getBytes(), toCompare.getSecret());
-
     }
 
     @Test
@@ -238,7 +260,6 @@ public class TestPresenter {
         verify(tokenListViewInterface).updateProgressbars(1);
         assertNotEquals(oldOTP_hotp, t1.getCurrentOTP());
         assertNotEquals(oldOTP_totp, t2.getCurrentOTP());
-
     }
 
     @Test
@@ -252,7 +273,7 @@ public class TestPresenter {
         verify(mainActivityInterface).resumeTimer();
 
         presenter.saveTokenlist();  // saves tokenlist
-        verify(util, times(2)).saveTokens((ArrayList<Token>) any());
+        verify(util, times(2)).saveTokens(any());
     }
 
     @Test
@@ -273,33 +294,33 @@ public class TestPresenter {
         assertEquals(t1, presenter.getTokenAtPosition(1));
         assertEquals(2, presenter.getTokenCount());
 
-        presenter.updateTaskStatus(PRO_STATUS_STEP_1, t1); // setStatusDialogText
-        presenter.updateTaskStatus(PRO_STATUS_STEP_2, t1); // setStatusDialogText
-        presenter.updateTaskStatus(PRO_STATUS_STEP_3, t1); // setStatusDialogText
+        presenter.updateTaskStatus(PRO_STATUS_STEP_1, t1);
+        presenter.updateTaskStatus(PRO_STATUS_STEP_2, t1);
+        presenter.updateTaskStatus(PRO_STATUS_STEP_3, t1);
 
-        // t2 should be added, but unfinished
+        // t2 should be added and state is FINISHED
         Token t2 = new Token("pushy", "pushy");
         presenter.updateTaskStatus(PRO_STATUS_DONE, t2); // t2 should be added
         assertEquals(t2, presenter.getTokenAtPosition(2));
-        assertTrue(presenter.getTokenAtPosition(2).rollout_finished);
+        assertEquals(FINISHED, presenter.getTokenAtPosition(2).state);
         assertEquals(3, presenter.getTokenCount());
 
         // t3 should be added, but unfinished
         Token t3 = new Token("pushyfail", "pushyfail");
         presenter.updateTaskStatus(PRO_STATUS_BAD_BASE64, t3);
-        assertFalse(presenter.getTokenAtPosition(3).rollout_finished);
+        assertEquals(UNFINISHED, presenter.getTokenAtPosition(3).state);
         assertEquals(4, presenter.getTokenCount());
 
         // t4 should be added, but unfinished
         Token t4 = new Token("pushyfail2", "pushyfail");
         presenter.updateTaskStatus(PRO_STATUS_MALFORMED_JSON, t4);
-        assertFalse(presenter.getTokenAtPosition(4).rollout_finished);
+        assertEquals(UNFINISHED, presenter.getTokenAtPosition(4).state);
         assertEquals(5, presenter.getTokenCount());
 
         // t5 should be added, but unfinished
         Token t5 = new Token("pushyfail3", "pushyfail");
         presenter.updateTaskStatus(PRO_STATUS_RESPONSE_NO_KEY, t5);
-        assertFalse(presenter.getTokenAtPosition(5).rollout_finished);
+        assertEquals(UNFINISHED, presenter.getTokenAtPosition(5).state);
         assertEquals(6, presenter.getTokenCount());
 
         // t3 should be removed if registration time is expired
@@ -312,28 +333,26 @@ public class TestPresenter {
 
         // t3 should be added again, but unfinished
         presenter.updateTaskStatus(STATUS_ENDPOINT_UNKNOWN_HOST, t3);
-        assertFalse(presenter.getTokenAtPosition(5).rollout_finished);
+        assertEquals(UNFINISHED, presenter.getTokenAtPosition(5).state);
         assertEquals(6, presenter.getTokenCount());
 
         // t3 should not be added again
         presenter.updateTaskStatus(PRO_STATUS_RESPONSE_NOT_OK, t3);
         assertEquals(6, presenter.getTokenCount());
 
+        // t3 is added but unfinished
+        presenter.updateTaskStatus(STATUS_ENDPOINT_SSL_ERROR, t3);
+        assertEquals(UNFINISHED, presenter.getTokenAtPosition(5).state);
+
         verify(mainActivityInterface, times(3)).cancelStatusDialog();
-        verify(mainActivityInterface, times(7)).makeAlertDialog(anyInt(), anyInt());
-        verify(mainActivityInterface, times(5)).setStatusDialogText(anyInt());
+        verify(mainActivityInterface, times(8)).makeAlertDialog(anyInt(), anyInt());
+        verify(mainActivityInterface, times(1)).setStatusDialogText(anyInt());
     }
 
     @Test
     public void testDialogToast() {
         presenter.makeAlertDialog("test", "test");
         verify(mainActivityInterface).makeAlertDialog("test", "test");
-
-        String token = presenter.getFirebaseToken();
-        verify(mainActivityInterface).getFirebaseToken();
-        assertNull(token);
-
-
     }
 
     @Test
@@ -362,13 +381,13 @@ public class TestPresenter {
 
         presenter.receivePublicKey("test", pushy);
         verify(presenter).updateTaskStatus(PRO_STATUS_RESPONSE_NO_KEY, pushy);
-        assertFalse(pushy.rollout_finished);
+        assertEquals(pushy.state, UNFINISHED);
 
         doThrow(IllegalArgumentException.class).when(util).storePIPubkey(anyString(), anyString());
 
         presenter.receivePublicKey("test", pushy);
         verify(presenter).updateTaskStatus(PRO_STATUS_BAD_BASE64, pushy);
-        assertFalse(pushy.rollout_finished);
+        assertEquals(pushy.state, UNFINISHED);
     }
 
     /*
@@ -434,14 +453,14 @@ public class TestPresenter {
         presenter.scanQRfinished(res);
         verify(mainActivityInterface).makeAlertDialog(anyInt(), anyInt());
     }
-
+/*
     @Test
     public void startPushAuth() throws CertificateException, UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException, IOException {
         clearTokenlist();
 
         Token pushy = new Token("serial", "label");
         presenter.addToken(pushy);
-        presenter.startPushAuthForPosition(0);
+        presenter.startPushAuthentication(0);
 
         presenter.addPushAuthRequest(new PushAuthRequest("asdnflsnf", "https://test.org", "serial",
                 "TESTquestion?", "TESTtitle", "slkdfns", false));
@@ -451,11 +470,11 @@ public class TestPresenter {
         when(wrapper.getPrivateKeyFor(anyString())).thenReturn(privateKey);
         when(util.getPIPubkey(anyString())).thenReturn(publicKey);
 
-        presenter.startPushAuthForPosition(0);
+        presenter.startPushAuthentication(0);
 
-        assertTrue(model.pushAuthRequests.isEmpty());
+        assertTrue(model.getPushAuthRequests().isEmpty());
         verify(tokenListViewInterface).notifyChange();
-    }
+    } */
 
     @Test
     public void lastPushToken() {

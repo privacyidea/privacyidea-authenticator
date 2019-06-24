@@ -5,7 +5,7 @@
     android:id="@+id/main_constraint_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="it.netknights.piauthenticator.MainActivity"
+    tools:context="it.netknights.piauthenticator.viewcontroller.MainActivity"
     tools:layout_editor_absoluteX="0dp"
     tools:layout_editor_absoluteY="81dp">
 

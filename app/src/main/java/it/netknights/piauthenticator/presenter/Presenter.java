@@ -18,9 +18,11 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.presenter;
 
-import android.os.AsyncTask;
+import android.util.Pair;
+
+import androidx.core.app.NotificationManagerCompat;
 
 import org.apache.commons.codec.binary.Base32;
 
@@ -34,48 +36,63 @@ import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Date;
 
-import static it.netknights.piauthenticator.AppConstants.HOTP;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_BAD_BASE64;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_DONE;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_MALFORMED_JSON;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_1;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_2;
-import static it.netknights.piauthenticator.AppConstants.PRO_STATUS_STEP_3;
-import static it.netknights.piauthenticator.AppConstants.PUSH;
-import static it.netknights.piauthenticator.AppConstants.QUESTION;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_ERROR;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
-import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE;
-import static it.netknights.piauthenticator.AppConstants.STATUS_INIT_FIREBASE_DONE;
-import static it.netknights.piauthenticator.AppConstants.STATUS_STANDARD_ROLLOUT_DONE;
-import static it.netknights.piauthenticator.AppConstants.STATUS_TWO_STEP_ROLLOUT;
-import static it.netknights.piauthenticator.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
-import static it.netknights.piauthenticator.AppConstants.TITLE;
-import static it.netknights.piauthenticator.AppConstants.TOTP;
-import static it.netknights.piauthenticator.Interfaces.MainActivityInterface;
-import static it.netknights.piauthenticator.Interfaces.PresenterInterface;
-import static it.netknights.piauthenticator.Interfaces.PresenterTaskInterface;
-import static it.netknights.piauthenticator.Interfaces.PresenterUtilInterface;
-import static it.netknights.piauthenticator.Interfaces.TokenListViewInterface;
-import static it.netknights.piauthenticator.OTPGenerator.generate;
-import static it.netknights.piauthenticator.OTPGenerator.hashPIN;
-import static it.netknights.piauthenticator.Util.logprint;
+import it.netknights.piauthenticator.R;
+import it.netknights.piauthenticator.interfaces.MainActivityInterface;
+import it.netknights.piauthenticator.interfaces.PresenterInterface;
+import it.netknights.piauthenticator.interfaces.PresenterTaskInterface;
+import it.netknights.piauthenticator.interfaces.PresenterUtilInterface;
+import it.netknights.piauthenticator.interfaces.PushAuthCallbackInterface;
+import it.netknights.piauthenticator.interfaces.TokenListViewInterface;
+import it.netknights.piauthenticator.model.FirebaseInitConfig;
+import it.netknights.piauthenticator.model.Model;
+import it.netknights.piauthenticator.model.PushAuthRequest;
+import it.netknights.piauthenticator.model.ScanResult;
+import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.tasks.PushAuthTask;
+import it.netknights.piauthenticator.tasks.PushRolloutTask;
+import it.netknights.piauthenticator.tasks.TwoStepRolloutTask;
+import it.netknights.piauthenticator.utils.SecretKeyWrapper;
+import it.netknights.piauthenticator.utils.Util;
 
-public class Presenter implements PresenterInterface, PresenterTaskInterface, PresenterUtilInterface, Interfaces.PushAuthCallbackInterface {
+import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_BAD_BASE64;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_MALFORMED_JSON;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_REGISTRATION_TIME_EXPIRED;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_RESPONSE_NOT_OK;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_RESPONSE_NO_KEY;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_1;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_2;
+import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_3;
+import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
+import static it.netknights.piauthenticator.utils.AppConstants.State.*;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_ERROR;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_SSL_ERROR;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREBASE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREBASE_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_STANDARD_ROLLOUT_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
+import static it.netknights.piauthenticator.utils.OTPGenerator.generate;
+import static it.netknights.piauthenticator.utils.OTPGenerator.hashPIN;
+import static it.netknights.piauthenticator.utils.Util.logprint;
+
+public class Presenter implements PresenterInterface, PresenterTaskInterface, PresenterUtilInterface, PushAuthCallbackInterface {
 
     private TokenListViewInterface tokenListInterface;
     private MainActivityInterface mainActivityInterface;
     private Model model;
     private Util util;
 
-    Presenter(TokenListViewInterface tokenListViewInterface, MainActivityInterface mainActivityInterface, Util util) {
+    private ArrayList<Pair<Token, PushAuthTask>> runningAuthentications = new ArrayList<>();
+    private ArrayList<Pair<Token, PushAuthRequest>> toDelete = new ArrayList<>();;
+
+    public Presenter(TokenListViewInterface tokenListViewInterface, MainActivityInterface mainActivityInterface, Util util) {
         this.tokenListInterface = tokenListViewInterface;
         this.mainActivityInterface = mainActivityInterface;
         this.util = util;
@@ -84,9 +101,8 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     @Override
     public void init() {
         // Logic of onCreate
-
         if (model == null) {
-            model = new Model(util.loadTokens(), new ArrayList<PushAuthRequest>());
+            model = new Model(util.loadTokens());
         }
         FirebaseInitConfig firebaseInitConfig = util.loadFirebaseConfig();
         if (firebaseInitConfig != null) {
@@ -101,6 +117,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             mainActivityInterface.makeAlertDialog(R.string.TokenExpiredTitle, expired.trim());
             tokenListInterface.notifyChange();
         }
+        checkForExpiredAuths();
     }
 
     @Override
@@ -122,16 +139,15 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                     util.storeFirebaseConfig(result.firebaseInitConfig);
                     mainActivityInterface.firebaseInit(result.firebaseInitConfig);
                 }
-                if (!result.sslverify) {
-                    token.sslVerify = false;
-                }
-                token.rollout_finished = false;
+                token.sslVerify = result.sslverify;
+                token.state = UNFINISHED;
                 Calendar now = Calendar.getInstance();
                 now.add(Calendar.MINUTE, result.ttl);
                 token.rollout_expiration = now.getTime();
                 token.rollout_url = result.rollout_url;
                 token.enrollment_credential = result.enrollment_credential;
-                doPushRollout(token);
+                addToken(token);
+                preparePushRollout(token);
                 break;
             }
             case HOTP:
@@ -156,7 +172,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         }
     }
 
-    void setModel(Model model) {
+    public void setModel(Model model) {
         this.model = model;
     }
 
@@ -180,15 +196,24 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     @Override
+    public void cancelAuthentication(Token token) {
+        // Reset the token's state and cancel the task
+        token.state = FINISHED;
+        deleteRunningAuthenticationFor(token);
+        tokenListInterface.notifyChange();
+    }
+
+    @Override
     public void addPushAuthRequest(PushAuthRequest request) {
         // Requests for token that are not enrolled yet are not allowed
-        for (Token token : model.tokens) {
-            if (token.getSerial().equals(request.serial)) {
-                if (!token.rollout_finished) {
+        for (Token token : model.getTokens()) {
+            if (token.getSerial().equals(request.getSerial())) {
+                if (token.state.equals(UNFINISHED)) {
                     return;
                 } else {
-                    logprint("Push Auth Request for " + request.serial + " added.");
-                    model.pushAuthRequests.add(request);
+                    logprint("Push Auth Request for " + request.getSerial() + " added.");
+                    if (token.addPushAuthRequest(request))
+                        tokenListInterface.notifyChange();
                 }
             }
         }
@@ -212,7 +237,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     @Override
     public void saveTokenlist() {
-        util.saveTokens(model.tokens);
+        util.saveTokens(model.getTokens());
     }
 
     @Override
@@ -222,75 +247,75 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     @Override
     public boolean isCurrentSelectionWithPin() {
-        if (model.currentSelection == null) return false;
-        return model.currentSelection.isWithPIN();
+        if (model.getCurrentSelection() == null) return false;
+        return model.getCurrentSelection().isWithPIN();
     }
 
     @Override
     public boolean isCurrentSelectionPersistent() {
-        if (model.currentSelection == null) return false;
-        return model.currentSelection.isPersistent();
+        if (model.getCurrentSelection() == null) return false;
+        return model.getCurrentSelection().isPersistent();
     }
 
     @Override
     public boolean isCurrentSelectionLocked() {
-        if (model.currentSelection == null) return false;
-        return model.currentSelection.isLocked();
+        if (model.getCurrentSelection() == null) return false;
+        return model.getCurrentSelection().isLocked();
     }
 
     @Override
     public void removeCurrentSelection() {
         // callback from ActionMode delete
-        if (model.currentSelection == null) return;
-        this.removeToken(model.currentSelection);
+        if (model.getCurrentSelection() == null) return;
+        this.removeToken(model.getCurrentSelection());
     }
 
     @Override
     public String getCurrentSelectionLabel() {
-        if (model.currentSelection == null) return null;
-        return model.currentSelection.getLabel();
+        if (model.getCurrentSelection() == null) return null;
+        return model.getCurrentSelection().getLabel();
     }
 
     @Override
     public String getCurrentSelectionOTP() {
-        if (model.currentSelection == null) return null;
-        return model.currentSelection.getCurrentOTP();
+        if (model.getCurrentSelection() == null) return null;
+        return model.getCurrentSelection().getCurrentOTP();
     }
 
     @Override
     public Token getCurrentSelection() {
-        return model.currentSelection;
+        return model.getCurrentSelection();
     }
 
     @Override
     public void setCurrentSelectionLabel(String label) {
-        if (model.currentSelection == null) return;
-        model.currentSelection.setLabel(label);
+        if (model.getCurrentSelection() == null) return;
+        model.getCurrentSelection().setLabel(label);
     }
 
     @Override
     public void changeCurrentSelectionPIN(int pin) {
-        if (model.currentSelection == null) return;
-        String hashedPIN = OTPGenerator.hashPIN(pin, model.currentSelection);
-        model.currentSelection.setPin(hashedPIN);
+        if (model.getCurrentSelection() == null) return;
+        String hashedPIN = hashPIN(pin, model.getCurrentSelection());
+        model.getCurrentSelection().setPin(hashedPIN);
         tokenListInterface.notifyChange();
         saveTokenlist();
     }
 
     @Override
     public Token getTokenAtPosition(int position) {
-        return model.tokens.get(position);
+        return model.getTokens().get(position);
     }
 
     @Override
     public int getTokenCount() {
-        if (model.tokens == null) return 0;
-        return model.tokens.size();
+        if (model.getTokens() == null) return 0;
+        return model.getTokens().size();
     }
 
     @Override
     public void addTokenAt(int position, Token token) {
-        model.tokens.add(position, token);
+        model.getTokens().add(position, token);
     }
 
     @Override
@@ -300,37 +325,37 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 token.setCurrentOTP(generate(token));
             }
         }
-        model.tokens.add(token);
+        model.getTokens().add(token);
     }
 
     @Override
-    //This is only used for swapping when changing position in the list
     public Token removeTokenAtPosition(int position) {
-        return model.tokens.remove(position);
+        return model.getTokens().remove(position);
     }
 
     /**
-     * Remove a token from the list. This includes Pub/Priv Keys for Pushtoken
+     * Remove a token from the list. This includes public and private keys for Pushtoken
      *
      * @param currToken the token to remove
      */
-    protected void removeToken(Token currToken) {
+    public void removeToken(Token currToken) {
         if (currToken == null) return;
 
-        int position = model.tokens.indexOf(currToken);
+        int position = model.getTokens().indexOf(currToken);
         tokenListInterface.removeProgressbar(position);
 
-        if (model.tokens.size() >= position && position >= 0 && !model.tokens.isEmpty()) {
-            model.tokens.remove(position);
+        if (model.getTokens().size() >= position && position >= 0 && !model.getTokens().isEmpty()) {
+            model.getTokens().remove(position);
         }
 
         if (currToken.getType().equals(PUSH)) {
             util.removePubkeyFor(currToken.getSerial());
             getWrapper().removePrivateKeyFor(currToken.getSerial());
             // if the removed token was the last push token, remove the firebase config
-            if(!model.hasPushToken()){
+            if (!model.hasPushToken()) {
                 util.removeFirebaseConfig();
                 mainActivityInterface.removeFirebase();
+                mainActivityInterface.makeToast(R.string.ResetFirebaseInfoMsg);
             }
         }
 
@@ -339,46 +364,28 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         saveTokenlist();
     }
 
-    /**
-     * Check if a token has pending PushAuthRequests
-     *
-     * @param token token to check for
-     * @return Map with keys "title" and "message" if there is a PushAuthRequest, null if there is none
-     */
     @Override
-    public Map<String, String> getPushAuthRequestInfo(Token token) {
-        if (!token.getType().equals(PUSH)) return null;
-        String t_serial = token.getSerial();
-        for (PushAuthRequest req : model.pushAuthRequests) {
-            if (req.serial.equals(t_serial)) {
-                Map<String, String> map = new HashMap<>();
-                map.put(TITLE, req.title);
-                map.put(QUESTION, req.question);
-                return map;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public void startPushAuthForPosition(int position) {
+    public void startPushAuthentication(Token token) {
         // onclick from token in list
-        Token t = model.tokens.get(position);
-        if (!t.getType().equals(PUSH)) return;
-        PushAuthRequest req = null;
-        String t_serial = t.getSerial();
-        for (PushAuthRequest request : model.pushAuthRequests) {
-            if (request.serial.equals(t_serial)) {
-                req = request;
-            }
+        if (!token.getType().equals(PUSH)) return;
+        // Always the first pendingAuth
+        PushAuthRequest req = token.getPendingAuths().get(0);
+        if (req == null || !req.getSerial().equals(token.getSerial()))
+            return;
+        if (req.getExpiration().compareTo(new Date()) < 1) {
+            // Expired
+            token.getPendingAuths().remove(req);
+            tokenListInterface.notifyChange();
+            return;
         }
-        if (req == null) return; // none found
         try {
-            PrivateKey appPrivateKey = getWrapper().getPrivateKeyFor(t_serial);
-            PublicKey piPublicKey = util.getPIPubkey(req.serial);
+            PrivateKey appPrivateKey = getWrapper().getPrivateKeyFor(req.getSerial());
+            PublicKey piPublicKey = util.getPIPubkey(req.getSerial());
             if (appPrivateKey != null && piPublicKey != null) {
-                new PushAuthTask(req, piPublicKey, appPrivateKey, this).execute();
-                model.pushAuthRequests.remove(req);
+                token.state = AUTHENTICATING;
+                PushAuthTask task = new PushAuthTask(token, req, piPublicKey, appPrivateKey, this);
+                runningAuthentications.add(new Pair<>(token, task));
+                task.execute();
                 tokenListInterface.notifyChange();
             }
         } catch (CertificateException e) {
@@ -396,14 +403,55 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     @Override
     public void startPushRolloutForPosition(int position) {
-        AsyncTask<Void, Integer, Boolean> pushrollout = new PushRolloutTask(model.tokens.get(position), this);
-        pushrollout.execute();
+        // This method is called from the Tokenlistadapter when the Rollout is retried,
+        // the adapter has only the position of the row
+        preparePushRollout(model.getTokens().get(position));
+    }
+
+    /**
+     * Sets the token in RollingOut state and gets the Firebase Token.
+     * After getting the FB Token the rollout is started by a callback.
+     * This ensures the FB Token is present.
+     *
+     * @param token token to start the rollout for
+     */
+    private void preparePushRollout(Token token) {
+        token.state = ROLLING_OUT;
+        tokenListInterface.notifyChange();
+
+        // Start getting the Firebase Token from InstanceID
+        // When finished there will be call to firebaseTokenReceived to start the Rollout
+        mainActivityInterface.getFirebaseTokenForPushRollout(token);
+    }
+
+    @Override
+    public void firebaseTokenReceived(String fbtoken, Token token) {
+        // Called when InstanceID in MainActivity finished getting the Token
+        // Now the Rollout can be started
+        new PushRolloutTask(token, fbtoken, this).execute();
+    }
+
+    @Override
+    public void removePushAuthFor(int notificationID, String signature) {
+        boolean changed = false;
+        for (Token token : model.getTokens()) {
+            for (PushAuthRequest req : token.getPendingAuths()) {
+                if (req.getSignature().equals(signature) && req.getNotificationID() == notificationID) {
+                    logprint("Removing PushAuthReq");
+                    token.getPendingAuths().remove(req);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            tokenListInterface.notifyChange();
+        }
     }
 
     @Override
     public void increaseHOTPCounter(Token token) {
         token.setCounter((token.getCounter() + 1));
-        token.setCurrentOTP(OTPGenerator.generate(token));
+        token.setCurrentOTP(generate(token));
         tokenListInterface.notifyChange();
     }
 
@@ -426,12 +474,37 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         if (progress < 3 || progress > 27 && progress < 33 || progress > 57) {
             refreshOTPs();
         }
+        // Check for expired pendingAuths every 30s
+        if (progress == 30 || progress == 0) {
+        }
+        checkForExpiredAuths();
+    }
+
+    private void checkForExpiredAuths() {
+        for (Token token : model.getTokens()) {
+            if (token.getType().equals(PUSH)) {
+                for (PushAuthRequest req : token.getPendingAuths()) {
+                    if (new Date().after(req.getExpiration())) {
+                        // Expired
+                        toDelete.add(new Pair<>(token, req));
+                    }
+                }
+            }
+        }
+        for (Pair<Token, PushAuthRequest> pair : toDelete) {
+            pair.first.getPendingAuths().remove(pair.second);
+            mainActivityInterface.cancelNotification(pair.second.getNotificationID());
+        }
+        if (!toDelete.isEmpty()) {
+            tokenListInterface.notifyChange();
+            toDelete.clear();
+        }
     }
 
     private void refreshOTPs() {
-        for (int i = 0; i < model.tokens.size(); i++) {
-            if (!model.tokens.get(i).getType().equals(PUSH)) {
-                model.tokens.get(i).setCurrentOTP(OTPGenerator.generate(model.tokens.get(i)));
+        for (int i = 0; i < model.getTokens().size(); i++) {
+            if (!model.getTokens().get(i).getType().equals(PUSH)) {
+                model.getTokens().get(i).setCurrentOTP(generate(model.getTokens().get(i)));
             }
         }
         tokenListInterface.notifyChange();
@@ -441,17 +514,13 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         new TwoStepRolloutTask(token, phonepartlength, iterations, output_size, this).execute();
     }
 
-    private void doPushRollout(Token token) {
-        new PushRolloutTask(token, this).execute();
-    }
-
     private void rolloutFinished(Token token) {
         if (token == null) return;
         if (!token.getType().equals(PUSH)) {
             token.setCurrentOTP(generate(token));
         } else {
             // Do not add token twice
-            for (Token t : model.tokens) {
+            for (Token t : model.getTokens()) {
                 if (t.getSerial().equals(token.getSerial()) && t.getType().equals(PUSH)) {
                     saveTokenlist();
                     tokenListInterface.notifyChange();
@@ -459,14 +528,9 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 }
             }
         }
-        model.tokens.add(token);
+        model.getTokens().add(token);
         saveTokenlist();
         tokenListInterface.notifyChange();
-    }
-
-    @Override
-    public String getFirebaseToken() {
-        return mainActivityInterface.getFirebaseToken();
     }
 
     @Override
@@ -476,7 +540,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     /**
      * Store the received key with the serial as alias. If there is an error when storing the key,
-     * the rollout will be marked as unfinished and can be repeated.
+     * the Token state will stay marked as unfinished and can be repeated.
      *
      * @param key   the received key as raw String
      * @param token token to save the key for
@@ -509,7 +573,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 break;
             //----------- INIT FIREBASE -----------
             case STATUS_INIT_FIREBASE:
-                mainActivityInterface.setStatusDialogText(R.string.InitFirebaseStatus);
+                //mainActivityInterface.setStatusDialogText(R.string.InitFirebaseStatus);
                 break;
             case STATUS_INIT_FIREBASE_DONE:
                 mainActivityInterface.cancelStatusDialog();
@@ -524,32 +588,32 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 break;
             //----------- PUSH ROLLOUT -----------
             case PRO_STATUS_STEP_1:
-                mainActivityInterface.setStatusDialogText(R.string.PushRolloutStep1Status);
+                //mainActivityInterface.setStatusDialogText(R.string.PushRolloutStep1Status);
                 break;
             case PRO_STATUS_STEP_2:
-                mainActivityInterface.setStatusDialogText(R.string.PushRolloutStep2Status);
+                //mainActivityInterface.setStatusDialogText(R.string.PushRolloutStep2Status);
                 break;
             case PRO_STATUS_STEP_3:
-                mainActivityInterface.setStatusDialogText(R.string.PushRolloutStep3Status);
+                //mainActivityInterface.setStatusDialogText(R.string.PushRolloutStep3Status);
                 break;
             case PRO_STATUS_DONE:
-                token.rollout_finished = true;
+                token.state = FINISHED;
                 rolloutFinished(token);
                 mainActivityInterface.cancelStatusDialog();
                 break;
-            //----------- PUSH ROLLOUT ERRORS-----------
+            //----------- PUSH ROLLOUT ERRORS -----------
             case PRO_STATUS_BAD_BASE64:
-                token.rollout_finished = false;
+                token.state = UNFINISHED;
                 rolloutFinished(token);
                 mainActivityInterface.makeAlertDialog(R.string.Error, R.string.KeyFromServerWrongFormat);
                 break;
             case PRO_STATUS_MALFORMED_JSON:
-                token.rollout_finished = false;
+                token.state = UNFINISHED;
                 rolloutFinished(token);
                 mainActivityInterface.makeAlertDialog(R.string.Error, R.string.ResponseNotParsed);
                 break;
             case PRO_STATUS_RESPONSE_NO_KEY:
-                token.rollout_finished = false;
+                token.state = UNFINISHED;
                 rolloutFinished(token);
                 mainActivityInterface.makeAlertDialog((R.string.Error), (R.string.ResponseNoKey));
                 break;
@@ -561,20 +625,26 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 mainActivityInterface.makeAlertDialog(R.string.Error, R.string.RolloutURLinvalid);
                 break;
             case STATUS_ENDPOINT_UNKNOWN_HOST:
-                token.rollout_finished = false;
+                token.state = UNFINISHED;
                 rolloutFinished(token);
                 mainActivityInterface.makeAlertDialog(R.string.Error, R.string.RolloutURLNotResolved);
                 break;
             case PRO_STATUS_RESPONSE_NOT_OK:
             case STATUS_ENDPOINT_ERROR:
-                token.rollout_finished = false;
+                token.state = UNFINISHED;
                 rolloutFinished(token);
                 mainActivityInterface.makeAlertDialog(R.string.Error, R.string.ServerResponseNotOk);
+                break;
+            case STATUS_ENDPOINT_SSL_ERROR:
+                token.state = UNFINISHED;
+                rolloutFinished(token);
+                mainActivityInterface.makeAlertDialog(R.string.Error, R.string.SSLHandshakeFailed);
                 break;
             default:
                 logprint("Unknown statusCode in updateTaskStatus: " + statusCode);
                 break;
         }
+        tokenListInterface.notifyChange();
     }
 
     @Override
@@ -588,11 +658,59 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     @Override
-    public void authenticationFinished(boolean success) {
+    public void authenticationFinished(boolean success, Token token) {
         if (success) {
             mainActivityInterface.makeToast(R.string.AuthenticationSuccessful);
+            // Remove the notification if still present
+            mainActivityInterface.cancelNotification(token.getPendingAuths().get(0).getNotificationID());
+            // In case of success, remove the pendingAuth from the token (always the first from within the App)
+            token.getPendingAuths().remove(0);
+            token.state = FINISHED;
+            tokenListInterface.notifyChange();
         } else {
             mainActivityInterface.makeToast(R.string.AuthenticationFailed);
+        }
+        // Regardless of success, remove the token from runningAuthentications
+        deleteRunningAuthenticationFor(token);
+    }
+
+    /**
+     * Cancel the running Authentication Task and remove the pair from the runningAuthentications List
+     *
+     * @param token token of the pair
+     */
+    private void deleteRunningAuthenticationFor(Token token) {
+        Pair<Token, PushAuthTask> toDelete = null;
+        for (Pair<Token, PushAuthTask> pair :
+                runningAuthentications) {
+            if (pair.first.getSerial().equals(token.getSerial())) {
+                toDelete = pair;
+            }
+        }
+        if (toDelete != null) {
+            toDelete.second.cancel(true);
+            runningAuthentications.remove(toDelete);
+        }
+        token.state = FINISHED;
+    }
+
+    @Override
+    public void handleError(int statusCode, Token token) {
+        switch (statusCode) {
+            case STATUS_ENDPOINT_UNKNOWN_HOST: {
+                // Network unreachable
+                cancelAuthentication(token);
+                mainActivityInterface.makeToast(R.string.ERR_SERVER_UNREACHABLE);
+                break;
+            }
+            case STATUS_ENDPOINT_SSL_ERROR: {
+                cancelAuthentication(token);
+                mainActivityInterface.makeToast(R.string.SSLHandshakeFailed);
+                break;
+            }
+            default:
+                logprint("No handling for errorcode " + statusCode + " in presenter.");
+                break;
         }
     }
 }

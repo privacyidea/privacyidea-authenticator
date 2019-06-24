@@ -23,10 +23,13 @@
  *
  */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.utils;
 
 import android.util.Base64;
 import android.util.Log;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import org.apache.commons.codec.binary.Base32;
 import org.json.JSONArray;
@@ -68,48 +71,60 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
-import static it.netknights.piauthenticator.AppConstants.API_KEY;
-import static it.netknights.piauthenticator.AppConstants.APP_ID;
-import static it.netknights.piauthenticator.AppConstants.COUNTER;
-import static it.netknights.piauthenticator.AppConstants.CRYPT_ALGORITHM;
-import static it.netknights.piauthenticator.AppConstants.DATAFILE;
-import static it.netknights.piauthenticator.AppConstants.DIGITS;
-import static it.netknights.piauthenticator.AppConstants.ENROLLMENT_CRED;
-import static it.netknights.piauthenticator.AppConstants.FB_CONFIG_FILE;
-import static it.netknights.piauthenticator.AppConstants.HOTP;
-import static it.netknights.piauthenticator.AppConstants.IV_LENGTH;
-import static it.netknights.piauthenticator.AppConstants.KEYFILE;
-import static it.netknights.piauthenticator.AppConstants.LABEL;
-import static it.netknights.piauthenticator.AppConstants.PERIOD;
-import static it.netknights.piauthenticator.AppConstants.PERSISTENT;
-import static it.netknights.piauthenticator.AppConstants.PIN;
-import static it.netknights.piauthenticator.AppConstants.PROJECT_ID;
-import static it.netknights.piauthenticator.AppConstants.PROJECT_NUMBER;
-import static it.netknights.piauthenticator.AppConstants.PUBKEYFILE;
-import static it.netknights.piauthenticator.AppConstants.PUSH;
-import static it.netknights.piauthenticator.AppConstants.ROLLOUT_EXPIRATION;
-import static it.netknights.piauthenticator.AppConstants.ROLLOUT_FINISHED;
-import static it.netknights.piauthenticator.AppConstants.TAG;
-import static it.netknights.piauthenticator.AppConstants.URL;
-import static it.netknights.piauthenticator.AppConstants.SECRET;
-import static it.netknights.piauthenticator.AppConstants.SERIAL;
-import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
-import static it.netknights.piauthenticator.AppConstants.TOTP;
-import static it.netknights.piauthenticator.AppConstants.TYPE;
-import static it.netknights.piauthenticator.AppConstants.WITHPIN;
+import it.netknights.piauthenticator.model.FirebaseInitConfig;
+import it.netknights.piauthenticator.model.PushAuthRequest;
+import it.netknights.piauthenticator.model.Token;
+
+import static it.netknights.piauthenticator.utils.AppConstants.ALGORITHM;
+import static it.netknights.piauthenticator.utils.AppConstants.API_KEY;
+import static it.netknights.piauthenticator.utils.AppConstants.APP_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.COUNTER;
+import static it.netknights.piauthenticator.utils.AppConstants.CRYPT_ALGORITHM;
+import static it.netknights.piauthenticator.utils.AppConstants.DATAFILE;
+import static it.netknights.piauthenticator.utils.AppConstants.DIGITS;
+import static it.netknights.piauthenticator.utils.AppConstants.ENROLLMENT_CRED;
+import static it.netknights.piauthenticator.utils.AppConstants.FB_CONFIG_FILE;
+import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.IV_LENGTH;
+import static it.netknights.piauthenticator.utils.AppConstants.KEYFILE;
+import static it.netknights.piauthenticator.utils.AppConstants.KEY_LENGTH;
+import static it.netknights.piauthenticator.utils.AppConstants.LABEL;
+import static it.netknights.piauthenticator.utils.AppConstants.PENDING_AUTHS;
+import static it.netknights.piauthenticator.utils.AppConstants.PERIOD;
+import static it.netknights.piauthenticator.utils.AppConstants.PERSISTENT;
+import static it.netknights.piauthenticator.utils.AppConstants.PIN;
+import static it.netknights.piauthenticator.utils.AppConstants.PROJECT_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.PROJECT_NUMBER;
+import static it.netknights.piauthenticator.utils.AppConstants.PUBKEYFILE;
+import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
+import static it.netknights.piauthenticator.utils.AppConstants.ROLLOUT_EXPIRATION;
+import static it.netknights.piauthenticator.utils.AppConstants.ROLLOUT_STATE;
+import static it.netknights.piauthenticator.utils.AppConstants.SIGNING_ALGORITHM;
+import static it.netknights.piauthenticator.utils.AppConstants.State;
+import static it.netknights.piauthenticator.utils.AppConstants.State.AUTHENTICATING;
+import static it.netknights.piauthenticator.utils.AppConstants.State.FINISHED;
+import static it.netknights.piauthenticator.utils.AppConstants.State.UNFINISHED;
+import static it.netknights.piauthenticator.utils.AppConstants.SECRET;
+import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.utils.AppConstants.SSL_VERIFY;
+import static it.netknights.piauthenticator.utils.AppConstants.TAG;
+import static it.netknights.piauthenticator.utils.AppConstants.TAPTOSHOW;
+import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.TYPE;
+import static it.netknights.piauthenticator.utils.AppConstants.URL;
+import static it.netknights.piauthenticator.utils.AppConstants.WITHPIN;
 
 public class Util {
 
     private String baseFilePath;
     private SecretKeyWrapper secretKeyWrapper;
 
-    Util(SecretKeyWrapper secretKeyWrapper, String baseFilePath) {
+    public Util(SecretKeyWrapper secretKeyWrapper, String baseFilePath) {
         this.baseFilePath = baseFilePath;
         this.secretKeyWrapper = secretKeyWrapper;
     }
 
-    Util() {
+    public Util() {
     }
 
     /**
@@ -118,7 +133,7 @@ public class Util {
      *
      * @return An ArrayList of Tokens
      */
-    ArrayList<Token> loadTokens() {
+    public ArrayList<Token> loadTokens() {
         ArrayList<Token> tokens = new ArrayList<>();
         try {
             byte[] data = loadDataFromFile(DATAFILE);
@@ -141,7 +156,7 @@ public class Util {
      *
      * @param tokens ArrayList of tokens to save
      */
-    void saveTokens(ArrayList<Token> tokens) {
+    public void saveTokens(ArrayList<Token> tokens) {
         JSONArray tmp = new JSONArray();
         if (tokens == null) {
             return;
@@ -174,17 +189,25 @@ public class Util {
 
         if (type.equals(PUSH)) {
             Token t = new Token(serial, label);
-            t.rollout_finished = o.getBoolean(ROLLOUT_FINISHED);
-            if (!t.rollout_finished) {
-                // If the
+            t.state = State.valueOf(o.getString(ROLLOUT_STATE));
+            if (t.state.equals(UNFINISHED)) {
                 t.rollout_url = o.getString(URL);
                 t.enrollment_credential = o.getString(ENROLLMENT_CRED);
+                t.sslVerify = o.getBoolean(SSL_VERIFY);
                 try {
                     t.rollout_expiration = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
                             .parse(o.getString(ROLLOUT_EXPIRATION));
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
+            }
+            // Check for pending Authentication Requests
+            try {
+                String pendingAuths = o.getString(PENDING_AUTHS);
+                t.setPendingAuths(new Gson().fromJson(pendingAuths, new TypeToken<ArrayList<PushAuthRequest>>() {
+                }.getType()));
+            } catch (JSONException e) {
+                // there were none and that's ok
             }
             return t;
         }
@@ -215,7 +238,6 @@ public class Util {
     }
 
     private JSONObject makeJSONfromToken(Token t) throws JSONException {
-        //logprint("saving tokens");
         JSONObject o = new JSONObject();
 
         o.put(SERIAL, t.getSerial());
@@ -223,13 +245,26 @@ public class Util {
         o.put(TYPE, t.getType());
 
         if (t.getType().equals(PUSH)) {
-            o.put(ROLLOUT_FINISHED, t.rollout_finished);
+            State state = t.state;
+            if (state.equals(AUTHENTICATING)) {
+                // Don't save authenticating state, has to be finished
+                // Unfinished token cannot authenticate
+                state = FINISHED;
+            }
+            o.put(ROLLOUT_STATE, state);
             // If the rollout is not finished yet, save the data necessary to complete it
-            if (!t.rollout_finished) {
+            if (t.state.equals(UNFINISHED)) {
                 o.put(URL, t.rollout_url);
                 o.put(ROLLOUT_EXPIRATION, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
                         .format(t.rollout_expiration));
                 o.put(ENROLLMENT_CRED, t.enrollment_credential);
+                o.put(SSL_VERIFY, t.sslVerify);
+            }
+
+            // Check for pending Authentication Requests
+            if (!t.getPendingAuths().isEmpty()) {
+                String pendingAuths = new Gson().toJson(t.getPendingAuths());
+                o.put(PENDING_AUTHS, pendingAuths);
             }
             return o;
         }
@@ -259,7 +294,7 @@ public class Util {
         return o;
     }
 
-    void storePIPubkey(String key, String serial) throws GeneralSecurityException, IllegalArgumentException {
+    public void storePIPubkey(String key, String serial) throws GeneralSecurityException, IllegalArgumentException {
         byte[] keybytes = decodeBase64(key);
 
         PublicKey pubkey = PKCS1ToSubjectPublicKeyInfo.decodePKCS1PublicKey(keybytes);
@@ -273,7 +308,7 @@ public class Util {
         PublicKey pubkey = kf.generatePublic(keySpec); */
     }
 
-    PublicKey getPIPubkey(String serial) {
+    public PublicKey getPIPubkey(String serial) {
         if (baseFilePath == null) return null;
         return getPIPubkey(baseFilePath, serial);
     }
@@ -301,7 +336,7 @@ public class Util {
      * @param fileName Name of the file to load
      * @return raw data as byte array, null if no baseFilePath is set or there is no file
      */
-    byte[] loadDataFromFile(String fileName) {
+    private byte[] loadDataFromFile(String fileName) {
         if (baseFilePath == null) return null;
         return loadDataFromFile(fileName, baseFilePath);
     }
@@ -314,7 +349,7 @@ public class Util {
      * @param baseFilePath baseFilePath of the Context
      * @return raw data as byte array, null if there is no file
      */
-    byte[] loadDataFromFile(String fileName, String baseFilePath) {
+    private byte[] loadDataFromFile(String fileName, String baseFilePath) {
         try {
             byte[] encryptedData = readFile(new File(baseFilePath + "/" + fileName));
             // decrypt
@@ -351,7 +386,7 @@ public class Util {
         }
     }
 
-    void removePubkeyFor(String serial) {
+    public void removePubkeyFor(String serial) {
         File f = new File(baseFilePath + "/" + serial + "_" + PUBKEYFILE);
         boolean res;
         if (f.exists()) {
@@ -366,14 +401,14 @@ public class Util {
         }
     }
 
-    void storeFirebaseConfig(FirebaseInitConfig firebaseInitConfig) {
+    public void storeFirebaseConfig(FirebaseInitConfig firebaseInitConfig) {
         logprint("Storing Firebase config...");
         JSONObject o = new JSONObject();
         try {
-            o.put(PROJECT_ID, firebaseInitConfig.projID);
-            o.put(APP_ID, firebaseInitConfig.appID);
-            o.put(API_KEY, firebaseInitConfig.api_key);
-            o.put(PROJECT_NUMBER, firebaseInitConfig.projNumber);
+            o.put(PROJECT_ID, firebaseInitConfig.getProjID());
+            o.put(APP_ID, firebaseInitConfig.getAppID());
+            o.put(API_KEY, firebaseInitConfig.getApiKey());
+            o.put(PROJECT_NUMBER, firebaseInitConfig.getProjNumber());
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -385,7 +420,7 @@ public class Util {
     /**
      * @return FirebaseInitConfig object or null if there is no config / error
      */
-    FirebaseInitConfig loadFirebaseConfig() {
+    public FirebaseInitConfig loadFirebaseConfig() {
         logprint("Loading Firebase config...");
         try {
             byte[] data = loadDataFromFile(FB_CONFIG_FILE);
@@ -410,11 +445,10 @@ public class Util {
         }
     }
 
-
-    void removeFirebaseConfig() {
+    public void removeFirebaseConfig() {
         File f = new File(baseFilePath + "/" + FB_CONFIG_FILE);
         if (f.exists()) {
-            if(f.delete()) {
+            if (f.delete()) {
                 logprint("Firebase config removed.");
             }
         }
@@ -424,10 +458,10 @@ public class Util {
      * Encrypt and save the given data in the specified file and baseFilePath.
      * baseFilePath + "/" + fileName
      *
-     * @param fileName  Name of the file to save to
-     * @param baseFilePath  Path to the app's data storage
-     * @param data  Data to save
-     * @return  true if successful, false if error
+     * @param fileName     Name of the file to save to
+     * @param baseFilePath Path to the app's data storage
+     * @param data         Data to save
+     * @return true if successful, false if error
      */
     private boolean saveToFile(String fileName, String baseFilePath, byte[] data) {
         try {
@@ -475,7 +509,7 @@ public class Util {
     static byte[] encrypt(SecretKey secretKey, byte[] plaintext)
             throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException,
             IllegalBlockSizeException, InvalidAlgorithmParameterException {
-        final byte[] iv = new byte[AppConstants.IV_LENGTH];
+        final byte[] iv = new byte[IV_LENGTH];
         new SecureRandom().nextBytes(iv);
         GCMParameterSpec params = new GCMParameterSpec(128, iv, 0, 12);
         byte[] cipherText = encrypt(secretKey, params, plaintext);
@@ -499,14 +533,14 @@ public class Util {
      * The symmetric secret key is stored securely on disk by wrapping
      * it with a public/private key pair, possibly backed by hardware.
      */
-    SecretKey getSecretKey(File keyFile)
+    public SecretKey getSecretKey(File keyFile)
             throws GeneralSecurityException, IOException {
         if (secretKeyWrapper == null) {
             throw new GeneralSecurityException("No SecretKeyWrapper available!");
         }
         // Generate secret key if none exists
         if (!keyFile.exists()) {
-            final byte[] raw = new byte[AppConstants.KEY_LENGTH];
+            final byte[] raw = new byte[KEY_LENGTH];
             new SecureRandom().nextBytes(raw);
             final SecretKey key = new SecretKeySpec(raw, "AES");
             final byte[] wrapped = secretKeyWrapper.wrap(key);
@@ -519,7 +553,6 @@ public class Util {
         return secretKeyWrapper.unwrap(wrapped);
     }
 
-
     /**
      * @param privateKey privateKey to sign the message with
      * @param message    message to sign
@@ -528,11 +561,10 @@ public class Util {
      * @throws InvalidKeyException
      * @throws SignatureException
      */
-    static String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        logprint("message to sign: " + message);
+    public static String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         byte[] bMessage = message.getBytes(StandardCharsets.UTF_8);
 
-        Signature s = Signature.getInstance("SHA256withRSA");
+        Signature s = Signature.getInstance(SIGNING_ALGORITHM);
         s.initSign(privateKey);
         s.update(bMessage);
 
@@ -549,10 +581,8 @@ public class Util {
      * @throws NoSuchAlgorithmException
      * @throws SignatureException
      */
-    static boolean verifySignature(PublicKey publicKey, String signature, String payload) throws InvalidKeyException,
+    public static boolean verifySignature(PublicKey publicKey, String signature, String payload) throws InvalidKeyException,
             NoSuchAlgorithmException, SignatureException {
-        logprint("signature to verify (b32): " + signature);
-        logprint("message to verify signature for: " + payload);
         if (!new Base32().isInAlphabet(signature)) {
             logprint("verifySignature: The given signature is not Base32 encoded!");
             return false;
@@ -560,18 +590,18 @@ public class Util {
 
         byte[] message = payload.getBytes(StandardCharsets.UTF_8);
         byte[] bSignature = new Base32().decode(signature);
-        Signature sig = Signature.getInstance("SHA256withRSA");
+        Signature sig = Signature.getInstance(SIGNING_ALGORITHM);
 
         sig.initVerify(publicKey);
         sig.update(message);
         return sig.verify(bSignature);
     }
 
-    byte[] decodeBase64(String key) {
+    public byte[] decodeBase64(String key) {
         return Base64.decode(key, Base64.DEFAULT);
     }
 
-    String encodeBase64(byte[] data) {
+    public String encodeBase64(byte[] data) {
         return Base64.encodeToString(data, Base64.URL_SAFE);
     }
 
@@ -581,7 +611,7 @@ public class Util {
      * @param ba byte array to convert
      * @return the Hex as String
      */
-    static String byteArrayToHexString(byte[] ba) {
+    public static String byteArrayToHexString(byte[] ba) {
         StringBuilder str = new StringBuilder();
         for (int i = 0; i < ba.length; i++)
             str.append(String.format("%02x", ba[i]));
@@ -594,7 +624,7 @@ public class Util {
      * @param hex: the Hex string to convert
      * @return a byte array
      */
-    static byte[] hexStringToByteArray(String hex) {
+    public static byte[] hexStringToByteArray(String hex) {
         // Adding one byte to get the right conversion
         // Values starting with "0" can be converted
         byte[] bArray = new BigInteger("10" + hex, 16).toByteArray();
@@ -611,5 +641,4 @@ public class Util {
             return;
         Log.e(TAG, msg);
     }
-
 }

@@ -18,15 +18,18 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.viewcontroller;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.PorterDuff;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -68,45 +71,58 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.NotificationManagerCompat;
 
-import static it.netknights.piauthenticator.AppConstants.ALGORITHM;
-import static it.netknights.piauthenticator.AppConstants.API_KEY;
-import static it.netknights.piauthenticator.AppConstants.APP_ID;
-import static it.netknights.piauthenticator.AppConstants.COUNTER;
-import static it.netknights.piauthenticator.AppConstants.DIGITS;
-import static it.netknights.piauthenticator.AppConstants.ENROLLMENT_CRED;
-import static it.netknights.piauthenticator.AppConstants.HOTP;
-import static it.netknights.piauthenticator.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
-import static it.netknights.piauthenticator.AppConstants.ISSUER;
-import static it.netknights.piauthenticator.AppConstants.LABEL;
-import static it.netknights.piauthenticator.AppConstants.NONCE;
-import static it.netknights.piauthenticator.AppConstants.NOTIFICATION_CHANNEL_ID;
-import static it.netknights.piauthenticator.AppConstants.PERIOD;
-import static it.netknights.piauthenticator.AppConstants.PERSISTENT;
-import static it.netknights.piauthenticator.AppConstants.PIN;
-import static it.netknights.piauthenticator.AppConstants.PROJECT_ID;
-import static it.netknights.piauthenticator.AppConstants.PROJECT_NUMBER;
-import static it.netknights.piauthenticator.AppConstants.PUSH;
-import static it.netknights.piauthenticator.AppConstants.PUSH_VERSION;
-import static it.netknights.piauthenticator.AppConstants.QUESTION;
-import static it.netknights.piauthenticator.AppConstants.SECRET;
-import static it.netknights.piauthenticator.AppConstants.SERIAL;
-import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
-import static it.netknights.piauthenticator.AppConstants.SSL_VERIFY;
-import static it.netknights.piauthenticator.AppConstants.TAPTOSHOW;
-import static it.netknights.piauthenticator.AppConstants.TITLE;
-import static it.netknights.piauthenticator.AppConstants.TOTP;
-import static it.netknights.piauthenticator.AppConstants.TTL;
-import static it.netknights.piauthenticator.AppConstants.TWOSTEP_DIFFICULTY;
-import static it.netknights.piauthenticator.AppConstants.TWOSTEP_OUTPUT;
-import static it.netknights.piauthenticator.AppConstants.TWOSTEP_SALT;
-import static it.netknights.piauthenticator.AppConstants.TYPE;
-import static it.netknights.piauthenticator.AppConstants.URL;
-import static it.netknights.piauthenticator.AppConstants.WITHPIN;
-import static it.netknights.piauthenticator.Interfaces.MainActivityInterface;
-import static it.netknights.piauthenticator.Interfaces.PresenterInterface;
+import it.netknights.piauthenticator.interfaces.MainActivityInterface;
+import it.netknights.piauthenticator.interfaces.PresenterInterface;
+import it.netknights.piauthenticator.model.FirebaseInitConfig;
+import it.netknights.piauthenticator.model.PushAuthRequest;
+import it.netknights.piauthenticator.model.ScanResult;
+import it.netknights.piauthenticator.utils.AppConstants;
+import it.netknights.piauthenticator.presenter.Presenter;
+import it.netknights.piauthenticator.R;
+import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.utils.SecretKeyWrapper;
+import it.netknights.piauthenticator.utils.Util;
+
+import static it.netknights.piauthenticator.utils.AppConstants.ALGORITHM;
+import static it.netknights.piauthenticator.utils.AppConstants.API_KEY;
+import static it.netknights.piauthenticator.utils.AppConstants.APP_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.COUNTER;
+import static it.netknights.piauthenticator.utils.AppConstants.DIGITS;
+import static it.netknights.piauthenticator.utils.AppConstants.ENROLLMENT_CRED;
+import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
+import static it.netknights.piauthenticator.utils.AppConstants.INTENT_FILTER;
+import static it.netknights.piauthenticator.utils.AppConstants.ISSUER;
+import static it.netknights.piauthenticator.utils.AppConstants.LABEL;
+import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
+import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_CHANNEL_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.PERIOD;
+import static it.netknights.piauthenticator.utils.AppConstants.PERSISTENT;
+import static it.netknights.piauthenticator.utils.AppConstants.PIN;
+import static it.netknights.piauthenticator.utils.AppConstants.PROJECT_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.PROJECT_NUMBER;
+import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
+import static it.netknights.piauthenticator.utils.AppConstants.PUSH_VERSION;
+import static it.netknights.piauthenticator.utils.AppConstants.QUESTION;
+import static it.netknights.piauthenticator.utils.AppConstants.SECRET;
+import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.utils.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.utils.AppConstants.SSL_VERIFY;
+import static it.netknights.piauthenticator.utils.AppConstants.TAPTOSHOW;
+import static it.netknights.piauthenticator.utils.AppConstants.TITLE;
+import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.TTL;
+import static it.netknights.piauthenticator.utils.AppConstants.TWOSTEP_DIFFICULTY;
+import static it.netknights.piauthenticator.utils.AppConstants.TWOSTEP_OUTPUT;
+import static it.netknights.piauthenticator.utils.AppConstants.TWOSTEP_SALT;
+import static it.netknights.piauthenticator.utils.AppConstants.TYPE;
+import static it.netknights.piauthenticator.utils.AppConstants.URL;
+import static it.netknights.piauthenticator.utils.AppConstants.WITHPIN;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
-import static it.netknights.piauthenticator.Util.logprint;
+import static it.netknights.piauthenticator.utils.Util.logprint;
 
 
 public class MainActivity extends AppCompatActivity implements ActionMode.Callback, MainActivityInterface {
@@ -116,11 +132,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private AlertDialog status_dialog;
     private Handler handler;
     private Runnable timer;
+    private MainActivityBroadcastReceiver receiver;
+
 
     // getting the firebase token requires the Activity
-    String firebase_token;
     private SecretKeyWrapper secretKeyWrapper;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,9 +163,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
         // init the model before the adapter is set
         presenterInterface.init();
-
         listview.setAdapter(tokenlistadapter);
-
+        receiver = new MainActivityBroadcastReceiver(this);
+        registerReceiver(receiver, receiver.intentFilter);
 
         createNotificationChannel();
 
@@ -158,28 +174,36 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
 
         // Check for intent (=Pending auth requests)
-
         Intent intent = getIntent();
         if (intent.getExtras() == null) {
             logprint("No intent found onCreate.");
         } else {
-            // intent contain push auth info
-            logprint("Intent Found onCreate:");
-            logprint(intent.getExtras().toString());
-            String serial = intent.getStringExtra(SERIAL);
-            String nonce = intent.getStringExtra(NONCE);
-            String title = intent.getStringExtra(TITLE);
-            String url = intent.getStringExtra(URL);
-            String signature = intent.getStringExtra(SIGNATURE);
-            String question = intent.getStringExtra(QUESTION);
-            boolean sslVerify = intent.getBooleanExtra(SSL_VERIFY, true);
-            if (serial != null && nonce != null && title != null && url != null && signature != null && question != null) {
-                logprint("Intent data: " + intent.getExtras().toString());
-                presenterInterface.addPushAuthRequest(new PushAuthRequest(nonce, url, serial, question, title, signature, sslVerify));
-            } else {
-                logprint("Not all data for PushAuth available");
-            }
+            pushAuthRequestReceived(intent);
         }
+    }
+
+    void pushAuthRequestReceived(Intent intent) {
+        // intent contain push auth info
+        logprint("Intent Found onCreate:");
+        logprint(intent.getExtras().toString());
+        String serial = intent.getStringExtra(SERIAL);
+        String nonce = intent.getStringExtra(NONCE);
+        String title = intent.getStringExtra(TITLE);
+        String url = intent.getStringExtra(URL);
+        String signature = intent.getStringExtra(SIGNATURE);
+        String question = intent.getStringExtra(QUESTION);
+        int notificationID = intent.getIntExtra(NOTIFICATION_ID, 654321);
+        boolean sslVerify = intent.getBooleanExtra(SSL_VERIFY, true);
+        if (serial != null && nonce != null && title != null && url != null && signature != null && question != null) {
+            logprint("Intent data: " + intent.getExtras().toString());
+            presenterInterface.addPushAuthRequest(new PushAuthRequest(nonce, url, serial, question, title, signature, notificationID, sslVerify));
+        } else {
+            logprint("Not all data for PushAuth available");
+        }
+    }
+
+    void pushAuthFinishedFor(int notificationID, String signature) {
+        presenterInterface.removePushAuthFor(notificationID, signature);
     }
 
     private void setupFab() {
@@ -274,17 +298,22 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-
                     }
+                    // otpauth://TYPE/LABEL?PARAMETERS
                     // TOKEN TYPE
                     String type = url.getHost();
+                    // LABEL
+                    String label = uri.getPath().substring(1);
+
                     // SERIAL
-                    String serial = uri.getPath().substring(1);
+                    String serial = uri.getQueryParameter(SERIAL);
+                    if (serial == null) {
+                        serial = label;
+                    }
 
                     ScanResult scanResult = new ScanResult(type, serial);
 
-                    // LABEL = ISSUER + SERIAL
-                    String label = serial;
+                    // LABEL = ISSUER: LABEL
                     String issuer = uri.getQueryParameter(ISSUER);
                     if (issuer != null && !label.startsWith(issuer)) {
                         label = issuer + ": " + label;
@@ -389,12 +418,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     public void onResume() {
         super.onResume();
+        registerReceiver(receiver, receiver.intentFilter);
         presenterInterface.onResume();
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        unregisterReceiver(receiver);
         presenterInterface.onPause();
     }
 
@@ -592,6 +623,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
+    public void cancelNotification(int notificationID) {
+        NotificationManagerCompat.from(this).cancel(notificationID);
+    }
+
+    @Override
     public void makeToast(int resID) {
         Toast.makeText(MainActivity.this, resID, Toast.LENGTH_SHORT).show();
     }
@@ -639,27 +675,26 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
-    public String getFirebaseToken() {
+    public void getFirebaseTokenForPushRollout(Token token) {
         logprint("Getting Firebase token...");
         FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(this, instanceIdResult -> {
             logprint("Firebase Token: " + instanceIdResult.getToken());
-            firebase_token = instanceIdResult.getToken();
+            presenterInterface.firebaseTokenReceived(instanceIdResult.getToken(), token);
         });
-        return firebase_token;
     }
 
     @Override
-    public String firebaseInit(FirebaseInitConfig firebaseInitConfig) {
+    public void firebaseInit(FirebaseInitConfig firebaseInitConfig) {
         logprint("Initializing Firebase...");
         // Check if Firebase is already initalized
         if (!FirebaseApp.getApps(this).isEmpty()) {
             logprint("Firebase already initialized for: " + FirebaseApp.getApps(this).toString());
         } else {
             // INIT FIREBASE
-            String projID = firebaseInitConfig.projID;
-            String appID = firebaseInitConfig.appID;
-            String api_key = firebaseInitConfig.api_key;
-            String gcmSenderID = firebaseInitConfig.projNumber;
+            String projID = firebaseInitConfig.getProjID();
+            String appID = firebaseInitConfig.getAppID();
+            String api_key = firebaseInitConfig.getApiKey();
+            String gcmSenderID = firebaseInitConfig.getProjNumber();
             String database_url = "https://" + projID + ".firebaseio.com";
             String storage_bucket = projID + ".appspot.com";
 
@@ -674,14 +709,10 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
             logprint("Firebase initialized!");
         }
-        return getFirebaseToken();
     }
 
     @Override
     public void removeFirebase() {
-        if(FirebaseApp.getApps(this).isEmpty()){
-            return;
-        }
         FirebaseApp.getApps(this).clear();
     }
 

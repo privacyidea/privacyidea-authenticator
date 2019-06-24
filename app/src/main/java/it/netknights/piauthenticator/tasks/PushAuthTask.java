@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.tasks;
 
 import android.os.AsyncTask;
 
@@ -33,37 +33,47 @@ import java.security.SignatureException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static it.netknights.piauthenticator.AppConstants.NONCE;
-import static it.netknights.piauthenticator.AppConstants.PA_AUTHENTICATION_FINISHED;
-import static it.netknights.piauthenticator.AppConstants.PA_INVALID_SIGNATURE;
-import static it.netknights.piauthenticator.AppConstants.PA_SIGNING_FAILURE;
-import static it.netknights.piauthenticator.AppConstants.RESPONSE_RESULT;
-import static it.netknights.piauthenticator.AppConstants.RESPONSE_VALUE;
-import static it.netknights.piauthenticator.AppConstants.SERIAL;
-import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
-import static it.netknights.piauthenticator.Util.logprint;
+import it.netknights.piauthenticator.interfaces.EndpointCallback;
+import it.netknights.piauthenticator.interfaces.PushAuthCallbackInterface;
+import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.utils.Endpoint;
+import it.netknights.piauthenticator.utils.Util;
+import it.netknights.piauthenticator.model.PushAuthRequest;
 
-public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements Interfaces.EndpointCallback {
+import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
+import static it.netknights.piauthenticator.utils.AppConstants.PA_AUTHENTICATION_FINISHED;
+import static it.netknights.piauthenticator.utils.AppConstants.PA_INVALID_SIGNATURE;
+import static it.netknights.piauthenticator.utils.AppConstants.PA_SIGNING_FAILURE;
+import static it.netknights.piauthenticator.utils.AppConstants.RESPONSE_RESULT;
+import static it.netknights.piauthenticator.utils.AppConstants.RESPONSE_VALUE;
+import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.utils.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
+import static it.netknights.piauthenticator.utils.Util.logprint;
+
+public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements EndpointCallback {
 
     private String nonce, endpoint_url, serial, question, title, signature;
     private PublicKey piPublicKey;
     private PrivateKey appPrivateKey;
     private boolean sslVerify;
-    private Interfaces.PushAuthCallbackInterface pushAuthCallbackInterface;
+    private PushAuthCallbackInterface pushAuthCallbackInterface;
     private boolean success;
+    private Token token;
 
-    PushAuthTask(PushAuthRequest pushAuthRequest,
-                 PublicKey piPublicKey, PrivateKey appPrivateKey, Interfaces.PushAuthCallbackInterface pushAuthCallbackInterface) {
-        this.nonce = pushAuthRequest.nonce;
-        this.endpoint_url = pushAuthRequest.url;
-        this.serial = pushAuthRequest.serial;
-        this.question = pushAuthRequest.question;
-        this.title = pushAuthRequest.title;
-        this.signature = pushAuthRequest.signature;
+    public PushAuthTask(Token token, PushAuthRequest pushAuthRequest,
+                        PublicKey piPublicKey, PrivateKey appPrivateKey, PushAuthCallbackInterface pushAuthCallbackInterface) {
+        this.nonce = pushAuthRequest.getNonce();
+        this.endpoint_url = pushAuthRequest.getUrl();
+        this.serial = pushAuthRequest.getSerial();
+        this.question = pushAuthRequest.getQuestion();
+        this.title = pushAuthRequest.getTitle();
+        this.signature = pushAuthRequest.getSignature();
         this.appPrivateKey = appPrivateKey;
         this.piPublicKey = piPublicKey;
-        this.sslVerify = pushAuthRequest.sslVerify;
+        this.sslVerify = pushAuthRequest.isSslVerify();
         this.pushAuthCallbackInterface = pushAuthCallbackInterface;
+        this.token = token;
     }
 
     @Override
@@ -75,8 +85,6 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements I
     @Override
     protected Boolean doInBackground(Void... voids) {
         // 0. Split data
-        // TODO convert key-value pairs to the map that was signed in the server
-        // TODO how does the payload look like?
         String strSSLVerify = sslVerify ? "1" : "0";
 
         String toVerify = nonce + "|" + endpoint_url + "|" + serial + "|" + question +
@@ -98,8 +106,6 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements I
             logprint("Signature invalid.");
             publishProgress(PA_INVALID_SIGNATURE);
             return false;
-        } else {
-            logprint("Signature valid.");
         }
 
         // 2. Sign the nonce
@@ -131,11 +137,12 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements I
         return true;
     }
 
+    // Progress from THIS task and statusCodes from Endpoint
     @Override
     protected void onProgressUpdate(Integer... values) {
         super.onProgressUpdate(values);
-
-        switch (values[0]) {
+        int code = values[0];
+        switch (code) {
             case PA_INVALID_SIGNATURE:
                 break;
             case PA_SIGNING_FAILURE:
@@ -143,22 +150,27 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements I
             case PA_AUTHENTICATION_FINISHED:
                 if (success) {
                     logprint("authentication successful :)");
-                    pushAuthCallbackInterface.authenticationFinished(true);
+                    pushAuthCallbackInterface.authenticationFinished(true, token);
                 } else {
                     logprint("authentication failed :(");
-                    pushAuthCallbackInterface.authenticationFinished(false);
+                    pushAuthCallbackInterface.authenticationFinished(false, token);
                 }
-            default:
                 break;
+            default: {
+                pushAuthCallbackInterface.handleError(code, token);
+                break;
+            }
         }
-
     }
 
     @Override
     public void updateStatus(int statusCode) {
-
+        // Status Codes from the Endpoint are directed to onProgressUpdate to run on UI Thread
+        logprint("Statuscode in PushAuthTask from Endpoint: " + statusCode);
+        publishProgress(statusCode);
     }
 
+    // Successful request callback from Endpoint
     @Override
     public void responseReceived(String response, int responseCode) {
         if (responseCode == 200) {

@@ -1,3 +1,22 @@
+/*
+  privacyIDEA Authenticator
+
+  Authors: Nils Behlen <nils.behlen@netknights.it>
+
+  Copyright (c) 2017-2019 NetKnights GmbH
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
 package it.netknights.piauthenticator;
 
 
@@ -10,7 +29,6 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.security.GeneralSecurityException;
@@ -27,10 +45,19 @@ import java.util.Date;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
-import static it.netknights.piauthenticator.AppConstants.HOTP;
-import static it.netknights.piauthenticator.AppConstants.KEYFILE;
-import static it.netknights.piauthenticator.AppConstants.PUBKEYFILE;
-import static it.netknights.piauthenticator.AppConstants.TOTP;
+import it.netknights.piauthenticator.model.FirebaseInitConfig;
+import it.netknights.piauthenticator.model.PushAuthRequest;
+import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.utils.AppConstants;
+import it.netknights.piauthenticator.utils.SecretKeyWrapper;
+import it.netknights.piauthenticator.utils.Util;
+
+import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.KEYFILE;
+import static it.netknights.piauthenticator.utils.AppConstants.PUBKEYFILE;
+import static it.netknights.piauthenticator.utils.AppConstants.State.AUTHENTICATING;
+import static it.netknights.piauthenticator.utils.AppConstants.State.FINISHED;
+import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -104,18 +131,32 @@ public class TestUtil {
         Token t2 = new Token("testetststest".getBytes(), "SERIALSERIAL2", "LABEL", TOTP, 6);
         list.add(t2);
 
+        // Test for rollout data
         Token pushy = new Token("PUSHYSERIAL", "PUSHYLABEL");
         pushy.enrollment_credential = "enrollmentcred";
-        pushy.rollout_finished = false;
         pushy.rollout_url = "https://test.com/roll/out";
-        pushy.rollout_expiration = new Date();
-
+        Date expiration = new Date();
+        pushy.rollout_expiration = expiration;
         list.add(pushy);
+        // Test for rolled out push token
+        Token pushy2 = new Token("serial2", "label2");
+        pushy2.state = AUTHENTICATING;
+        pushy2.addPushAuthRequest(new PushAuthRequest("nonce", "url", "serial", "question", "title", "AAAAAAAA", 654321, true));
+        list.add(pushy2);
 
         util.saveTokens(list);
-
         ArrayList<Token> list_loaded = util.loadTokens();
+
         assertEquals(list.size(), list_loaded.size());
+        // expiration variable has trailing whitespace...
+        assertEquals(expiration.toString().trim(), list_loaded.get(2).rollout_expiration.toString().trim());
+        assertEquals("enrollmentcred", list_loaded.get(2).enrollment_credential);
+        assertEquals("https://test.com/roll/out", list_loaded.get(2).rollout_url);
+
+        // Loading the Pushtoken restores the PushAuthRequest
+        assertFalse(list_loaded.get(3).getPendingAuths().isEmpty());
+        // The token's state is reset when saving in AUTHENTICATING STATE
+        assertEquals(FINISHED, list_loaded.get(3).state);
     }
 
     @Test
@@ -159,11 +200,6 @@ public class TestUtil {
     }
 
     @Test
-    public void fileError() {
-        assertNull(util.loadDataFromFile("notexisting"));
-    }
-
-    @Test
     public void removePublicKey() throws IOException {
         // create a "pubkey" file
         String serial = "serial";
@@ -180,7 +216,7 @@ public class TestUtil {
     }
 
     @Test
-    public void saveAndLoadFirebaseConfig() {
+    public void saveLoadDeleteFirebaseConfig() {
         // there is none
         assertNull(util.loadFirebaseConfig());
 
@@ -195,10 +231,14 @@ public class TestUtil {
 
         FirebaseInitConfig loaded = util.loadFirebaseConfig();
         assertNotNull(loaded);
-        assertEquals(fbConf.api_key, loaded.api_key);
-        assertEquals(fbConf.appID, loaded.appID);
-        assertEquals(fbConf.projID, loaded.projID);
-        assertEquals(fbConf.projNumber, loaded.projNumber);
+        assertEquals(fbConf.getApiKey(), loaded.getApiKey());
+        assertEquals(fbConf.getAppID(), loaded.getAppID());
+        assertEquals(fbConf.getProjID(), loaded.getProjID());
+        assertEquals(fbConf.getProjNumber(), loaded.getProjNumber());
+
+        // Delete the file
+        util.removeFirebaseConfig();
+        assertNull(util.loadFirebaseConfig());
     }
 
     @Test
@@ -221,7 +261,7 @@ public class TestUtil {
         assertNull(key);
     }
 
-    // FIXME include
+    @Test
     public void testLoadingOldToken() {
         // Older token did not have the serial attribute.
         // Upon loading them, their label should be set as their serial
@@ -262,10 +302,9 @@ public class TestUtil {
         // wrong signature is rejected
         byte[] rndm = new byte[512];
         new SecureRandom().nextBytes(rndm);
-        assertFalse(Util.verifySignature(keyPair.getPublic(),new Base32().encodeAsString(rndm), message));
+        assertFalse(Util.verifySignature(keyPair.getPublic(), new Base32().encodeAsString(rndm), message));
 
         // signature which is not in b32 format is rejected
         assertFalse(Util.verifySignature(keyPair.getPublic(), "9999999", message));
-
     }
 }

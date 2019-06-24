@@ -1,15 +1,31 @@
+/*
+  privacyIDEA Authenticator
+
+  Authors: Nils Behlen <nils.behlen@netknights.it>
+
+  Copyright (c) 2017-2019 NetKnights GmbH
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
 package it.netknights.piauthenticator;
 
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Intent;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
-
-import com.google.firebase.messaging.RemoteMessage;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -34,8 +50,11 @@ import androidx.test.espresso.ViewInteraction;
 import androidx.test.espresso.intent.Intents;
 import androidx.test.espresso.matcher.ViewMatchers;
 import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner;
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
+
+import it.netknights.piauthenticator.utils.PKCS1ToSubjectPublicKeyInfo;
+import it.netknights.piauthenticator.utils.Util;
+import it.netknights.piauthenticator.viewcontroller.MainActivity;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 
@@ -48,18 +67,17 @@ import static androidx.test.espresso.intent.Intents.intending;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasAction;
 import static androidx.test.espresso.matcher.ViewMatchers.Visibility.GONE;
 import static androidx.test.espresso.matcher.ViewMatchers.Visibility.VISIBLE;
-import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withClassName;
 import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
-import static it.netknights.piauthenticator.AppConstants.NONCE;
-import static it.netknights.piauthenticator.AppConstants.QUESTION;
-import static it.netknights.piauthenticator.AppConstants.SERIAL;
-import static it.netknights.piauthenticator.AppConstants.SIGNATURE;
-import static it.netknights.piauthenticator.AppConstants.SSL_VERIFY;
-import static it.netknights.piauthenticator.AppConstants.TITLE;
-import static it.netknights.piauthenticator.AppConstants.URL;
+import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
+import static it.netknights.piauthenticator.utils.AppConstants.QUESTION;
+import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
+import static it.netknights.piauthenticator.utils.AppConstants.SIGNATURE;
+import static it.netknights.piauthenticator.utils.AppConstants.SSL_VERIFY;
+import static it.netknights.piauthenticator.utils.AppConstants.TITLE;
+import static it.netknights.piauthenticator.utils.AppConstants.URL;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.is;
 
@@ -124,7 +142,7 @@ public class PushRolloutAuth {
         onView(withId(R.id.fab)).perform(click());
 
         intended(hasAction("com.google.zxing.client.android.SCAN"));
-        //sleep(5000);
+        sleep(5000);
 
         ViewInteraction appCompatButton3 = onView(
                 allOf(withId(android.R.id.button1),
@@ -172,17 +190,18 @@ public class PushRolloutAuth {
         mActivityTestRule.launchActivity(intent);
 
         // Now there should be a pending Auth request, the next button should be visible to allow the authentication
-        onView(withId(R.id.textViewToken)).check(matches(withText(title)));
-        onView(withId(R.id.textViewLabel)).check(matches(withText(question)));
+        onView(withId(R.id.textViewToken)).check(matches(withText("privacyIDEA: PIPU0001D07B")));
+        onView(withId(R.id.textViewLabel)).check(matches(withText(title)));
+        onView(withId(R.id.textView_pushStatus)).check(matches(withText(question)));
         onView(withId(R.id.next_button)).check(matches(allOf(withEffectiveVisibility(VISIBLE),
                 withText(R.string.Allow))));
 
 
         // Set the server to response with success
         server.enqueue(new MockResponse().setResponseCode(200)
-        .setBody("{\"nonce\": \"nocnencoenocencoecne\", \"jsonrpc\": \"2.0\", \"signature\": \"rsa_sha256_pss:339309fb3d362c0249cfdb37175\", " +
-                "\"versionnumber\": \"3.0.dev3\", \"version\": \"privacyIDEA 3.0.dev3\", \"result\":" +
-                " {\"status\": true, \"value\": true}, \"time\": 1554457850.641362, \"id\": 1}"));
+                .setBody("{\"nonce\": \"nocnencoenocencoecne\", \"jsonrpc\": \"2.0\", \"signature\": \"rsa_sha256_pss:339309fb3d362c0249cfdb37175\", " +
+                        "\"versionnumber\": \"3.0.dev3\", \"version\": \"privacyIDEA 3.0.dev3\", \"result\":" +
+                        " {\"status\": true, \"value\": true}, \"time\": 1554457850.641362, \"id\": 1}"));
 
         // Click allow
         onView(withId(R.id.next_button)).perform(click());

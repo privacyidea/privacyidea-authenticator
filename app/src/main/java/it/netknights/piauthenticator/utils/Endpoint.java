@@ -18,7 +18,7 @@
   limitations under the License.
 */
 
-package it.netknights.piauthenticator;
+package it.netknights.piauthenticator.utils;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -38,33 +38,44 @@ import java.util.Map;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import static it.netknights.piauthenticator.AppConstants.CONNECT_TIMEOUT;
-import static it.netknights.piauthenticator.AppConstants.READ_TIMEOUT;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_ERROR;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
-import static it.netknights.piauthenticator.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
-import static it.netknights.piauthenticator.Util.logprint;
 
-class Endpoint {
+import it.netknights.piauthenticator.interfaces.EndpointCallback;
+
+import static it.netknights.piauthenticator.utils.AppConstants.CONNECT_TIMEOUT;
+import static it.netknights.piauthenticator.utils.AppConstants.READ_TIMEOUT;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_ERROR;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_SSL_ERROR;
+import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
+import static it.netknights.piauthenticator.utils.Util.logprint;
+
+public class Endpoint {
 
     private boolean sslVerify;
     private String url;
     private Map<String, String> data;
-    private Interfaces.EndpointCallback callback;
+    private EndpointCallback callback;
 
-    Endpoint(boolean sslVerify, String url, Map<String, String> data, Interfaces.EndpointCallback callback) {
+    public Endpoint(boolean sslVerify, String url, Map<String, String> data, EndpointCallback callback) {
         this.sslVerify = sslVerify;
         this.url = url;
         this.data = data;
         this.callback = callback;
     }
 
-    boolean connect() {
+    /**
+     * Establishes a connection to the URL specified in the Constructor.
+     * The data is sent as POST Parameters.
+     *
+     * @return true if the request could be sent, false if not
+     */
+    public boolean connect() {
         logprint("Setting up connection to " + url);
         URL url;
         try {
@@ -102,6 +113,10 @@ class Endpoint {
         OutputStream os;
         try {
             os = con.getOutputStream();
+        } catch (SSLHandshakeException e) {
+            e.printStackTrace();
+            callback.updateStatus(STATUS_ENDPOINT_SSL_ERROR);
+            return false;
         } catch (IOException e) {
             e.printStackTrace();
             callback.updateStatus(STATUS_ENDPOINT_UNKNOWN_HOST);
@@ -154,7 +169,6 @@ class Endpoint {
     }
 
     private HttpsURLConnection turnOffSSLVerification(HttpsURLConnection con) {
-        logprint("Turning SSL verification off...");
         final TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager() {
                     @Override
@@ -182,13 +196,8 @@ class Endpoint {
         }
         final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
         con.setSSLSocketFactory(sslSocketFactory);
-        con.setHostnameVerifier(new HostnameVerifier() {
-            @Override
-            public boolean verify(String hostname, SSLSession session) {
-                return true;
-            }
-        });
-        logprint("Done.");
+        con.setHostnameVerifier((hostname, session) -> true);
+        logprint("SSL Verification is off.");
         return con;
     }
 }

@@ -13,7 +13,7 @@
         android:theme="@style/AppTheme">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".viewcontroller.MainActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
@@ -23,32 +23,32 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".EnterDetailsActivity"
+            android:name=".viewcontroller.EnterDetailsActivity"
             android:label="Enter Details"
-            android:parentActivityName=".MainActivity"
+            android:parentActivityName=".viewcontroller.MainActivity"
             android:windowSoftInputMode="stateHidden">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="it.netknights.piauthenticator.MainActivity" />
+                android:value="it.netknights.piauthenticator.viewcontroller.MainActivity" />
         </activity>
 
         <activity
-            android:name=".AboutActivity"
+            android:name=".viewcontroller.AboutActivity"
             android:label="About"
-            android:parentActivityName=".MainActivity">
+            android:parentActivityName=".viewcontroller.MainActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="it.netknights.piauthenticator.MainActivity" />
+                android:value="it.netknights.piauthenticator.viewcontroller.MainActivity" />
         </activity>
 
-        <service android:name=".FCMReceiverService">
+        <service android:name=".services.FCMReceiverService">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
 
         <service
-            android:name=".PushAuthService"
+            android:name=".services.PushAuthService"
             android:icon="@mipmap/ic_launcher"
             android:label="PushAuthService">
         </service>
