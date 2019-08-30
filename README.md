@@ -1,15 +1,15 @@
 # privacyIDEA Authenticator
 
-The privacyIDEA Authenticator currently implements the HOTP and TOTP (30 and 60 seconds) algorithms.
+The privacyIDEA Authenticator currently implements the HOTP and TOTP (30 and 60 seconds) algorithms with SHA-1/SHA-256/SHA-512.
 It can scan QR codes according to the
 [Google Authenticator Key URI](https://github.com/google/google-authenticator/wiki/Key-Uri-Format).
 
-It is meant to be used with the
-[privacyIDEA Authentication Server](https://github/privacyidea/privacyidea).
-
-The privacyIDEA Authenticator also provides an easier and more secure way of enrollment as
+The privacyIDEA Authenticator also provides a more secure way of enrollment as
 specified in our
-[smartphone concept](https://github.com/privacyidea/privacyidea/wiki/concept%3A-SmartphoneApp).
+[smartphone concept](https://github.com/privacyidea/privacyidea/wiki/concept%3A-SmartphoneApp) as well as the [pushtoken](https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken) with support for user-configured firebase projects.
+
+The App is best used with the
+[privacyIDEA Authentication Server](https://github/privacyidea/privacyidea).
 
 The iOS App can be found [here](https://github.com/privacyidea/privacyidea-authenticator-ios).
 
