@@ -110,6 +110,7 @@
     <string name="PushtokenRetryLabel">Retry rollout</string>
     <string name="PushtokenAuthenticating">Authenticating…</string>
     <string name="license_gson" translatable="false">Gson</string>
+    <string name="license_firebase" translatable="false">Firebase</string>
     <string name="NotificationWithToken">With token</string>
     <string name="ERR_SERVER_UNREACHABLE">Server was unreachable.</string>
     <string name="retry_authentication">Retry Authentication</string>
