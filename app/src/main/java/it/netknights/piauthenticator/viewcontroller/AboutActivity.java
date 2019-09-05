@@ -61,6 +61,7 @@ public class AboutActivity extends AppCompatActivity {
         acknowledgements.add(getString(R.string.license_zxing_embed));
         acknowledgements.add(getString(R.string.license_android_code_sample));
         acknowledgements.add(getString(R.string.license_gson));
+        acknowledgements.add(getString(R.string.license_firebase));
 
         AboutListAdapter adapter = new AboutListAdapter();
         listView.setAdapter(adapter);
