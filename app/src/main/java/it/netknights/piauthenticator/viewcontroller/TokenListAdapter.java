@@ -46,9 +46,11 @@ import androidx.core.widget.TextViewCompat;
 
 import it.netknights.piauthenticator.interfaces.PresenterInterface;
 import it.netknights.piauthenticator.interfaces.TokenListViewInterface;
+import it.netknights.piauthenticator.tasks.TwoStepRolloutTask;
 import it.netknights.piauthenticator.utils.AppConstants;
 import it.netknights.piauthenticator.R;
 import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.utils.Util;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
@@ -155,7 +157,9 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
                         setupTOTP(nextbtn, progressBar);
                         break;
                 }
-                otptext.setText(token.getCurrentOTP());
+
+                String text = token.getCurrentOTP();
+                otptext.setText(Util.insertPeriodically(text, text.length() / 2));
                 labeltext.setText(token.getLabel());
             }
         } else {
