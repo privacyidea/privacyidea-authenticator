@@ -34,6 +34,7 @@ import java.security.spec.InvalidKeySpecException;
 import it.netknights.piauthenticator.interfaces.PresenterTaskInterface;
 import it.netknights.piauthenticator.model.Token;
 import it.netknights.piauthenticator.utils.OTPGenerator;
+import it.netknights.piauthenticator.utils.Util;
 
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
@@ -108,7 +109,7 @@ public class TwoStepRolloutTask extends AsyncTask<Void, Void, Boolean> {
         }
 
         byte completeOutputBytes[] = outputStream.toByteArray();
-        result = insertPeriodically(new Base32().encodeAsString(completeOutputBytes));
+        result = Util.insertPeriodically(new Base32().encodeAsString(completeOutputBytes), 4);
         result = result.replaceAll("=", "");
         return result;
     }
@@ -119,19 +120,5 @@ public class TwoStepRolloutTask extends AsyncTask<Void, Void, Boolean> {
         presenterTaskInterface.updateTaskStatus(STATUS_TWO_STEP_ROLLOUT_DONE, token);
         presenterTaskInterface.makeAlertDialog("Phone secret", buildResultMessage());
         logprint("2step rollout finished.");
-    }
-
-    private String insertPeriodically(String text) {
-        StringBuilder builder = new StringBuilder(text.length() + " ".length() * (text.length() / 4) + 1);
-        int index = 0;
-        String prefix = "";
-        while (index < text.length()) {
-            builder.append(prefix);
-            prefix = " ";
-            builder.append(text.substring(index,
-                    Math.min(index + 4, text.length())));
-            index += 4;
-        }
-        return builder.toString();
     }
 }

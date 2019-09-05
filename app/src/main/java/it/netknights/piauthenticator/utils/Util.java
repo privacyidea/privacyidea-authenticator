@@ -641,4 +641,18 @@ public class Util {
             return;
         Log.e(TAG, msg);
     }
+
+    public static String insertPeriodically(String text, int stepSize) {
+        StringBuilder builder = new StringBuilder(text.length() + " ".length() * (text.length() / stepSize) + 1);
+        int index = 0;
+        String prefix = "";
+        while (index < text.length()) {
+            builder.append(prefix);
+            prefix = " ";
+            builder.append(text.substring(index,
+                    Math.min(index + stepSize, text.length())));
+            index += stepSize;
+        }
+        return builder.toString();
+    }
 }
