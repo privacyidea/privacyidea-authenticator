@@ -8,7 +8,9 @@
     <string name="period">Period:</string>
     <string name="enter_details">Enter Details</string>
     <string name="algorithm">Algorithm:</string>
-    <string name="base32_encoded_secret">Base32 encoded secret</string>
+    <string name="base32_encoded_secret">Base32 encoded secret</string> <!-- TODO write a better text -->
+    <string name="hex_encoded_secret">Hex endcoded secret</string> <!-- TODO write a better text + translate -->
+    <string name="title_radioGroup_encoding">Choose encoding:</string> <!-- TODO write a better text + translate-->
     <string name="name" translatable="false">Name</string>
     <string name="secret">Secret</string>
     <string name="type">Type:</string>
