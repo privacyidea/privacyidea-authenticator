@@ -66,7 +66,7 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
     private PresenterInterface presenterInterface;
     private ArrayList<ProgressBar> progressBars;
 
-    private static final long DISABEL_TIME_INTERVALL = 1000; // Time in milliseconds
+    private static final long DISABLE_TIME_INTERVAL = 1000; // Time in milliseconds
     private long lastTimeClicked = 0;
 
     void setPresenterInterface(PresenterInterface presenterInterface) {
@@ -254,17 +254,14 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         nextbtn.setVisibility(VISIBLE);
 
         nextbtn.setOnClickListener(v -> {
-
-            // FIXME ? this disables all buttons at once for the given time
-
-            // button gets disabled for some time interval
             long currentTime = SystemClock.elapsedRealtime();
-            if (currentTime - lastTimeClicked > DISABEL_TIME_INTERVALL) {
+
+            if (currentTime - lastTimeClicked > DISABLE_TIME_INTERVAL){
                 lastTimeClicked = currentTime;
                 presenterInterface.increaseHOTPCounter(token);
             }
-        });
 
+        });
     }
 
     private void setupTapRequired(View v, TextView otptext, final Token token, Button nextbtn, ProgressBar progressBar) {
