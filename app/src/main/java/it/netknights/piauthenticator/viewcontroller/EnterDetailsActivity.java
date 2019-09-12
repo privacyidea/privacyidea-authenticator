@@ -26,6 +26,7 @@ import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.appcompat.app.ActionBar;
@@ -40,6 +41,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TableLayout;
 import android.widget.TextView;
@@ -68,6 +71,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
     private int new_period;
     private int new_digits;
     private boolean new_withpin = false;
+    private RadioButton currentSelectedEncoding = null;
     TableLayout tl;
 
 
@@ -176,9 +180,27 @@ public class EnterDetailsActivity extends AppCompatActivity {
 
     }
 
-    // TODO handle clicks on radio group, group should be no-selectable also
-    public void onRadioButtonClicked(View view){
-        Toast.makeText(this, "RadioClicked", Toast.LENGTH_LONG).show();
+    public void onRadioButtonClicked(View view) {
+        boolean checked = ((RadioButton) view).isChecked();
+
+        // if a button is clicked twice no encoding is selected
+        if (view.equals(currentSelectedEncoding)) {
+            ((RadioGroup) view.getParent()).clearCheck();
+            currentSelectedEncoding = null;
+            return;
+        }
+
+        switch (view.getId()) {
+            case R.id.radio_base32:
+                if (checked) {
+                currentSelectedEncoding = (RadioButton) view;
+                }
+
+            case R.id.radio_hex:
+                if (checked) {
+                currentSelectedEncoding = (RadioButton) view;
+                }
+        }
     }
 
     private void setupButtons() {
