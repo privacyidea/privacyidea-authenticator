@@ -51,6 +51,7 @@
     <string name="toast_name_cantbe_empty">Name cannot be empty!</string>
     <string name="toast_secret_cantbe_empty">Secret cannot be empty!</string>
     <string name="toast_secret_nob32format">Secret is not in Base32 format!</string>
+    <string name="toast_secret_nohexformat">Secret is not in hexadecimal format</string> <!-- TODO translate -->
     <string name="toast_edit_cancelled">Editing cancelled</string>
     <string name="toast_name_changed">Name was changed</string>
     <string name="toast_pins_dont_match">PINs do not match - Cancelled</string>

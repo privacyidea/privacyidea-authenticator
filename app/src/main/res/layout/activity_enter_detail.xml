@@ -62,7 +62,7 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editText_name" />
-    
+
     <TextView
         android:id="@+id/textView_encoding_title"
         android:layout_width="wrap_content"
