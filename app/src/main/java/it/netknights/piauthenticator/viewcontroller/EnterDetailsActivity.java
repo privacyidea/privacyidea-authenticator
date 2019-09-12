@@ -26,6 +26,7 @@ import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.appcompat.app.ActionBar;
@@ -40,12 +41,16 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base32;
+import org.apache.commons.codec.binary.Hex;
 
 import it.netknights.piauthenticator.R;
 
@@ -68,6 +73,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
     private int new_period;
     private int new_digits;
     private boolean new_withpin = false;
+    private RadioButton currentSelectedEncoding = null;
     TableLayout tl;
 
 
@@ -176,6 +182,29 @@ public class EnterDetailsActivity extends AppCompatActivity {
 
     }
 
+    public void onRadioButtonClicked(View view) {
+        boolean checked = ((RadioButton) view).isChecked();
+
+        // if a button is clicked twice no encoding is selected
+        if (view.equals(currentSelectedEncoding)) {
+            ((RadioGroup) view.getParent()).clearCheck();
+            currentSelectedEncoding = null;
+            return;
+        }
+
+        switch (view.getId()) {
+            case R.id.radio_base32:
+                if (checked) {
+                    currentSelectedEncoding = (RadioButton) view;
+                }
+
+            case R.id.radio_hex:
+                if (checked) {
+                    currentSelectedEncoding = (RadioButton) view;
+                }
+        }
+    }
+
     private void setupButtons() {
         Button addBtn = findViewById(R.id.button_add);
         addBtn.setOnClickListener(new View.OnClickListener() {
@@ -192,7 +221,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
     private boolean evaluate() {
         EditText editText_name = findViewById(R.id.editText_name);
         EditText editText_secret = findViewById(R.id.editText_secret);
-        CheckBox check_base32 = findViewById(R.id.checkBox_base32);
+//        CheckBox check_base32 = findViewById(R.id.checkBox_base32);
         CheckBox check_pin = findViewById(R.id.checkBox_pin);
 
         if (check_pin.isChecked()) {
@@ -212,15 +241,30 @@ public class EnterDetailsActivity extends AppCompatActivity {
             editText_secret.requestFocus();
             return false;
         }
-        if (check_base32.isChecked()) {
-            if (new Base32().isInAlphabet(new_secret_string)) {
-                new_secret = new Base32().decode(new_secret_string);
-            } else {
-                Toast.makeText(this, R.string.toast_secret_nob32format, Toast.LENGTH_LONG).show();
-                editText_secret.requestFocus();
-                return false;
-            }
+        
+        if (currentSelectedEncoding != null) {
+            switch (currentSelectedEncoding.getId()) {
 
+                case R.id.radio_base32:
+                    if (new Base32().isInAlphabet(new_secret_string)) {
+                        new_secret = new Base32().decode(new_secret_string);
+                        break;
+                    } else {
+                        Toast.makeText(this, R.string.toast_secret_nob32format, Toast.LENGTH_LONG).show();
+                        editText_secret.requestFocus();
+                        return false;
+                    }
+
+                case R.id.radio_hex:
+                    try {
+                        new_secret = Hex.decodeHex(new_secret_string.toCharArray());
+                        break;
+                    } catch (DecoderException e) {
+                        Toast.makeText(this, R.string.toast_secret_nohexformat, Toast.LENGTH_LONG).show();
+                        editText_secret.requestFocus();
+                        return false;
+                    }
+            }
         } else {
             new_secret = new_secret_string.getBytes();
         }

@@ -102,8 +102,10 @@ public class DetailAndMenuTest {
         onView(withId(R.id.editText_name)).check(matches(isDisplayed()));
         onView(withId(R.id.editText_name)).check(matches(withText(R.string.name)));
 
-        onView(withId(R.id.checkBox_base32)).check(matches(isDisplayed()));
-        onView(withId(R.id.checkBox_base32)).check(matches(withText(R.string.base32_encoded_secret)));
+        onView(withId(R.id.radio_base32)).check(matches(isDisplayed()));
+        onView(withId(R.id.radio_hex)).check(matches(isDisplayed()));
+        onView(withId(R.id.radio_base32)).check(matches(withText(R.string.base32_encoded_secret)));
+        onView(withId(R.id.radio_hex)).check(matches(withText(R.string.hex_encoded_secret)));
 
         onView(withId(R.id.checkBox_pin)).check(matches(isDisplayed()));
         onView(withId(R.id.checkBox_pin)).check(matches(withText(R.string.with_pin)));
@@ -244,24 +246,12 @@ public class DetailAndMenuTest {
                         isDisplayed()));
         appCompatEditText7.perform(closeSoftKeyboard());
 
-        ViewInteraction appCompatCheckBox = onView(
-                allOf(withId(R.id.checkBox_base32), withText((R.string.base32_encoded_secret)),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(android.R.id.content),
-                                        0),
-                                3),
-                        isDisplayed()));
-        appCompatCheckBox.perform(click());
+        ViewInteraction appCompatRadioButton = onView(
+                allOf(withId(R.id.radio_base32), withText("Base32")));
+        appCompatRadioButton.perform(click());
 
         ViewInteraction appCompatCheckBox2 = onView(
-                allOf(withId(R.id.checkBox_pin), withText((R.string.with_pin)),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(android.R.id.content),
-                                        0),
-                                4),
-                        isDisplayed()));
+                allOf(withId(R.id.checkBox_pin), withText((R.string.with_pin))));
         appCompatCheckBox2.perform(click());
 
         //pressBack();
@@ -352,13 +342,7 @@ public class DetailAndMenuTest {
         appCompatTextView5.perform(click());
 
         ViewInteraction appCompatButton = onView(
-                allOf(withId(R.id.button_add), withText("+"),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(android.R.id.content),
-                                        0),
-                                5),
-                        isDisplayed()));
+                allOf(withId(R.id.button_add), withText("+")));
         appCompatButton.perform(click());
 
         sleep();
@@ -726,18 +710,47 @@ public class DetailAndMenuTest {
         appCompatTextView7.perform(click());
 
         ViewInteraction appCompatButton6 = onView(
-                allOf(withId(R.id.button_add), withText("+"),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(android.R.id.content),
-                                        0),
-                                5),
-                        isDisplayed()));
+                allOf(withId(R.id.button_add), withText("+")));
         appCompatButton6.perform(click());
 
         sleep();
 
         onView(allOf(withId(R.id.progressBar), withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE))).check(matches(isDisplayed()));
+
+    }
+
+    @Test
+    public  void testHexSecret(){
+
+        sleep();
+
+        openActionBarOverflowOrOptionsMenu(getInstrumentation().getTargetContext());
+
+        sleep();
+
+        ViewInteraction appCompatTextView8 = onView(
+                allOf(withId(R.id.title), withText(R.string.menu_add_manually)));
+        appCompatTextView8.perform(click());
+
+        ViewInteraction appCompatEditText8 = onView(
+                allOf(withId(R.id.editText_secret), withText(R.string.secret)));
+        appCompatEditText8.perform(replaceText("AAAA"));
+
+        ViewInteraction appCompatEditText9 = onView(
+                allOf(withId(R.id.editText_secret), withText("AAAA")));
+        appCompatEditText9.perform(closeSoftKeyboard());
+
+        ViewInteraction appCompatRadioButton = onView(
+                allOf(withId(R.id.radio_hex), withText(R.string.hex_encoded_secret)));
+        appCompatRadioButton.perform(click());
+
+        ViewInteraction appCompatButton = onView(
+                allOf(withId(R.id.button_add), withText("+")));
+        appCompatButton.perform(click());
+
+        sleep();
+
+        onView(withId(R.id.textViewToken)).check(matches(withText("637 493")));
     }
 
     private String getString(int resID) {
