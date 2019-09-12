@@ -443,7 +443,7 @@ public class DetailAndMenuTest {
 
         sleep();
 
-        onView(withId(R.id.textViewToken)).check(matches(withText("66674061")));
+        onView(withId(R.id.textViewToken)).check(matches(withText("6667 4061")));
 
         ViewInteraction textView13 = onView(
                 allOf(withId(R.id.textViewLabel), withText("Nam"),
