@@ -102,8 +102,10 @@ public class DetailAndMenuTest {
         onView(withId(R.id.editText_name)).check(matches(isDisplayed()));
         onView(withId(R.id.editText_name)).check(matches(withText(R.string.name)));
 
-        onView(withId(R.id.checkBox_base32)).check(matches(isDisplayed()));
-        onView(withId(R.id.checkBox_base32)).check(matches(withText(R.string.base32_encoded_secret)));
+        onView(withId(R.id.radio_base32)).check(matches(isDisplayed()));
+        onView(withId(R.id.radio_hex)).check(matches(isDisplayed()));
+        onView(withId(R.id.radio_base32)).check(matches(withText(R.string.base32_encoded_secret)));
+        onView(withId(R.id.radio_hex)).check(matches(withText(R.string.hex_encoded_secret)));
 
         onView(withId(R.id.checkBox_pin)).check(matches(isDisplayed()));
         onView(withId(R.id.checkBox_pin)).check(matches(withText(R.string.with_pin)));
