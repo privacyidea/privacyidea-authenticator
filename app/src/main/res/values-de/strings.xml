@@ -45,7 +45,7 @@
     <string name="with_pin">Mit PIN</string>
     <string name="type">Typ:</string>
     <string name="secret">Geheimnis</string>
-    <string name="base32_encoded_secret">Base32 codiertes Geheimnis</string>
+    <string name="base32_encoded_secret">Base32</string>
     <string name="algorithm">Algorithmus:</string>
     <string name="enter_details">Details angeben</string>
     <string name="period">Periode:</string>
