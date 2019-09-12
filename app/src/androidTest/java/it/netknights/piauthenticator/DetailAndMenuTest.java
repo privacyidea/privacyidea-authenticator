@@ -244,24 +244,22 @@ public class DetailAndMenuTest {
                         isDisplayed()));
         appCompatEditText7.perform(closeSoftKeyboard());
 
-        ViewInteraction appCompatCheckBox = onView(
-                allOf(withId(R.id.checkBox_base32), withText((R.string.base32_encoded_secret)),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(android.R.id.content),
-                                        0),
-                                3),
-                        isDisplayed()));
-        appCompatCheckBox.perform(click());
+//        ViewInteraction appCompatCheckBox = onView(
+//                allOf(withId(R.id.radio_base32),
+//                        childAtPosition(
+//                                childAtPosition(
+//                                        withId(android.R.id.content),
+//                                        0),
+//                                3),
+//                        isDisplayed()));
+//        appCompatCheckBox.perform(click());
+
+        ViewInteraction appCompatRadioButton = onView(
+                allOf(withId(R.id.radio_base32), withText("Base32")));
+        appCompatRadioButton.perform(click());
 
         ViewInteraction appCompatCheckBox2 = onView(
-                allOf(withId(R.id.checkBox_pin), withText((R.string.with_pin)),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(android.R.id.content),
-                                        0),
-                                4),
-                        isDisplayed()));
+                allOf(withId(R.id.checkBox_pin), withText((R.string.with_pin))));
         appCompatCheckBox2.perform(click());
 
         //pressBack();
@@ -352,13 +350,7 @@ public class DetailAndMenuTest {
         appCompatTextView5.perform(click());
 
         ViewInteraction appCompatButton = onView(
-                allOf(withId(R.id.button_add), withText("+"),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(android.R.id.content),
-                                        0),
-                                5),
-                        isDisplayed()));
+                allOf(withId(R.id.button_add), withText("+")));
         appCompatButton.perform(click());
 
         sleep();
@@ -443,7 +435,7 @@ public class DetailAndMenuTest {
 
         sleep();
 
-        onView(withId(R.id.textViewToken)).check(matches(withText("66674061")));
+        onView(withId(R.id.textViewToken)).check(matches(withText("6667 4061")));
 
         ViewInteraction textView13 = onView(
                 allOf(withId(R.id.textViewLabel), withText("Nam"),
