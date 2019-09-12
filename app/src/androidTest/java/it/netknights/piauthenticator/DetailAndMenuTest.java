@@ -720,13 +720,7 @@ public class DetailAndMenuTest {
         appCompatTextView7.perform(click());
 
         ViewInteraction appCompatButton6 = onView(
-                allOf(withId(R.id.button_add), withText("+"),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(android.R.id.content),
-                                        0),
-                                5),
-                        isDisplayed()));
+                allOf(withId(R.id.button_add), withText("+")));
         appCompatButton6.perform(click());
 
         sleep();
