@@ -48,7 +48,9 @@ import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base32;
+import org.apache.commons.codec.binary.Hex;
 
 import it.netknights.piauthenticator.R;
 
@@ -193,12 +195,12 @@ public class EnterDetailsActivity extends AppCompatActivity {
         switch (view.getId()) {
             case R.id.radio_base32:
                 if (checked) {
-                currentSelectedEncoding = (RadioButton) view;
+                    currentSelectedEncoding = (RadioButton) view;
                 }
 
             case R.id.radio_hex:
                 if (checked) {
-                currentSelectedEncoding = (RadioButton) view;
+                    currentSelectedEncoding = (RadioButton) view;
                 }
         }
     }
@@ -217,55 +219,66 @@ public class EnterDetailsActivity extends AppCompatActivity {
     }
 
     private boolean evaluate() {
-//        EditText editText_name = findViewById(R.id.editText_name);
-//        EditText editText_secret = findViewById(R.id.editText_secret);
+        EditText editText_name = findViewById(R.id.editText_name);
+        EditText editText_secret = findViewById(R.id.editText_secret);
 //        CheckBox check_base32 = findViewById(R.id.checkBox_base32);
-//        CheckBox check_pin = findViewById(R.id.checkBox_pin);
-//
-//        if (check_pin.isChecked()) {
-//            new_withpin = true;
-//        }
-//
-//        new_label = editText_name.getText().toString();
-//        if (new_label.equals("")) {
-//            Toast.makeText(this, R.string.toast_name_cantbe_empty, Toast.LENGTH_LONG).show();
-//            editText_name.requestFocus();
-//            return false;
-//        }
-//        String new_secret_string = editText_secret.getText().toString();
-//
-//        if (new_secret_string.equals("")) {
-//            Toast.makeText(this, R.string.toast_secret_cantbe_empty, Toast.LENGTH_LONG).show();
-//            editText_secret.requestFocus();
-//            return false;
-//        }
-//        if (check_base32.isChecked()) {
-//            if (new Base32().isInAlphabet(new_secret_string)) {
-//                new_secret = new Base32().decode(new_secret_string);
-//            } else {
-//                Toast.makeText(this, R.string.toast_secret_nob32format, Toast.LENGTH_LONG).show();
-//                editText_secret.requestFocus();
-//                return false;
-//            }
-//
-//            // TODO create a check for the case that the secret is encoded as hex
-//
-//        } else {
-//            new_secret = new_secret_string.getBytes();
-//        }
-//
-//        new_type = (String) spinner_type.getSelectedItem();
-//        new_type = new_type.toLowerCase();
-//        if (new_type.equals(TOTP)) {
-//            String tmp_string = (String) spinner_period.getSelectedItem();
-//            if (tmp_string.equals(PERIOD_30_STR)) {
-//                new_period = PERIOD_30;
-//            } else new_period = PERIOD_60;
-//        }
-//
-//        String tmp_digits = (String) spinner_digits.getSelectedItem();
-//        new_digits = Integer.parseInt(tmp_digits);
-//        new_algorithm = (String) spinner_algorithm.getSelectedItem();
+        CheckBox check_pin = findViewById(R.id.checkBox_pin);
+
+        if (check_pin.isChecked()) {
+            new_withpin = true;
+        }
+
+        new_label = editText_name.getText().toString();
+        if (new_label.equals("")) {
+            Toast.makeText(this, R.string.toast_name_cantbe_empty, Toast.LENGTH_LONG).show();
+            editText_name.requestFocus();
+            return false;
+        }
+        String new_secret_string = editText_secret.getText().toString();
+
+        if (new_secret_string.equals("")) {
+            Toast.makeText(this, R.string.toast_secret_cantbe_empty, Toast.LENGTH_LONG).show();
+            editText_secret.requestFocus();
+            return false;
+        }
+        
+        if (currentSelectedEncoding != null) {
+            switch (currentSelectedEncoding.getId()) {
+
+                case R.id.radio_base32:
+                    if (new Base32().isInAlphabet(new_secret_string)) {
+                        new_secret = new Base32().decode(new_secret_string);
+                    } else {
+                        Toast.makeText(this, R.string.toast_secret_nob32format, Toast.LENGTH_LONG).show();
+                        editText_secret.requestFocus();
+                        return false;
+                    }
+
+                case R.id.radio_hex:
+                    try {
+                        new_secret = Hex.decodeHex(new_secret_string.toCharArray());
+                    } catch (DecoderException e) {
+                        Toast.makeText(this, R.string.toast_secret_nohexformat, Toast.LENGTH_LONG).show();
+                        editText_secret.requestFocus();
+                        return false;
+                    }
+            }
+        } else {
+            new_secret = new_secret_string.getBytes();
+        }
+
+        new_type = (String) spinner_type.getSelectedItem();
+        new_type = new_type.toLowerCase();
+        if (new_type.equals(TOTP)) {
+            String tmp_string = (String) spinner_period.getSelectedItem();
+            if (tmp_string.equals(PERIOD_30_STR)) {
+                new_period = PERIOD_30;
+            } else new_period = PERIOD_60;
+        }
+
+        String tmp_digits = (String) spinner_digits.getSelectedItem();
+        new_digits = Integer.parseInt(tmp_digits);
+        new_algorithm = (String) spinner_algorithm.getSelectedItem();
         return true;
     }
 
