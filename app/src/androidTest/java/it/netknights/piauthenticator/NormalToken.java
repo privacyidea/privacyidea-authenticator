@@ -115,7 +115,7 @@ public class NormalToken {
                 inAdapterView(withId(R.id.listview)).
                 atPosition(0).
                 onChildView(withId(R.id.textViewToken))
-                .check(matches(withText(startsWith("163584"))));
+                .check(matches(withText(startsWith("163 584"))));
 
         // Check that the next button is displayed and the progressbar is not
         onView(withId(R.id.next_button)).check(matches(allOf(isDisplayed(), withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE))));
@@ -155,7 +155,7 @@ public class NormalToken {
                 atPosition(0).
                 onChildView(withId(R.id.textViewToken))
                 .check(matches(allOf(isDisplayed(),
-                        withText(not(startsWith("163584"))),
+                        withText(not(startsWith("163 584"))),
                         withAnyString()))); // The OTP is not the same even though the secret is the same
         // Check that the progressbar is displayed and the next button not
         onView(withId(R.id.progressBar)).check(matches(allOf(isDisplayed(), withEffectiveVisibility(VISIBLE))));

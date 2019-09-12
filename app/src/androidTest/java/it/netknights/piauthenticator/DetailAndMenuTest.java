@@ -246,16 +246,6 @@ public class DetailAndMenuTest {
                         isDisplayed()));
         appCompatEditText7.perform(closeSoftKeyboard());
 
-//        ViewInteraction appCompatCheckBox = onView(
-//                allOf(withId(R.id.radio_base32),
-//                        childAtPosition(
-//                                childAtPosition(
-//                                        withId(android.R.id.content),
-//                                        0),
-//                                3),
-//                        isDisplayed()));
-//        appCompatCheckBox.perform(click());
-
         ViewInteraction appCompatRadioButton = onView(
                 allOf(withId(R.id.radio_base32), withText("Base32")));
         appCompatRadioButton.perform(click());
@@ -726,6 +716,41 @@ public class DetailAndMenuTest {
         sleep();
 
         onView(allOf(withId(R.id.progressBar), withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE))).check(matches(isDisplayed()));
+
+    }
+
+    @Test
+    public  void testHexSecret(){
+
+        sleep();
+
+        openActionBarOverflowOrOptionsMenu(getInstrumentation().getTargetContext());
+
+        sleep();
+
+        ViewInteraction appCompatTextView8 = onView(
+                allOf(withId(R.id.title), withText(R.string.menu_add_manually)));
+        appCompatTextView8.perform(click());
+
+        ViewInteraction appCompatEditText8 = onView(
+                allOf(withId(R.id.editText_secret), withText(R.string.secret)));
+        appCompatEditText8.perform(replaceText("AAAA"));
+
+        ViewInteraction appCompatEditText9 = onView(
+                allOf(withId(R.id.editText_secret), withText("AAAA")));
+        appCompatEditText9.perform(closeSoftKeyboard());
+
+        ViewInteraction appCompatRadioButton = onView(
+                allOf(withId(R.id.radio_hex), withText(R.string.hex_encoded_secret)));
+        appCompatRadioButton.perform(click());
+
+        ViewInteraction appCompatButton = onView(
+                allOf(withId(R.id.button_add), withText("+")));
+        appCompatButton.perform(click());
+
+        sleep();
+
+        onView(withId(R.id.textViewToken)).check(matches(withText("637 493")));
     }
 
     private String getString(int resID) {
