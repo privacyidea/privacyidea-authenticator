@@ -248,6 +248,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
                 case R.id.radio_base32:
                     if (new Base32().isInAlphabet(new_secret_string)) {
                         new_secret = new Base32().decode(new_secret_string);
+                        break;
                     } else {
                         Toast.makeText(this, R.string.toast_secret_nob32format, Toast.LENGTH_LONG).show();
                         editText_secret.requestFocus();
@@ -257,6 +258,7 @@ public class EnterDetailsActivity extends AppCompatActivity {
                 case R.id.radio_hex:
                     try {
                         new_secret = Hex.decodeHex(new_secret_string.toCharArray());
+                        break;
                     } catch (DecoderException e) {
                         Toast.makeText(this, R.string.toast_secret_nohexformat, Toast.LENGTH_LONG).show();
                         editText_secret.requestFocus();
