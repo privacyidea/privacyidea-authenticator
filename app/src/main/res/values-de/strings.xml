@@ -83,4 +83,7 @@
     <string name="NotificationWithToken">"Mit Token "</string>
     <string name="ERR_SERVER_UNREACHABLE">Server war nicht erreichbar.</string>
     <string name="retry_authentication">Erneut Versuchen</string>
+    <string name="hex_encoded_secret">Hexadezimal</string>
+    <string name="title_radioGroup_encoding">Codierung des Geheimnisses</string>
+    <string name="toast_secret_nohexformat">Geheimnis nicht im hexadezimalen Format!</string>
 </resources>
