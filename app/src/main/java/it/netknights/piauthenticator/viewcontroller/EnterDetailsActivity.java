@@ -176,6 +176,8 @@ public class EnterDetailsActivity extends AppCompatActivity {
 
     }
 
+    // TODO handle clicks on radio group, group should be no-selectable also
+
     private void setupButtons() {
         Button addBtn = findViewById(R.id.button_add);
         addBtn.setOnClickListener(new View.OnClickListener() {
@@ -220,6 +222,8 @@ public class EnterDetailsActivity extends AppCompatActivity {
                 editText_secret.requestFocus();
                 return false;
             }
+
+            // TODO create a check for the case that the secret is encoded as hex
 
         } else {
             new_secret = new_secret_string.getBytes();

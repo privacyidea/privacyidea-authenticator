@@ -75,6 +75,8 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editText_secret" />
 
+<!--    TODO add radio group and remove check box-->
+
     <CheckBox
         android:id="@+id/checkBox_pin"
         android:layout_width="wrap_content"
