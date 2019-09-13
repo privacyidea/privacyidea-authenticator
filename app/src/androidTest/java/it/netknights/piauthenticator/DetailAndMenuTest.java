@@ -720,7 +720,7 @@ public class DetailAndMenuTest {
     }
 
     @Test
-    public  void testHexSecret(){
+    public void testHexSecret() {
 
         sleep();
 
@@ -751,6 +751,51 @@ public class DetailAndMenuTest {
         sleep();
 
         onView(withId(R.id.textViewToken)).check(matches(withText("637 493")));
+    }
+
+    @Test
+    public void testNextButtonDelay() {
+        setupForNextButton();
+
+        onView(allOf(withId(R.id.next_button), withText(R.string.button_text_next))).perform(click());
+
+        // next 963 548
+        onView(allOf(withId(R.id.textViewToken), withText("963 548"))).check(matches(withText("963 548")));
+        onView(allOf(withId(R.id.next_button), withText(R.string.button_text_next))).perform(click());
+
+        // check that the click was not performed
+        onView(allOf(withId(R.id.textViewToken), withText("963 548"))).check(matches(withText("963 548")));
+
+        sleep();
+        onView(allOf(withId(R.id.next_button), withText(R.string.button_text_next))).perform(click());
+        onView(allOf(withId(R.id.textViewToken), withText("364 247"))).check(matches(withText("364 247")));
+    }
+
+    private void setupForNextButton() {
+
+        openActionBarOverflowOrOptionsMenu(getInstrumentation().getTargetContext());
+
+        sleep();
+
+        ViewInteraction appCompatTextView8 = onView(
+                allOf(withId(R.id.title), withText(R.string.menu_add_manually)));
+        appCompatTextView8.perform(click());
+
+        ViewInteraction appCompatEditText8 = onView(
+                allOf(withId(R.id.editText_secret), withText(R.string.secret)));
+        appCompatEditText8.perform(replaceText("AAA"));
+
+        ViewInteraction appCompatEditText9 = onView(
+                allOf(withId(R.id.editText_secret), withText("AAA")));
+        appCompatEditText9.perform(closeSoftKeyboard());
+
+        ViewInteraction appCompatButton = onView(
+                allOf(withId(R.id.button_add), withText("+")));
+        appCompatButton.perform(click());
+
+        sleep();
+
+        onView(withId(R.id.textViewToken)).check(matches(withText("063 211")));
     }
 
     private String getString(int resID) {
