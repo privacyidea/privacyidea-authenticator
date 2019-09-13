@@ -29,6 +29,8 @@ import android.os.Build;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.Map;
 import java.util.Random;
 
@@ -37,6 +39,10 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
 import it.netknights.piauthenticator.R;
+import it.netknights.piauthenticator.model.Model;
+import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.utils.SecretKeyWrapper;
+import it.netknights.piauthenticator.utils.Util;
 import it.netknights.piauthenticator.viewcontroller.MainActivity;
 
 import static it.netknights.piauthenticator.utils.AppConstants.INTENT_FILTER;
@@ -85,6 +91,30 @@ public class FCMReceiverService extends FirebaseMessagingService {
             }
         }
 
+        // check if the token was deleted from within the app,
+        // if that is the case do not show any notification for it
+        try {
+            Util util = new Util(new SecretKeyWrapper(this.getApplicationContext()),
+                    this.getFilesDir().getAbsolutePath());
+            boolean tokenExists = false;
+            for (Token t : util.loadTokens()) {
+                if (t.getSerial().equals(serial)) {
+                    tokenExists = true;
+                    break;
+                }
+            }
+
+            if (!tokenExists) {
+                return;
+            }
+
+        } catch (GeneralSecurityException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
         // Generate a random notification ID
         Random random = new Random();
         int notificationID = random.nextInt(9999 - 1000) + 1000;
@@ -115,15 +145,15 @@ public class FCMReceiverService extends FirebaseMessagingService {
      * Pressing the button will the start the sepcified service.
      * The intents for the activity and the service need to be filled beforehand.
      *
-     * @param context           app context
-     * @param notificationID    notification ID
-     * @param service_intent    intent to start the service with, getService will be called on this
-     * @param activity_intent   intent to start the activity with, getActivity will be called on this
-     * @param title             notification title
-     * @param contextText       notification text
-     * @param subText           notification subtext, optional
-     * @param buttonText        button text
-     * @return                  notification
+     * @param context         app context
+     * @param notificationID  notification ID
+     * @param service_intent  intent to start the service with, getService will be called on this
+     * @param activity_intent intent to start the activity with, getActivity will be called on this
+     * @param title           notification title
+     * @param contextText     notification text
+     * @param subText         notification subtext, optional
+     * @param buttonText      button text
+     * @return notification
      */
     static Notification buildNotificationFromPush(Context context, int notificationID, Intent service_intent, Intent activity_intent,
                                                   String title, String contextText, @Nullable String subText, String buttonText) {
