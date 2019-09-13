@@ -25,6 +25,7 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.os.Handler;
 import android.os.SystemClock;
 import android.text.InputType;
 import android.view.DragEvent;
@@ -65,9 +66,6 @@ import static it.netknights.piauthenticator.R.color.PIBLUE;
 public class TokenListAdapter extends BaseAdapter implements TokenListViewInterface {
     private PresenterInterface presenterInterface;
     private ArrayList<ProgressBar> progressBars;
-
-    private static final long DISABLE_TIME_INTERVAL = 1000; // Time in milliseconds
-    private long lastTimeClicked = 0;
 
     void setPresenterInterface(PresenterInterface presenterInterface) {
         this.presenterInterface = presenterInterface;
@@ -254,12 +252,11 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         nextbtn.setVisibility(VISIBLE);
 
         nextbtn.setOnClickListener(v -> {
-            long currentTime = SystemClock.elapsedRealtime();
 
-            if (currentTime - lastTimeClicked > DISABLE_TIME_INTERVAL){
-                lastTimeClicked = currentTime;
-                presenterInterface.increaseHOTPCounter(token);
-            }
+            // disable button for some time after clicking
+            nextbtn.setEnabled(false);
+            new Handler().postDelayed(() -> nextbtn.setEnabled(true), 1000);
+            presenterInterface.increaseHOTPCounter(token);
 
         });
     }
