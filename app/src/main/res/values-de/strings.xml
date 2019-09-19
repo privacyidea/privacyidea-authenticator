@@ -86,4 +86,7 @@
     <string name="hex_encoded_secret">Hexadezimal</string>
     <string name="title_radioGroup_encoding">Codierung des Geheimnisses</string>
     <string name="toast_secret_nohexformat">Geheimnis nicht im hexadezimalen Format!</string>
+    <string name="device_not_supported">Android-Gerät wird nicht unterstützt</string>
+    <string name="device_not_supported_btn_text">Schließe Anwendung</string>
+    <string name="device_not_supported_text">Dieses Android-Gerät unterstützt die sichere Speicherung von Tokens nicht, daher kann die Anwendung nicht verwendet werden.</string>
 </resources>

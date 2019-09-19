@@ -169,8 +169,12 @@ public class Util {
             }
         }
 
-        if (saveToFile(DATAFILE, tmp.toString().getBytes())) {
-            logprint("Tokenlist saved.");
+        try {
+            if (saveToFile(DATAFILE, tmp.toString().getBytes())) {
+                logprint("Tokenlist saved.");
+            }
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
         }
     }
 
@@ -401,7 +405,7 @@ public class Util {
         }
     }
 
-    public void storeFirebaseConfig(FirebaseInitConfig firebaseInitConfig) {
+    public void storeFirebaseConfig(FirebaseInitConfig firebaseInitConfig) throws InvalidKeyException {
         logprint("Storing Firebase config...");
         JSONObject o = new JSONObject();
         try {
@@ -463,12 +467,14 @@ public class Util {
      * @param data         Data to save
      * @return true if successful, false if error
      */
-    private boolean saveToFile(String fileName, String baseFilePath, byte[] data) {
+    private boolean saveToFile(String fileName, String baseFilePath, byte[] data) throws InvalidKeyException {
         try {
             SecretKey key = getSecretKey(new File(baseFilePath + "/" + KEYFILE));
             data = encrypt(key, data);
             writeFile(new File(baseFilePath + "/" + fileName), data);
             return true;
+        } catch (InvalidKeyException e) {
+            throw e;
         } catch (GeneralSecurityException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -485,7 +491,7 @@ public class Util {
      * @param data     Data to save
      * @return true if successful, false if error
      */
-    boolean saveToFile(String fileName, byte[] data) {
+    public boolean saveToFile(String fileName, byte[] data) throws InvalidKeyException {
         if (baseFilePath == null) return false;
         return saveToFile(fileName, baseFilePath, data);
     }

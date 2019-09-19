@@ -20,16 +20,14 @@
 
 package it.netknights.piauthenticator.viewcontroller;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.PorterDuff;
-import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -93,7 +91,6 @@ import static it.netknights.piauthenticator.utils.AppConstants.DIGITS;
 import static it.netknights.piauthenticator.utils.AppConstants.ENROLLMENT_CRED;
 import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
 import static it.netknights.piauthenticator.utils.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
-import static it.netknights.piauthenticator.utils.AppConstants.INTENT_FILTER;
 import static it.netknights.piauthenticator.utils.AppConstants.ISSUER;
 import static it.netknights.piauthenticator.utils.AppConstants.LABEL;
 import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
@@ -154,11 +151,18 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (IllegalStateException e) {
+            // This exception occurs when the creation of the keypair fails, the app cannot save keys then and is unusable
+            makeDeviceNotSupportedDialog();
         }
+
         Util util = new Util(secretKeyWrapper, getFilesDir().getAbsolutePath());
         Presenter presenter = new Presenter(tokenlistadapter, this, util);
 
         presenterInterface = presenter;
+
+        presenter.checkKeyStoreIsWorking();
+
         tokenlistadapter.setPresenterInterface(presenter);
 
         // init the model before the adapter is set
@@ -800,18 +804,32 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
-    public void makeAlertDialog(String title, String message) {
+    public void makeAlertDialog(String title, String message, String positiveBtnText, boolean cancelable,
+                                DialogInterface.OnClickListener positiveBtnListener) {
         if (status_dialog != null) {
             cancelStatusDialog();
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle(title)
+                .setCancelable(cancelable)
                 .setMessage(message)
-                .setPositiveButton("OK", (dialog, which) -> dialog.cancel());
+                .setPositiveButton(positiveBtnText, positiveBtnListener);
         final AlertDialog alert = builder.create();
         MainActivity.changeDialogFontColor(alert);
         alert.show();
+    }
+
+    @Override
+    public void makeAlertDialog(int titleID, int messageID, int positiveBtnTextID,
+                                boolean cancelable, DialogInterface.OnClickListener positiveBtnListener) {
+        makeAlertDialog(getStringResource(titleID), getStringResource(messageID),
+                getStringResource(positiveBtnTextID), cancelable, positiveBtnListener);
+    }
+
+    @Override
+    public void makeAlertDialog(String title, String message) {
+        makeAlertDialog(title, message, "OK", true, (dialog, which) -> dialog.cancel());
     }
 
     @Override
@@ -824,4 +842,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         makeAlertDialog(getStringResource(titleID), getStringResource(messageID));
     }
 
+    @Override
+    public void makeDeviceNotSupportedDialog() {
+        makeAlertDialog(R.string.device_not_supported, R.string.device_not_supported_text,
+                R.string.device_not_supported_btn_text, false,
+                (dialog, which) -> {
+                    this.finish(); // TODO this does not seem to be the best way to handle this
+                });
+    }
 }
