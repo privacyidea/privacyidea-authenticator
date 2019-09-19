@@ -90,7 +90,6 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     private ArrayList<Pair<Token, PushAuthTask>> runningAuthentications = new ArrayList<>();
     private ArrayList<Pair<Token, PushAuthRequest>> toDelete = new ArrayList<>();
-    ;
 
     public Presenter(TokenListViewInterface tokenListViewInterface, MainActivityInterface mainActivityInterface, Util util) {
         this.tokenListInterface = tokenListViewInterface;
