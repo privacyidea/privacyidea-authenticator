@@ -20,6 +20,8 @@
 
 package it.netknights.piauthenticator.interfaces;
 
+import android.content.DialogInterface;
+
 import java.security.PublicKey;
 
 import it.netknights.piauthenticator.model.FirebaseInitConfig;
@@ -27,6 +29,9 @@ import it.netknights.piauthenticator.model.Token;
 import it.netknights.piauthenticator.utils.SecretKeyWrapper;
 
 public interface MainActivityInterface {
+    void makeAlertDialog(String title, String message, String postitiveBtnText, boolean cancelable,
+                         DialogInterface.OnClickListener postiveBtnListener);
+
     void makeAlertDialog(String title, String message);
 
     void makeAlertDialog(int titleID, String message);

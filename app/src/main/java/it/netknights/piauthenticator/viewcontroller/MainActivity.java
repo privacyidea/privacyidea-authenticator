@@ -20,16 +20,14 @@
 
 package it.netknights.piauthenticator.viewcontroller;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.PorterDuff;
-import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -800,18 +798,25 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
-    public void makeAlertDialog(String title, String message) {
+    public void makeAlertDialog(String title, String message, String postitiveBtnText, boolean cancelable,
+                                DialogInterface.OnClickListener postiveBtnListener) {
         if (status_dialog != null) {
             cancelStatusDialog();
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle(title)
+                .setCancelable(cancelable)
                 .setMessage(message)
-                .setPositiveButton("OK", (dialog, which) -> dialog.cancel());
+                .setPositiveButton(postitiveBtnText, postiveBtnListener);
         final AlertDialog alert = builder.create();
         MainActivity.changeDialogFontColor(alert);
         alert.show();
+    }
+
+    @Override
+    public void makeAlertDialog(String title, String message) {
+        makeAlertDialog(title, message, "OK", true, (dialog, which) -> dialog.cancel());
     }
 
     @Override
