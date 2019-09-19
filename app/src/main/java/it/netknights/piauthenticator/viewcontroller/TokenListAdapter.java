@@ -403,19 +403,23 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
     @Override
     public void updateProgressbars(int progress) {
         for (ProgressBar pb : progressBars) {
-            if (pb.getMax() == 30 * 100 && progress >= 30) {
-                setProgressAnimate(pb, progress - 30);
-            } else {
-                setProgressAnimate(pb, progress);
-            }
+            setProgressAnimate(pb, progress);
         }
     }
 
     private void setProgressAnimate(ProgressBar pb, int progressTo) {
-        ObjectAnimator animation = ObjectAnimator.ofInt(pb, AppConstants.PROPERTY_PROGRESS, pb.getProgress(), progressTo * 100);
-        animation.setDuration(2000);
-        animation.setInterpolator(new LinearInterpolator());
-        animation.start();
+
+        int newProgress = (progressTo * 100) % pb.getMax();
+
+        if (newProgress < pb.getProgress()) {
+            pb.setProgress(newProgress);
+        } else {
+            ObjectAnimator animator = ObjectAnimator.ofInt(pb, AppConstants.PROPERTY_PROGRESS, newProgress);
+            animator.setDuration(2000);
+            animator.setInterpolator(new LinearInterpolator());
+            animator.start();
+        }
+
     }
 
     @Override
