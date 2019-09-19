@@ -41,6 +41,8 @@ public interface MainActivityInterface {
 
     void makeAlertDialog(int titleID, int messageID);
 
+    void makeDeviceNotSupportedDialog();
+
     void makeToast(String message);
 
     void makeToast(int resID);

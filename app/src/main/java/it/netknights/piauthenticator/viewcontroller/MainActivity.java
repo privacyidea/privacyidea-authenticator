@@ -154,11 +154,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             e.printStackTrace();
         } catch (IllegalStateException e) {
             // This exception occurs when the creation of the keypair fails, the app cannot save keys then and is unusable
-            makeAlertDialog(R.string.device_not_supported, R.string.device_not_supported_text,
-                    R.string.device_not_supported_btn_text, false,
-                    (dialog, which) -> {
-                        this.finish(); // TODO this does not seem to be the best way to handle this
-                    });
+            makeDeviceNotSupportedDialog();
         }
 
         Util util = new Util(secretKeyWrapper, getFilesDir().getAbsolutePath());
@@ -844,4 +840,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         makeAlertDialog(getStringResource(titleID), getStringResource(messageID));
     }
 
+    @Override
+    public void makeDeviceNotSupportedDialog() {
+        makeAlertDialog(R.string.device_not_supported, R.string.device_not_supported_text,
+                R.string.device_not_supported_btn_text, false,
+                (dialog, which) -> {
+                    this.finish(); // TODO this does not seem to be the best way to handle this
+                });
+    }
 }
