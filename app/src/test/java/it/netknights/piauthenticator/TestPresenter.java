@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -400,7 +401,7 @@ public class TestPresenter {
     } */
 
     @Test
-    public void scanQRResult() {
+    public void scanQRResult() throws InvalidKeyException {
         clearTokenlist();
         ScanResult res = new ScanResult(HOTP, "serial");
         res.secret = "AAAAAAAAAAAAAA";

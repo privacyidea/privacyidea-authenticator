@@ -216,7 +216,7 @@ public class TestUtil {
     }
 
     @Test
-    public void saveLoadDeleteFirebaseConfig() {
+    public void saveLoadDeleteFirebaseConfig() throws InvalidKeyException {
         // there is none
         assertNull(util.loadFirebaseConfig());
 
