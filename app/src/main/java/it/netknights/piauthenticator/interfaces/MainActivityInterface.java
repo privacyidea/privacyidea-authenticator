@@ -29,8 +29,11 @@ import it.netknights.piauthenticator.model.Token;
 import it.netknights.piauthenticator.utils.SecretKeyWrapper;
 
 public interface MainActivityInterface {
-    void makeAlertDialog(String title, String message, String postitiveBtnText, boolean cancelable,
-                         DialogInterface.OnClickListener postiveBtnListener);
+    void makeAlertDialog(String title, String message, String positiveBtnText, boolean cancelable,
+                         DialogInterface.OnClickListener positiveBtnListener);
+
+    void makeAlertDialog(int titleID, int messageID, int positiveBtnTextID, boolean cancelable,
+                         DialogInterface.OnClickListener positiveBtnListener);
 
     void makeAlertDialog(String title, String message);
 

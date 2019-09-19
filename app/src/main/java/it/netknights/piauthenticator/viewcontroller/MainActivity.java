@@ -152,7 +152,15 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (IllegalStateException e) {
+            // This exception occurs when the creation of the keypair fails, the app cannot save keys then and is unusable
+            makeAlertDialog(R.string.device_not_supported, R.string.device_not_supported_text,
+                    R.string.device_not_supported_btn_text, false,
+                    (dialog, which) -> {
+                        this.finish(); // TODO this does not seem to be the best way to handle this
+                    });
         }
+
         Util util = new Util(secretKeyWrapper, getFilesDir().getAbsolutePath());
         Presenter presenter = new Presenter(tokenlistadapter, this, util);
 
@@ -798,8 +806,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
-    public void makeAlertDialog(String title, String message, String postitiveBtnText, boolean cancelable,
-                                DialogInterface.OnClickListener postiveBtnListener) {
+    public void makeAlertDialog(String title, String message, String positiveBtnText, boolean cancelable,
+                                DialogInterface.OnClickListener positiveBtnListener) {
         if (status_dialog != null) {
             cancelStatusDialog();
         }
@@ -808,10 +816,17 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         builder.setTitle(title)
                 .setCancelable(cancelable)
                 .setMessage(message)
-                .setPositiveButton(postitiveBtnText, postiveBtnListener);
+                .setPositiveButton(positiveBtnText, positiveBtnListener);
         final AlertDialog alert = builder.create();
         MainActivity.changeDialogFontColor(alert);
         alert.show();
+    }
+
+    @Override
+    public void makeAlertDialog(int titleID, int messageID, int positiveBtnTextID,
+                                boolean cancelable, DialogInterface.OnClickListener positiveBtnListener) {
+        makeAlertDialog(getStringResource(titleID), getStringResource(messageID),
+                getStringResource(positiveBtnTextID), cancelable, positiveBtnListener);
     }
 
     @Override
