@@ -411,7 +411,10 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
 
         int newProgress = (progressTo * 100) % pb.getMax();
 
-        if (newProgress < pb.getProgress()) {
+        // if the progress 'begins again' or if the difference between the update steps is
+        // bigger than 2 seconds (e.g. on app resume) do not animate the update
+        if (newProgress < pb.getProgress() ||
+                (newProgress - pb.getProgress()) > 2 * 100) {
             pb.setProgress(newProgress);
         } else {
             ObjectAnimator animator = ObjectAnimator.ofInt(pb, AppConstants.PROPERTY_PROGRESS, newProgress);
