@@ -22,12 +22,11 @@ package it.netknights.piauthenticator.presenter;
 
 import android.util.Pair;
 
-import androidx.core.app.NotificationManagerCompat;
-
 import org.apache.commons.codec.binary.Base32;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -90,7 +89,8 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     private Util util;
 
     private ArrayList<Pair<Token, PushAuthTask>> runningAuthentications = new ArrayList<>();
-    private ArrayList<Pair<Token, PushAuthRequest>> toDelete = new ArrayList<>();;
+    private ArrayList<Pair<Token, PushAuthRequest>> toDelete = new ArrayList<>();
+    ;
 
     public Presenter(TokenListViewInterface tokenListViewInterface, MainActivityInterface mainActivityInterface, Util util) {
         this.tokenListInterface = tokenListViewInterface;
@@ -136,7 +136,11 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
                 token = new Token(result.serial, result.label);
                 if (result.firebaseInitConfig != null) {
-                    util.storeFirebaseConfig(result.firebaseInitConfig);
+                    try {
+                        util.storeFirebaseConfig(result.firebaseInitConfig);
+                    } catch (InvalidKeyException e) {
+                        e.printStackTrace();
+                    }
                     mainActivityInterface.firebaseInit(result.firebaseInitConfig);
                 }
                 token.sslVerify = result.sslverify;
@@ -238,6 +242,14 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     @Override
     public void saveTokenlist() {
         util.saveTokens(model.getTokens());
+    }
+
+    public void checkKeyStoreIsWorking() {
+        try {
+            util.saveToFile("test", new byte[]{});
+        } catch (InvalidKeyException e) {
+            mainActivityInterface.makeDeviceNotSupportedDialog();
+        }
     }
 
     @Override

@@ -91,7 +91,6 @@ import static it.netknights.piauthenticator.utils.AppConstants.DIGITS;
 import static it.netknights.piauthenticator.utils.AppConstants.ENROLLMENT_CRED;
 import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
 import static it.netknights.piauthenticator.utils.AppConstants.INTENT_ADD_TOKEN_MANUALLY;
-import static it.netknights.piauthenticator.utils.AppConstants.INTENT_FILTER;
 import static it.netknights.piauthenticator.utils.AppConstants.ISSUER;
 import static it.netknights.piauthenticator.utils.AppConstants.LABEL;
 import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
@@ -161,6 +160,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         Presenter presenter = new Presenter(tokenlistadapter, this, util);
 
         presenterInterface = presenter;
+
+        presenter.checkKeyStoreIsWorking();
+
         tokenlistadapter.setPresenterInterface(presenter);
 
         // init the model before the adapter is set
