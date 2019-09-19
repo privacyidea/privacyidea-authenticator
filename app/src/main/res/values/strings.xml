@@ -39,8 +39,7 @@
     <string name="input_hint_repeat_new_pin">Repeat new PIN</string>
     <string name="title_change_pin">Change PIN</string>
     <string name="device_not_supported">Android Device not supported</string>
-    <string name="device_not_supported_text">This android device is not supported because
-        it cannot store Tokens securely.</string>
+    <string name="device_not_supported_text">This android device is not supported as it cannot store Tokens securely.</string>
     <string name="device_not_supported_btn_text">Close Application</string>
 
     <!--Strings for toasts-->
