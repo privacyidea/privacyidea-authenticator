@@ -161,6 +161,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
         presenterInterface = presenter;
 
+        // this method checks if saving keys works, if not a dialog will appear informing the user
+        // that the application cannot be used on the device
         presenter.checkKeyStoreIsWorking();
 
         tokenlistadapter.setPresenterInterface(presenter);
