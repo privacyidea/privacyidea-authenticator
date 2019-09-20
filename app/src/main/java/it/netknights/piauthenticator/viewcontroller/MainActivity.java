@@ -130,8 +130,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private Handler handler;
     private Runnable timer;
     private MainActivityBroadcastReceiver receiver;
-    private View selectedView;
-
 
     // getting the firebase token requires the Activity
     private SecretKeyWrapper secretKeyWrapper;
@@ -234,8 +232,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         listview = findViewById(R.id.listview);
         listview.setOnItemLongClickListener((adapterView, view, i, l) -> {
             presenterInterface.setCurrentSelection(i);
-            selectedView = view;
-            selectedView.setBackgroundColor(getResources().getColor(R.color.selected));
             startSupportActionMode(MainActivity.this);
             return true;
         });
@@ -600,9 +596,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     @Override
     public void onDestroyActionMode(ActionMode mode) {
-        if (selectedView != null) {
-            selectedView.setBackgroundColor(getResources().getColor(R.color.white));
+
+        // colors are set for the selected views in the TOkenListAdapter, this is due to the
+        // implementation. As the color of all views cannot be changed there,
+        // it has to be done here
+        for (int i = 0; i < listview.getChildCount(); i++){
+            listview.getChildAt(i).setBackgroundColor(getResources().getColor(R.color.white));
         }
+
         presenterInterface.setCurrentSelection(-1); // equals null in the data model
         tokenlistadapter.notifyChange();
         presenterInterface.saveTokenlist();

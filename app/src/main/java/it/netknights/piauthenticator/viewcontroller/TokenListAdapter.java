@@ -344,9 +344,11 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
                     break;
 
                 case DragEvent.ACTION_DRAG_EXITED:
+                    v.setBackgroundColor(v.getResources().getColor(R.color.white));
                     break;
 
                 case DragEvent.ACTION_DRAG_ENTERED:
+                    v.setBackgroundColor(v.getResources().getColor(R.color.selected));
                     break;
 
                 case DragEvent.ACTION_DROP: {
