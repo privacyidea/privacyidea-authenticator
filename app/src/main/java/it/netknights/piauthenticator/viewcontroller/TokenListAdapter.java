@@ -359,6 +359,8 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
                 }
                 case DragEvent.ACTION_DRAG_ENDED: {
                     notifyChange();
+                    // TODO end action mode
+
                     return true;
                 }
                 default:
@@ -414,7 +416,7 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         // if the progress 'begins again' or if the difference between the update steps is
         // bigger than 2 seconds (e.g. on app resume) do not animate the update
         if (newProgress < pb.getProgress() ||
-                (newProgress - pb.getProgress()) > 2 * 100) {
+                (newProgress - pb.getProgress()) > 3 * 100) {
             pb.setProgress(newProgress);
         } else {
             ObjectAnimator animator = ObjectAnimator.ofInt(pb, AppConstants.PROPERTY_PROGRESS, newProgress);
