@@ -235,7 +235,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         listview.setOnItemLongClickListener((adapterView, view, i, l) -> {
             presenterInterface.setCurrentSelection(i);
             selectedView = view;
-            selectedView.setBackgroundColor(getResources().getColor(PIBLUE));
+            selectedView.setBackgroundColor(getResources().getColor(R.color.selected));
             startSupportActionMode(MainActivity.this);
             return true;
         });

@@ -6,4 +6,5 @@
     <color name="PIGREEN">#83C927</color>
     <color name="PIBLUE">#55b0e6</color>
     <color name="white">#FFFFFF</color>
+    <color name="selected">#69BEF0</color>
 </resources>
