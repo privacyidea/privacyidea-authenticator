@@ -538,6 +538,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             });
             final AlertDialog alert = builder.create();
             MainActivity.changeDialogFontColor(alert);
+            alert.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
             alert.show();
             return true;
         }
