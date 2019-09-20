@@ -359,8 +359,6 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
                 }
                 case DragEvent.ACTION_DRAG_ENDED: {
                     notifyChange();
-                    // TODO end action mode
-
                     return true;
                 }
                 default:
