@@ -130,6 +130,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private Handler handler;
     private Runnable timer;
     private MainActivityBroadcastReceiver receiver;
+    private View selectedView;
 
 
     // getting the firebase token requires the Activity
@@ -233,6 +234,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         listview = findViewById(R.id.listview);
         listview.setOnItemLongClickListener((adapterView, view, i, l) -> {
             presenterInterface.setCurrentSelection(i);
+            selectedView = view;
+            selectedView.setBackgroundColor(getResources().getColor(PIBLUE));
             startSupportActionMode(MainActivity.this);
             return true;
         });
@@ -597,9 +600,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     @Override
     public void onDestroyActionMode(ActionMode mode) {
+        if (selectedView != null) {
+            selectedView.setBackgroundColor(getResources().getColor(R.color.white));
+        }
         presenterInterface.setCurrentSelection(-1); // equals null in the data model
         tokenlistadapter.notifyChange();
         presenterInterface.saveTokenlist();
+
     }
 
     @Override
