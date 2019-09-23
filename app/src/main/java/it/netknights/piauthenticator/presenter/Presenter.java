@@ -90,7 +90,6 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     private ArrayList<Pair<Token, PushAuthTask>> runningAuthentications = new ArrayList<>();
     private ArrayList<Pair<Token, PushAuthRequest>> toDelete = new ArrayList<>();
-    ;
 
     public Presenter(TokenListViewInterface tokenListViewInterface, MainActivityInterface mainActivityInterface, Util util) {
         this.tokenListInterface = tokenListViewInterface;
@@ -137,11 +136,18 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                 token = new Token(result.serial, result.label);
                 if (result.firebaseInitConfig != null) {
                     try {
+                        mainActivityInterface.firebaseInit(result.firebaseInitConfig);
                         util.storeFirebaseConfig(result.firebaseInitConfig);
                     } catch (InvalidKeyException e) {
                         e.printStackTrace();
+                    } catch (IllegalArgumentException e) {
+                        // mainActivityInterface.firebaseInit() will throw this exception if it
+                        // least one of the parameters is empty; we do not want to add a Token then,
+                        // as it will be broken too
+                        mainActivityInterface.makeAlertDialog(R.string.firebase_config_broken_title,
+                                R.string.firebase_config_broken);
+                        return;
                     }
-                    mainActivityInterface.firebaseInit(result.firebaseInitConfig);
                 }
                 token.sslVerify = result.sslverify;
                 token.state = UNFINISHED;
