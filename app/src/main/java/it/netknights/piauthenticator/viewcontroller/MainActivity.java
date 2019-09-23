@@ -131,7 +131,6 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     private Runnable timer;
     private MainActivityBroadcastReceiver receiver;
 
-
     // getting the firebase token requires the Activity
     private SecretKeyWrapper secretKeyWrapper;
 
@@ -161,6 +160,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
         presenterInterface = presenter;
 
+        // this method checks if saving keys works, if not a dialog will appear informing the user
+        // that the application cannot be used on the device
         presenter.checkKeyStoreIsWorking();
 
         tokenlistadapter.setPresenterInterface(presenter);
@@ -536,6 +537,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             });
             final AlertDialog alert = builder.create();
             MainActivity.changeDialogFontColor(alert);
+            alert.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
             alert.show();
             return true;
         }
@@ -594,9 +596,18 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     @Override
     public void onDestroyActionMode(ActionMode mode) {
+
+        // colors are set for the selected views in the TOkenListAdapter, this is due to the
+        // implementation. As the color of all views cannot be changed there,
+        // it has to be done here
+        for (int i = 0; i < listview.getChildCount(); i++){
+            listview.getChildAt(i).setBackgroundColor(getResources().getColor(R.color.white));
+        }
+
         presenterInterface.setCurrentSelection(-1); // equals null in the data model
         tokenlistadapter.notifyChange();
         presenterInterface.saveTokenlist();
+
     }
 
     @Override
