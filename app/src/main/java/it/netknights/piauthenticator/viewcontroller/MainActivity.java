@@ -494,8 +494,11 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             } else {*/
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle(R.string.confirm_deletion_title);
-            builder.setMessage(getString(R.string.confirm_deletion_text)
-                    + presenterInterface.getCurrentSelectionLabel() + " ?");
+
+            String message = getString(R.string.confirm_deletion_text,
+                    presenterInterface.getCurrentSelectionLabel());
+            builder.setMessage(message);
+
             builder.setPositiveButton(R.string.button_text_yes, (dialog, which) -> {
                 presenterInterface.removeCurrentSelection();
                 mode.finish();
@@ -600,7 +603,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         // colors are set for the selected views in the TOkenListAdapter, this is due to the
         // implementation. As the color of all views cannot be changed there,
         // it has to be done here
-        for (int i = 0; i < listview.getChildCount(); i++){
+        for (int i = 0; i < listview.getChildCount(); i++) {
             listview.getChildAt(i).setBackgroundColor(getResources().getColor(R.color.white));
         }
 
