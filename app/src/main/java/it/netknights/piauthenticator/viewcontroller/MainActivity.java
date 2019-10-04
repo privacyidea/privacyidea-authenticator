@@ -32,7 +32,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.Html;
 import android.text.InputType;
+import android.text.Spanned;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -497,7 +499,8 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
             String message = getString(R.string.confirm_deletion_text,
                     presenterInterface.getCurrentSelectionLabel());
-            builder.setMessage(message);
+            Spanned spanned = Html.fromHtml(message);
+            builder.setMessage(spanned);
 
             builder.setPositiveButton(R.string.button_text_yes, (dialog, which) -> {
                 presenterInterface.removeCurrentSelection();
@@ -542,6 +545,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             MainActivity.changeDialogFontColor(alert);
             alert.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
             alert.show();
+
             return true;
         }
 

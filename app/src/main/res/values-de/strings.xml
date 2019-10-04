@@ -35,7 +35,7 @@
     <string name="enter_pin_title">PIN eingeben</string>
     <string name="tap_to_set_pin">Berühren, um PIN zu setzen</string>
     <string name="tap_to_unlock">Berühren, um PIN einzugeben</string>
-    <string name="confirm_deletion_text">Wollen Sie %s entgültig löschen?</string>
+    <string name="confirm_deletion_text">Wollen Sie den Token &lt;i>%s&lt;/i> entgültig löschen?</string>
     <string name="confirm_deletion_title">Löschen bestätigen</string>
     <string name="actionmode_title">Aktion auswählen</string>
     <string name="menu_about">Über</string>
