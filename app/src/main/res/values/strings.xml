@@ -25,7 +25,7 @@
 
     <!--Strings for dialogs-->
     <string name="confirm_deletion_title">Confirm Deletion</string>
-    <string name="confirm_deletion_text">Do you really want to delete the token?</string>
+    <string name="confirm_deletion_text">Do you really want to delete the token &lt;i>%s&lt;/i>?</string>
     <string name="edit_name_title">Edit Name</string>
     <string name="rename">Rename</string>
     <string name="item" translatable="false">Item</string>
