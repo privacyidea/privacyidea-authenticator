@@ -25,6 +25,8 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.os.Handler;
+import android.os.SystemClock;
 import android.text.InputType;
 import android.view.DragEvent;
 import android.view.LayoutInflater;
@@ -46,9 +48,11 @@ import androidx.core.widget.TextViewCompat;
 
 import it.netknights.piauthenticator.interfaces.PresenterInterface;
 import it.netknights.piauthenticator.interfaces.TokenListViewInterface;
+import it.netknights.piauthenticator.tasks.TwoStepRolloutTask;
 import it.netknights.piauthenticator.utils.AppConstants;
 import it.netknights.piauthenticator.R;
 import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.utils.Util;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
@@ -155,7 +159,9 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
                         setupTOTP(nextbtn, progressBar);
                         break;
                 }
-                otptext.setText(token.getCurrentOTP());
+
+                String text = token.getCurrentOTP();
+                otptext.setText(Util.insertPeriodically(text, text.length() / 2));
                 labeltext.setText(token.getLabel());
             }
         } else {
@@ -244,7 +250,15 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
     private void setupHOTP(final Token token, Button nextbtn, ProgressBar progressBar) {
         progressBar.setVisibility(GONE);
         nextbtn.setVisibility(VISIBLE);
-        nextbtn.setOnClickListener(v -> presenterInterface.increaseHOTPCounter(token));
+
+        nextbtn.setOnClickListener(v -> {
+
+            // disable button for some time after clicking
+            nextbtn.setEnabled(false);
+            new Handler().postDelayed(() -> nextbtn.setEnabled(true), 1000);
+            presenterInterface.increaseHOTPCounter(token);
+
+        });
     }
 
     private void setupTapRequired(View v, TextView otptext, final Token token, Button nextbtn, ProgressBar progressBar) {
@@ -330,9 +344,11 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
                     break;
 
                 case DragEvent.ACTION_DRAG_EXITED:
+                    v.setBackgroundColor(v.getResources().getColor(R.color.white));
                     break;
 
                 case DragEvent.ACTION_DRAG_ENTERED:
+                    v.setBackgroundColor(v.getResources().getColor(R.color.selected));
                     break;
 
                 case DragEvent.ACTION_DROP: {
@@ -389,19 +405,26 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
     @Override
     public void updateProgressbars(int progress) {
         for (ProgressBar pb : progressBars) {
-            if (pb.getMax() == 30 * 100 && progress >= 30) {
-                setProgressAnimate(pb, progress - 30);
-            } else {
-                setProgressAnimate(pb, progress);
-            }
+            setProgressAnimate(pb, progress);
         }
     }
 
     private void setProgressAnimate(ProgressBar pb, int progressTo) {
-        ObjectAnimator animation = ObjectAnimator.ofInt(pb, AppConstants.PROPERTY_PROGRESS, pb.getProgress(), progressTo * 100);
-        animation.setDuration(2000);
-        animation.setInterpolator(new LinearInterpolator());
-        animation.start();
+
+        int newProgress = (progressTo * 100) % pb.getMax();
+
+        // if the progress 'begins again' or if the difference between the update steps is
+        // bigger than 2 seconds (e.g. on app resume) do not animate the update
+        if (newProgress < pb.getProgress() ||
+                (newProgress - pb.getProgress()) > 3 * 100) {
+            pb.setProgress(newProgress);
+        } else {
+            ObjectAnimator animator = ObjectAnimator.ofInt(pb, AppConstants.PROPERTY_PROGRESS, newProgress);
+            animator.setDuration(2000);
+            animator.setInterpolator(new LinearInterpolator());
+            animator.start();
+        }
+
     }
 
     @Override

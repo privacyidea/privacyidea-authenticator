@@ -45,7 +45,7 @@
     <string name="with_pin">Mit PIN</string>
     <string name="type">Typ:</string>
     <string name="secret">Geheimnis</string>
-    <string name="base32_encoded_secret">Base32 codiertes Geheimnis</string>
+    <string name="base32_encoded_secret">Base32</string>
     <string name="algorithm">Algorithmus:</string>
     <string name="enter_details">Details angeben</string>
     <string name="period">Periode:</string>
@@ -83,4 +83,12 @@
     <string name="NotificationWithToken">"Mit Token "</string>
     <string name="ERR_SERVER_UNREACHABLE">Server war nicht erreichbar.</string>
     <string name="retry_authentication">Erneut Versuchen</string>
+    <string name="hex_encoded_secret">Hexadezimal</string>
+    <string name="title_radioGroup_encoding">Codierung des Geheimnisses</string>
+    <string name="toast_secret_nohexformat">Geheimnis nicht im hexadezimalen Format!</string>
+    <string name="device_not_supported">Android-Gerät wird nicht unterstützt</string>
+    <string name="device_not_supported_btn_text">Schließe Anwendung</string>
+    <string name="device_not_supported_text">Dieses Android-Gerät unterstützt die sichere Speicherung von Tokens nicht, daher kann die Anwendung nicht verwendet werden.</string>
+    <string name="firebase_config_broken_title">Firebase falsch konfiguriert</string>
+    <string name="firebase_config_broken">Firebase scheint falsch konfiguriert zu sein, bitte informieren sie den zuständigen Administrator darüber.</string>
 </resources>

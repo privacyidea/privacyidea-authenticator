@@ -63,17 +63,45 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editText_name" />
 
-    <CheckBox
-        android:id="@+id/checkBox_base32"
+    <TextView
+        android:id="@+id/textView_encoding_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
-        android:layout_marginTop="24dp"
-        android:text="@string/base32_encoded_secret"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium.Inverse"
         android:textSize="22sp"
+        android:layout_marginTop="24dp"
+        android:layout_marginStart="8dp"
+        android:text="@string/title_radioGroup_encoding"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editText_secret" />
+        app:layout_constraintTop_toBottomOf="@id/editText_secret"/>
+
+    <RadioGroup
+        android:id="@+id/radioGroup_encoding"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textView_encoding_title"
+        android:orientation="horizontal"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp">
+
+        <RadioButton
+            android:id="@+id/radio_base32"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/base32_encoded_secret"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium.Inverse"
+            android:onClick="onRadioButtonClicked"/>
+
+        <RadioButton
+            android:id="@+id/radio_hex"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="onRadioButtonClicked"
+            android:text="@string/hex_encoded_secret"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium.Inverse" />
+    </RadioGroup>
 
     <CheckBox
         android:id="@+id/checkBox_pin"
@@ -85,7 +113,7 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Menu"
         android:textSize="22sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/checkBox_base32" />
+        app:layout_constraintTop_toBottomOf="@+id/radioGroup_encoding" />
 
     <Button
         android:id="@+id/button_add"

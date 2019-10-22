@@ -22,12 +22,11 @@ package it.netknights.piauthenticator.presenter;
 
 import android.util.Pair;
 
-import androidx.core.app.NotificationManagerCompat;
-
 import org.apache.commons.codec.binary.Base32;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -90,7 +89,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     private Util util;
 
     private ArrayList<Pair<Token, PushAuthTask>> runningAuthentications = new ArrayList<>();
-    private ArrayList<Pair<Token, PushAuthRequest>> toDelete = new ArrayList<>();;
+    private ArrayList<Pair<Token, PushAuthRequest>> toDelete = new ArrayList<>();
 
     public Presenter(TokenListViewInterface tokenListViewInterface, MainActivityInterface mainActivityInterface, Util util) {
         this.tokenListInterface = tokenListViewInterface;
@@ -136,8 +135,19 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
                 token = new Token(result.serial, result.label);
                 if (result.firebaseInitConfig != null) {
-                    util.storeFirebaseConfig(result.firebaseInitConfig);
-                    mainActivityInterface.firebaseInit(result.firebaseInitConfig);
+                    try {
+                        mainActivityInterface.firebaseInit(result.firebaseInitConfig);
+                        util.storeFirebaseConfig(result.firebaseInitConfig);
+                    } catch (InvalidKeyException e) {
+                        e.printStackTrace();
+                    } catch (IllegalArgumentException e) {
+                        // mainActivityInterface.firebaseInit() will throw this exception if it
+                        // least one of the parameters is empty; we do not want to add a Token then,
+                        // as it will be broken too
+                        mainActivityInterface.makeAlertDialog(R.string.firebase_config_broken_title,
+                                R.string.firebase_config_broken);
+                        return;
+                    }
                 }
                 token.sslVerify = result.sslverify;
                 token.state = UNFINISHED;
@@ -238,6 +248,14 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     @Override
     public void saveTokenlist() {
         util.saveTokens(model.getTokens());
+    }
+
+    public void checkKeyStoreIsWorking() {
+        try {
+            util.saveToFile("test", new byte[]{});
+        } catch (InvalidKeyException e) {
+            mainActivityInterface.makeDeviceNotSupportedDialog();
+        }
     }
 
     @Override

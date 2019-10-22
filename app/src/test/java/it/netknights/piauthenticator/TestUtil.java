@@ -216,7 +216,7 @@ public class TestUtil {
     }
 
     @Test
-    public void saveLoadDeleteFirebaseConfig() {
+    public void saveLoadDeleteFirebaseConfig() throws InvalidKeyException {
         // there is none
         assertNull(util.loadFirebaseConfig());
 
@@ -306,5 +306,13 @@ public class TestUtil {
 
         // signature which is not in b32 format is rejected
         assertFalse(Util.verifySignature(keyPair.getPublic(), "9999999", message));
+    }
+
+    @Test
+    public void testInsertPeriodically() {
+        String input = "ABCDEFGHI";
+
+        assertEquals("AB CD EF GH I", Util.insertPeriodically(input, 2));
+        assertEquals("ABC DEF GHI", Util.insertPeriodically(input, 3));
     }
 }

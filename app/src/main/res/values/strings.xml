@@ -8,7 +8,9 @@
     <string name="period">Period:</string>
     <string name="enter_details">Enter Details</string>
     <string name="algorithm">Algorithm:</string>
-    <string name="base32_encoded_secret">Base32 encoded secret</string>
+    <string name="base32_encoded_secret">Base32</string>
+    <string name="hex_encoded_secret">Hexadecimal</string>
+    <string name="title_radioGroup_encoding">Encoding of secret:</string>
     <string name="name" translatable="false">Name</string>
     <string name="secret">Secret</string>
     <string name="type">Type:</string>
@@ -36,6 +38,12 @@
     <string name="input_hint_new_pin">New PIN</string>
     <string name="input_hint_repeat_new_pin">Repeat new PIN</string>
     <string name="title_change_pin">Change PIN</string>
+    <string name="device_not_supported">Android Device not supported</string>
+    <string name="device_not_supported_text">This android device is not supported as it cannot store Tokens securely.</string>
+    <string name="device_not_supported_btn_text">Close Application</string>
+    <string name="firebase_config_broken_title">Firebase not set up correctly</string>
+    <string name="firebase_config_broken">The Firebase configuration of the token seems to be broken.
+                                            Please inform the responsible administrator about this issue.</string>
 
     <!--Strings for toasts-->
     <string name="toast_token_removed">Token removed</string>
@@ -49,6 +57,7 @@
     <string name="toast_name_cantbe_empty">Name cannot be empty!</string>
     <string name="toast_secret_cantbe_empty">Secret cannot be empty!</string>
     <string name="toast_secret_nob32format">Secret is not in Base32 format!</string>
+    <string name="toast_secret_nohexformat">Secret is not in hexadecimal format!</string>
     <string name="toast_edit_cancelled">Editing cancelled</string>
     <string name="toast_name_changed">Name was changed</string>
     <string name="toast_pins_dont_match">PINs do not match - Cancelled</string>
@@ -73,7 +82,7 @@
     <!-- Strings for licenses-->
     <string name="licenses_label">Licenses </string>
     <string name="license_apache_20" translatable="false">Apache License 2.0</string>
-    <string name="license_otpauth" translatable="false">OTP Authenticator by Bruno Bierbaumer</string>
+    <string name="license_otpauth" translatable="false">OTP Authenticator</string>
     <string name="license_zxing_embed" translatable="false">ZXing Embedded</string>
     <string name="license_android_code_sample" translatable="false">Android Code Samples</string>
 
@@ -110,6 +119,7 @@
     <string name="PushtokenRetryLabel">Retry rollout</string>
     <string name="PushtokenAuthenticating">Authenticating…</string>
     <string name="license_gson" translatable="false">Gson</string>
+    <string name="license_firebase" translatable="false">Firebase</string>
     <string name="NotificationWithToken">With token</string>
     <string name="ERR_SERVER_UNREACHABLE">Server was unreachable.</string>
     <string name="retry_authentication">Retry Authentication</string>

@@ -59,6 +59,8 @@ public class AboutListAdapter extends BaseAdapter {
                 text = readAcknowledgement(R.raw.androidcodesamples, v1);
             } else if (position == 4) {
                 text = readAcknowledgement(R.raw.apache2license, v1);
+            } else if (position == 5) {
+                text = readAcknowledgement(R.raw.apache2license, v1);
             }
             else {
                 return;
