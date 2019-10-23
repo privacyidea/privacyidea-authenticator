@@ -123,5 +123,7 @@
     <string name="NotificationWithToken">With token</string>
     <string name="ERR_SERVER_UNREACHABLE">Server was unreachable.</string>
     <string name="retry_authentication">Retry Authentication</string>
+    <string name="PushAuthInvalidSignature">Authentication signature is invalid. Try to authenticate again.</string>
+    <string name="PushAuthSigningError">Authentication could not be signed. Try enrolling a new token.</string>
 
 </resources>
