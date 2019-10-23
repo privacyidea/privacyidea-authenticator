@@ -79,8 +79,6 @@ import static it.netknights.piauthenticator.utils.AppConstants.STATUS_STANDARD_R
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
 import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
-import static it.netknights.piauthenticator.utils.AppConstants.PA_INVALID_SIGNATURE;
-import static it.netknights.piauthenticator.utils.AppConstants.PA_SIGNING_FAILURE;
 import static it.netknights.piauthenticator.utils.OTPGenerator.generate;
 import static it.netknights.piauthenticator.utils.OTPGenerator.hashPIN;
 import static it.netknights.piauthenticator.utils.Util.logprint;
