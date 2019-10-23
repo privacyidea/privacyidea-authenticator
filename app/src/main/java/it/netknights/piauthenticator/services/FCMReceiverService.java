@@ -177,7 +177,8 @@ public class FCMReceiverService extends FirebaseMessagingService {
                 .addAction(action)                                     // Add the allow Button
                 .setAutoCancel(true)                                   // Remove the notification after tabbing it
                 .setWhen(0)
-                .setContentIntent(pActivity_intent);                   // Intent for opening activity with the request
+                .setContentIntent(pActivity_intent)                    // Intent for opening activity with the request
+                .setDefaults(Notification.DEFAULT_SOUND);              // Play a sound/vibrate for push auth
 
         if (subText != null) {
             mBuilder.setSubText(subText);
