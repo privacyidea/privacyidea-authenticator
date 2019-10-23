@@ -200,7 +200,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         String signature = intent.getStringExtra(SIGNATURE);
         String question = intent.getStringExtra(QUESTION);
         int notificationID = intent.getIntExtra(NOTIFICATION_ID, 654321);
-        boolean sslVerify = intent.getBooleanExtra(SSL_VERIFY, !intent.getStringExtra(SSL_VERIFY).equals("0"));
+        boolean sslVerify = intent.getBooleanExtra(SSL_VERIFY, !"0".equals(intent.getStringExtra(SSL_VERIFY)));
         if (serial != null && nonce != null && title != null && url != null && signature != null && question != null) {
             logprint("Intent data: " + intent.getExtras().toString());
             presenterInterface.addPushAuthRequest(new PushAuthRequest(nonce, url, serial, question, title, signature, notificationID, sslVerify));
