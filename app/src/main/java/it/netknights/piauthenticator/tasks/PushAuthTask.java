@@ -35,10 +35,10 @@ import java.util.Map;
 
 import it.netknights.piauthenticator.interfaces.EndpointCallback;
 import it.netknights.piauthenticator.interfaces.PushAuthCallbackInterface;
+import it.netknights.piauthenticator.model.PushAuthRequest;
 import it.netknights.piauthenticator.model.Token;
 import it.netknights.piauthenticator.utils.Endpoint;
 import it.netknights.piauthenticator.utils.Util;
-import it.netknights.piauthenticator.model.PushAuthRequest;
 
 import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
 import static it.netknights.piauthenticator.utils.AppConstants.PA_AUTHENTICATION_FINISHED;
@@ -48,7 +48,6 @@ import static it.netknights.piauthenticator.utils.AppConstants.RESPONSE_RESULT;
 import static it.netknights.piauthenticator.utils.AppConstants.RESPONSE_VALUE;
 import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.utils.AppConstants.SIGNATURE;
-import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_UNKNOWN_HOST;
 import static it.netknights.piauthenticator.utils.Util.logprint;
 
 public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements EndpointCallback {

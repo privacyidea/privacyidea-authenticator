@@ -31,6 +31,10 @@ import android.os.Build;
 import android.os.IBinder;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStoreException;
@@ -42,17 +46,13 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 
-import androidx.annotation.Nullable;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
-
 import it.netknights.piauthenticator.R;
 import it.netknights.piauthenticator.interfaces.PushAuthCallbackInterface;
+import it.netknights.piauthenticator.model.PushAuthRequest;
 import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.tasks.PushAuthTask;
 import it.netknights.piauthenticator.utils.SecretKeyWrapper;
 import it.netknights.piauthenticator.utils.Util;
-import it.netknights.piauthenticator.model.PushAuthRequest;
-import it.netknights.piauthenticator.tasks.PushAuthTask;
 import it.netknights.piauthenticator.viewcontroller.MainActivity;
 
 import static it.netknights.piauthenticator.utils.AppConstants.INTENT_FILTER;
@@ -93,9 +93,6 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
             logprint("intent is null, returning");
             return Service.START_STICKY;
         }
-
-        if (intent.getExtras() != null)
-            logprint(intent.getExtras().toString());
 
         // Cancel
         if (intent.hasExtra("ACTION")) {
@@ -217,16 +214,16 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
             Toast.makeText(getApplicationContext(), R.string.AuthenticationSuccessful, Toast.LENGTH_LONG).show();
             // In case of success, remove the pendingAuth from the token (the one the auth was started with)
             // If the app is running broadcast the result, otherwise edit and save the token here
-            if (isRunningInBackground()) {
-                token.getPendingAuths().remove(req);
-                if (util != null) {
-                    util.saveTokens(tokenlist);
-                }
-                // Close the notification that the authentication is running
-                NotificationManagerCompat.from(this).cancel(req.getNotificationID());
-            } else {
-                broadcastAuthenticationFinished();
+            //if (isRunningInBackground()) {
+            token.getPendingAuths().remove(req);
+            if (util != null) {
+                util.saveTokens(tokenlist);
             }
+            // Close the notification that the authentication is running
+            NotificationManagerCompat.from(this).cancel(req.getNotificationID());
+            //} else {
+            broadcastAuthenticationFinished();
+            //}
         } else {
             Toast.makeText(getApplicationContext(), R.string.AuthenticationFailed, Toast.LENGTH_LONG).show();
             // If failed save the request so it can be retried from within the app
@@ -280,11 +277,11 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
     }
 
     private void saveIfAppNotRunning() {
-        if (isRunningInBackground()) {
-            if (util != null) {
-                util.saveTokens(tokenlist);
-            }
+        //if (isRunningInBackground()) {
+        if (util != null) {
+            util.saveTokens(tokenlist);
         }
+        //}
     }
 
     // Send broadcast in case app is running and the notification button was clicked

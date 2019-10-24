@@ -32,9 +32,9 @@ import java.util.Map;
 
 import it.netknights.piauthenticator.interfaces.EndpointCallback;
 import it.netknights.piauthenticator.interfaces.PresenterTaskInterface;
+import it.netknights.piauthenticator.model.Token;
 import it.netknights.piauthenticator.utils.Endpoint;
 import it.netknights.piauthenticator.utils.Util;
-import it.netknights.piauthenticator.model.Token;
 
 import static it.netknights.piauthenticator.utils.AppConstants.ENROLLMENT_CRED;
 import static it.netknights.piauthenticator.utils.AppConstants.FB_TOKEN;

@@ -47,6 +47,13 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ActionMode;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.lifecycle.LifecycleObserver;
+
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.FirebaseApp;
@@ -67,24 +74,19 @@ import java.security.PublicKey;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
 
-import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.view.ActionMode;
-import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.NotificationManagerCompat;
-
+import it.netknights.piauthenticator.R;
 import it.netknights.piauthenticator.interfaces.MainActivityInterface;
 import it.netknights.piauthenticator.interfaces.PresenterInterface;
 import it.netknights.piauthenticator.model.FirebaseInitConfig;
 import it.netknights.piauthenticator.model.PushAuthRequest;
 import it.netknights.piauthenticator.model.ScanResult;
-import it.netknights.piauthenticator.utils.AppConstants;
-import it.netknights.piauthenticator.presenter.Presenter;
-import it.netknights.piauthenticator.R;
 import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.presenter.Presenter;
+import it.netknights.piauthenticator.utils.AppConstants;
 import it.netknights.piauthenticator.utils.SecretKeyWrapper;
 import it.netknights.piauthenticator.utils.Util;
 
+import static it.netknights.piauthenticator.R.color.PIBLUE;
 import static it.netknights.piauthenticator.utils.AppConstants.ALGORITHM;
 import static it.netknights.piauthenticator.utils.AppConstants.API_KEY;
 import static it.netknights.piauthenticator.utils.AppConstants.APP_ID;
@@ -120,11 +122,9 @@ import static it.netknights.piauthenticator.utils.AppConstants.TWOSTEP_SALT;
 import static it.netknights.piauthenticator.utils.AppConstants.TYPE;
 import static it.netknights.piauthenticator.utils.AppConstants.URL;
 import static it.netknights.piauthenticator.utils.AppConstants.WITHPIN;
-import static it.netknights.piauthenticator.R.color.PIBLUE;
 import static it.netknights.piauthenticator.utils.Util.logprint;
 
-
-public class MainActivity extends AppCompatActivity implements ActionMode.Callback, MainActivityInterface {
+public class MainActivity extends AppCompatActivity implements ActionMode.Callback, MainActivityInterface, LifecycleObserver {
     private PresenterInterface presenterInterface;
     private TokenListAdapter tokenlistadapter;
     private ListView listview;
@@ -432,13 +432,13 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     @Override
     public void onPause() {
         super.onPause();
-        unregisterReceiver(receiver);
         presenterInterface.onPause();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        //unregisterReceiver(receiver);
         presenterInterface.onStop();
     }
 

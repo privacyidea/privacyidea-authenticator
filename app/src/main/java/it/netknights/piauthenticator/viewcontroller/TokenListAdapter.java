@@ -26,7 +26,6 @@ import android.content.ClipData;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Handler;
-import android.os.SystemClock;
 import android.text.InputType;
 import android.view.DragEvent;
 import android.view.LayoutInflater;
@@ -42,25 +41,26 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
-
 import androidx.core.widget.TextViewCompat;
 
+import java.util.ArrayList;
+
+import it.netknights.piauthenticator.R;
 import it.netknights.piauthenticator.interfaces.PresenterInterface;
 import it.netknights.piauthenticator.interfaces.TokenListViewInterface;
-import it.netknights.piauthenticator.tasks.TwoStepRolloutTask;
-import it.netknights.piauthenticator.utils.AppConstants;
-import it.netknights.piauthenticator.R;
 import it.netknights.piauthenticator.model.Token;
+import it.netknights.piauthenticator.utils.AppConstants;
 import it.netknights.piauthenticator.utils.Util;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static it.netknights.piauthenticator.R.color.PIBLUE;
 import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
 import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
-import static it.netknights.piauthenticator.utils.AppConstants.State.*;
+import static it.netknights.piauthenticator.utils.AppConstants.State.AUTHENTICATING;
+import static it.netknights.piauthenticator.utils.AppConstants.State.FINISHED;
+import static it.netknights.piauthenticator.utils.AppConstants.State.UNFINISHED;
 import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
-import static it.netknights.piauthenticator.R.color.PIBLUE;
 
 
 public class TokenListAdapter extends BaseAdapter implements TokenListViewInterface {

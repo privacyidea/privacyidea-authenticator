@@ -66,7 +66,6 @@ import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_1
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_2;
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_STEP_3;
 import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
-import static it.netknights.piauthenticator.utils.AppConstants.State.*;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_ERROR;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_MALFORMED_URL;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_ENDPOINT_SSL_ERROR;
@@ -76,6 +75,10 @@ import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREB
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_STANDARD_ROLLOUT_DONE;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.State.AUTHENTICATING;
+import static it.netknights.piauthenticator.utils.AppConstants.State.FINISHED;
+import static it.netknights.piauthenticator.utils.AppConstants.State.ROLLING_OUT;
+import static it.netknights.piauthenticator.utils.AppConstants.State.UNFINISHED;
 import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
 import static it.netknights.piauthenticator.utils.OTPGenerator.generate;
 import static it.netknights.piauthenticator.utils.OTPGenerator.hashPIN;
