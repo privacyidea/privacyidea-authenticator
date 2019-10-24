@@ -24,18 +24,19 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+
 import java.util.ArrayList;
 
-import it.netknights.piauthenticator.utils.AppConstants;
 import it.netknights.piauthenticator.R;
+import it.netknights.piauthenticator.utils.AppConstants;
 
 import static it.netknights.piauthenticator.R.color.PIBLUE;
 

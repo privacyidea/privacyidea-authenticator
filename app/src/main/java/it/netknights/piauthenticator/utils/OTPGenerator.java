@@ -20,7 +20,6 @@
 
 package it.netknights.piauthenticator.utils;
 
-
 import org.apache.commons.codec.binary.Base32;
 
 import java.lang.reflect.UndeclaredThrowableException;
@@ -40,7 +39,6 @@ import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
 import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
 import static it.netknights.piauthenticator.utils.Util.byteArrayToHexString;
 import static it.netknights.piauthenticator.utils.Util.hexStringToByteArray;
-
 
 public class OTPGenerator {
 

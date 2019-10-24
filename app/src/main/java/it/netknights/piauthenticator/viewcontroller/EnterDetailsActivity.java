@@ -26,13 +26,6 @@ import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -48,6 +41,12 @@ import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.constraintlayout.widget.ConstraintLayout;
+
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
@@ -55,8 +54,24 @@ import org.apache.commons.codec.binary.Hex;
 import it.netknights.piauthenticator.R;
 
 import static android.view.View.GONE;
-import static it.netknights.piauthenticator.utils.AppConstants.*;
 import static it.netknights.piauthenticator.R.color.PIBLUE;
+import static it.netknights.piauthenticator.utils.AppConstants.ALGORITHM;
+import static it.netknights.piauthenticator.utils.AppConstants.DIGITS;
+import static it.netknights.piauthenticator.utils.AppConstants.DIGITS_6_STR;
+import static it.netknights.piauthenticator.utils.AppConstants.DIGITS_8_STR;
+import static it.netknights.piauthenticator.utils.AppConstants.LABEL;
+import static it.netknights.piauthenticator.utils.AppConstants.PERIOD;
+import static it.netknights.piauthenticator.utils.AppConstants.PERIOD_30;
+import static it.netknights.piauthenticator.utils.AppConstants.PERIOD_30_STR;
+import static it.netknights.piauthenticator.utils.AppConstants.PERIOD_60;
+import static it.netknights.piauthenticator.utils.AppConstants.PERIOD_60_STR;
+import static it.netknights.piauthenticator.utils.AppConstants.SECRET;
+import static it.netknights.piauthenticator.utils.AppConstants.SHA1;
+import static it.netknights.piauthenticator.utils.AppConstants.SHA256;
+import static it.netknights.piauthenticator.utils.AppConstants.SHA512;
+import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.TYPE;
+import static it.netknights.piauthenticator.utils.AppConstants.WITHPIN;
 
 public class EnterDetailsActivity extends AppCompatActivity {
 

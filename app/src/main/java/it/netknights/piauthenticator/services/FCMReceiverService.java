@@ -20,26 +20,29 @@
 
 package it.netknights.piauthenticator.services;
 
+import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 
+import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import androidx.annotation.Nullable;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
-
 import it.netknights.piauthenticator.R;
-import it.netknights.piauthenticator.model.Model;
+import it.netknights.piauthenticator.model.PushAuthRequest;
 import it.netknights.piauthenticator.model.Token;
 import it.netknights.piauthenticator.utils.SecretKeyWrapper;
 import it.netknights.piauthenticator.utils.Util;
@@ -86,38 +89,44 @@ public class FCMReceiverService extends FirebaseMessagingService {
             signature = map.get(SIGNATURE);
         }
         if (map.containsKey(SSL_VERIFY)) {
-            if (Integer.parseInt(map.get(SSL_VERIFY)) < 1) {
-                sslVerify = false;
+            try {
+                if (Integer.parseInt(map.get(SSL_VERIFY)) < 1) {
+                    sslVerify = false;
+                }
+            } catch (NullPointerException | NumberFormatException e) {
+                sslVerify = true;
             }
         }
+        // Generate a random notification ID
+        Random random = new Random();
+        int notificationID = random.nextInt(9999 - 1000) + 1000;
+
+        PushAuthRequest req = new PushAuthRequest(nonce, url, serial, question, title, signature, notificationID, sslVerify);
 
         // check if the token was deleted from within the app,
         // if that is the case do not show any notification for it
+        // if the token is found, append the request so it will be loaded when loading the app, if closed before
         try {
             Util util = new Util(new SecretKeyWrapper(this.getApplicationContext()),
                     this.getFilesDir().getAbsolutePath());
             boolean tokenExists = false;
-            for (Token t : util.loadTokens()) {
+            ArrayList<Token> tokens = util.loadTokens();
+            for (Token t : tokens) {
                 if (t.getSerial().equals(serial)) {
+                    t.addPushAuthRequest(req);
                     tokenExists = true;
                     break;
                 }
             }
-
             if (!tokenExists) {
                 return;
             }
-
+            util.saveTokens(tokens);
         } catch (GeneralSecurityException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
-        // Generate a random notification ID
-        Random random = new Random();
-        int notificationID = random.nextInt(9999 - 1000) + 1000;
 
         // Build an intent which will update the running app
         Intent update_intent = new Intent(INTENT_FILTER);
@@ -135,8 +144,26 @@ public class FCMReceiverService extends FirebaseMessagingService {
         Notification notification = buildNotificationFromPush(getApplicationContext(), notificationID, service_intent,
                 activity_intent, title, question, "Token: " + activity_intent.getStringExtra(SERIAL), getApplicationContext().getString(R.string.Allow));
         if (notification != null) {
-            NotificationManagerCompat.from(this).notify(notificationID, notification);
+            //if (!appInForeground(getApplicationContext())) {
+                NotificationManagerCompat.from(this).notify(notificationID, notification);
+            //}
         }
+    }
+
+    private boolean appInForeground(Context context) {
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningAppProcessInfo> runningAppProcesses = activityManager.getRunningAppProcesses();
+        if (runningAppProcesses == null) {
+            return false;
+        }
+
+        for (ActivityManager.RunningAppProcessInfo runningAppProcess : runningAppProcesses) {
+            if (runningAppProcess.processName.equals(context.getPackageName()) &&
+                    runningAppProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

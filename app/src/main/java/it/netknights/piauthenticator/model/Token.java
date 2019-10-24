@@ -20,13 +20,12 @@
 
 package it.netknights.piauthenticator.model;
 
-
 import java.util.ArrayList;
 import java.util.Date;
 
-import static it.netknights.piauthenticator.utils.AppConstants.*;
 import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
-import static it.netknights.piauthenticator.utils.AppConstants.State.*;
+import static it.netknights.piauthenticator.utils.AppConstants.State;
+import static it.netknights.piauthenticator.utils.AppConstants.State.UNFINISHED;
 import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
 
 public class Token {

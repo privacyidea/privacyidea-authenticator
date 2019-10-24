@@ -20,8 +20,6 @@
 
 package it.netknights.piauthenticator.interfaces;
 
-import java.util.Map;
-
 import it.netknights.piauthenticator.model.PushAuthRequest;
 import it.netknights.piauthenticator.model.ScanResult;
 import it.netknights.piauthenticator.model.Token;
