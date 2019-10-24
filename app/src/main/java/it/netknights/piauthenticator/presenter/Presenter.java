@@ -56,6 +56,8 @@ import it.netknights.piauthenticator.utils.SecretKeyWrapper;
 import it.netknights.piauthenticator.utils.Util;
 
 import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
+import static it.netknights.piauthenticator.utils.AppConstants.PA_INVALID_SIGNATURE;
+import static it.netknights.piauthenticator.utils.AppConstants.PA_SIGNING_FAILURE;
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_BAD_BASE64;
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_DONE;
 import static it.netknights.piauthenticator.utils.AppConstants.PRO_STATUS_MALFORMED_JSON;
@@ -724,6 +726,18 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             case STATUS_ENDPOINT_SSL_ERROR: {
                 cancelAuthentication(token);
                 mainActivityInterface.makeToast(R.string.SSLHandshakeFailed);
+                break;
+            }
+            case PA_INVALID_SIGNATURE: {
+                cancelAuthentication(token);
+                token.getPendingAuths().remove(0);
+                mainActivityInterface.makeToast(R.string.PushAuthInvalidSignature);
+                break;
+            }
+            case PA_SIGNING_FAILURE: {
+                cancelAuthentication(token);
+                token.getPendingAuths().remove(0);
+                mainActivityInterface.makeToast(R.string.PushAuthSigningError);
                 break;
             }
             default:

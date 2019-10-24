@@ -91,4 +91,6 @@
     <string name="device_not_supported_text">Dieses Android-Gerät unterstützt die sichere Speicherung von Tokens nicht, daher kann die Anwendung nicht verwendet werden.</string>
     <string name="firebase_config_broken_title">Firebase falsch konfiguriert</string>
     <string name="firebase_config_broken">Firebase scheint falsch konfiguriert zu sein, bitte informieren sie den zuständigen Administrator darüber.</string>
+    <string name="PushAuthInvalidSignature">Die Authentifizierungssignatur ist ungültig. Versuchen Sie erneut, sich zu authentifizieren.</string>
+    <string name="PushAuthSigningError">Authentifizierung konnte nicht signiert werden. Versuchen Sie, ein neues Token zu registrieren.</string>
 </resources>
