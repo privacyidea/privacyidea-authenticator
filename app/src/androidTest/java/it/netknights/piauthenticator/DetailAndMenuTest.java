@@ -440,7 +440,7 @@ public class DetailAndMenuTest {
         textView13.check(matches(withText("Nam")));
 
         ViewInteraction button4 = onView(
-                allOf(withId(R.id.next_button),
+                allOf(withId(R.id.allow_button),
                         isDisplayed()));
         button4.check(matches(isDisplayed()));
 
@@ -757,17 +757,17 @@ public class DetailAndMenuTest {
     public void testNextButtonDelay() {
         setupForNextButton();
 
-        onView(allOf(withId(R.id.next_button), withText(R.string.button_text_next))).perform(click());
+        onView(allOf(withId(R.id.allow_button), withText(R.string.button_text_next))).perform(click());
 
         // next 963 548
         onView(allOf(withId(R.id.textViewToken), withText("963 548"))).check(matches(withText("963 548")));
-        onView(allOf(withId(R.id.next_button), withText(R.string.button_text_next))).perform(click());
+        onView(allOf(withId(R.id.allow_button), withText(R.string.button_text_next))).perform(click());
 
         // check that the click was not performed
         onView(allOf(withId(R.id.textViewToken), withText("963 548"))).check(matches(withText("963 548")));
 
         sleep();
-        onView(allOf(withId(R.id.next_button), withText(R.string.button_text_next))).perform(click());
+        onView(allOf(withId(R.id.allow_button), withText(R.string.button_text_next))).perform(click());
         onView(allOf(withId(R.id.textViewToken), withText("364 247"))).check(matches(withText("364 247")));
     }
 

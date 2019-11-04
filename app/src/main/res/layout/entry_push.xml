@@ -43,51 +43,71 @@
         app:autoSizeStepGranularity="2sp"
         app:autoSizeTextType="uniform" />
 
-    <Button
-        android:id="@+id/next_button"
-        android:layout_width="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/textViewLabel"
-        android:layout_alignParentEnd="true"
-        android:layout_marginTop="14dp"
-        android:layout_marginEnd="8dp"
-        android:backgroundTint="@color/PIBLUE"
-        android:text="@string/Allow"
-        android:textColor="@color/zxing_status_text" />
-
-    <TextView
-        android:id="@+id/textView_pushStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="44dp"
-        android:layout_below="@+id/textViewLabel"
         android:layout_alignParentStart="true"
-        android:layout_marginStart="64dp"
-        android:layout_marginTop="18dp"
-        android:layout_marginEnd="3dp"
-        android:layout_toStartOf="@+id/next_button"
-        android:text="@string/PushtokenRollingOut"
-        android:textAlignment="center"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
-
-    <ProgressBar
-        android:id="@+id/progressBar_push"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/textViewLabel"
         android:layout_alignParentEnd="true"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:indeterminate="true" />
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp">
 
-    <ImageView
-        android:id="@+id/imageView_cancel"
-        android:layout_width="54dp"
-        android:layout_height="49dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="98dp"
-        app:srcCompat="@drawable/ic_cancel_blue" />
+        <TextView
+            android:id="@+id/textView_pushStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/PushtokenRollingOut"
+            android:textAlignment="center"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/dismiss_button"
+            app:layout_constraintStart_toEndOf="@+id/imageView_cancel"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/imageView_cancel"
+            android:layout_width="31dp"
+            android:layout_height="44dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/textView_pushStatus"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_cancel_blue" />
+
+        <ProgressBar
+            android:id="@+id/progressBar_push"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/allow_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/PIBLUE"
+            android:text="@string/Allow"
+            android:textColor="@color/zxing_status_text"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/dismiss_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:backgroundTint="@color/PIBLUE"
+            android:text="@string/Dismiss"
+            android:textColor="@color/zxing_status_text"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/allow_button"
+            app:layout_constraintStart_toEndOf="@+id/textView_pushStatus"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </RelativeLayout>

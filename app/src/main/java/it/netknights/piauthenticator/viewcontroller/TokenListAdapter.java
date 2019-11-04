@@ -102,11 +102,13 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         final View mView = v;
         final TextView otptext = v.findViewById(R.id.textViewToken);
         final TextView labeltext = v.findViewById(R.id.textViewLabel);
-        final Button nextbtn = v.findViewById(R.id.next_button);
+        Button nextbtn = null, allowbtn = null, dismissbtn = null;
 
-        // Progressbar for Normal or Push
+        // Progressbar and buttons for Normal or Push
         ProgressBar progressBar;
         if (token.getType().equals(PUSH)) {
+            allowbtn = v.findViewById(R.id.allow_button);
+            dismissbtn = v.findViewById(R.id.dismiss_button);
             progressBar = v.findViewById(R.id.progressBar_push);
             if (progressBar != null) {
                 progressBar.setIndeterminate(true);
@@ -114,6 +116,7 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
                         Color.rgb(0x83, 0xc9, 0x27), PorterDuff.Mode.SRC_IN);
             }
         } else {
+            nextbtn = v.findViewById(R.id.allow_button);
             progressBar = v.findViewById(R.id.progressBar);
             if (progressBar != null) {
                 progressBar.getProgressDrawable().setColorFilter(
@@ -140,7 +143,9 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         if (!token.getType().equals(PUSH)) {
             if (token.isWithPIN() && token.getPin().equals("")) {
                 //----------------------- Pin not set yet ----------------------
-                setupPinNotSet(mView, otptext, token, nextbtn, progressBar);
+                if (nextbtn != null) {
+                    setupPinNotSet(mView, otptext, token, nextbtn, progressBar);
+                }
             } else if (token.isWithPIN() && token.isLocked()) {
                 //------------------- show dialog for PIN input -------------------------------------
                 setupPinRequired(mView, otptext, token, nextbtn, progressBar);
@@ -169,14 +174,15 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
             TextView pushStatus = mView.findViewById(R.id.textView_pushStatus);
             ImageView cancelImage = mView.findViewById(R.id.imageView_cancel);
             enableAutoSizeText(pushStatus);
-            setupPUSH(position, v, otptext, labeltext, token, nextbtn, progressBar, pushStatus, cancelImage);
+            setupPUSH(position, v, otptext, labeltext, token, allowbtn, dismissbtn, progressBar, pushStatus, cancelImage);
         }
 
         setupOnDrags(v, position); // Position change
         return v;
     }
 
-    private void setupPUSH(final int position, View v, TextView bigText, TextView smallText, Token token, Button nextbtn, ProgressBar progressBar, TextView subTextStatus, ImageView cancelImage) {
+    private void setupPUSH(final int position, View v, TextView bigText, TextView smallText, Token token, Button allowbtn, Button dismissbtn,
+                           ProgressBar progressBar, TextView subTextStatus, ImageView cancelImage) {
         v.setClickable(false);
         v.setOnClickListener(null);
         v.setLongClickable(true);
@@ -189,8 +195,9 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         subTextStatus.setVisibility(GONE);
         subTextStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         progressBar.setVisibility(GONE);
-        nextbtn.setVisibility(GONE);
+        allowbtn.setVisibility(GONE);
         cancelImage.setVisibility(GONE);
+        dismissbtn.setVisibility(GONE);
 
         if (!token.getPendingAuths().isEmpty() && (token.state.equals(FINISHED))) {
             // If there is a pending Authentication, set the question as label and title as otp
@@ -199,10 +206,16 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
             subTextStatus.setVisibility(VISIBLE);
             subTextStatus.setText(token.getPendingAuths().get(0).getQuestion());
 
-            nextbtn.setVisibility(VISIBLE);
-            nextbtn.setClickable(true);
-            nextbtn.setText(v.getContext().getString(R.string.Allow));
-            nextbtn.setOnClickListener(__ -> presenterInterface.startPushAuthentication(token));
+            allowbtn.setVisibility(VISIBLE);
+            allowbtn.setClickable(true);
+            allowbtn.setText(v.getContext().getString(R.string.Allow));
+            allowbtn.setOnClickListener(__ -> presenterInterface.startPushAuthentication(token));
+
+            if (token.lastAuthHadError) {
+                dismissbtn.setVisibility(VISIBLE);
+                dismissbtn.setOnClickListener(__ -> presenterInterface.removeCurrentAuthRequest(token));
+            }
+
         } else if (!token.getPendingAuths().isEmpty() && (token.state.equals(AUTHENTICATING))) {
             smallText.setText(token.getPendingAuths().get(0).getTitle());
             subTextStatus.setVisibility(VISIBLE);
@@ -220,11 +233,11 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
             // Rollout state
             if (token.state.equals(UNFINISHED)) {
                 // Retry state
-                nextbtn.setVisibility(VISIBLE);
-                nextbtn.setText("");
-                nextbtn.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_retry_rollout, 0);
-                nextbtn.setOnClickListener(__ -> presenterInterface.startPushRolloutForPosition(position));
-                nextbtn.setLongClickable(false);
+                allowbtn.setVisibility(VISIBLE);
+                allowbtn.setText("");
+                allowbtn.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_retry_rollout, 0);
+                allowbtn.setOnClickListener(__ -> presenterInterface.startPushRolloutForPosition(position));
+                allowbtn.setLongClickable(false);
                 subTextStatus.setVisibility(VISIBLE);
                 subTextStatus.setText(v.getContext().getString(R.string.PushtokenRetryLabel));
                 subTextStatus.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);

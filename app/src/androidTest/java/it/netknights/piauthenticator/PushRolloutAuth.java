@@ -157,16 +157,16 @@ public class PushRolloutAuth {
         onView(withId(R.id.textViewToken)).check(matches(withText("privacyIDEA: PIPU0001D07B")));
         onView(withId(R.id.textViewLabel)).check(matches(withText((R.string.PushtokenLabelRolloutUnfinished))));
         // the button is visible to retry the rollout
-        onView(withId(R.id.next_button)).check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+        onView(withId(R.id.allow_button)).check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
 
         // Press the retry button
-        onView(withId(R.id.next_button)).perform(click());
+        onView(withId(R.id.allow_button)).perform(click());
         //sleep(5000);
 
         // Validate token rolled out now
         onView(withId(R.id.textViewToken)).check(matches(withText("privacyIDEA: PIPU0001D07B")));
         onView(withId(R.id.textViewLabel)).check(matches(withText((R.string.PushtokenLabel))));
-        onView(withId(R.id.next_button)).check(matches(withEffectiveVisibility(GONE)));
+        onView(withId(R.id.allow_button)).check(matches(withEffectiveVisibility(GONE)));
 
         // Restart the App with an intent containing the PushAuthRequest(data)
         String title = "titletitle";
@@ -193,7 +193,7 @@ public class PushRolloutAuth {
         onView(withId(R.id.textViewToken)).check(matches(withText("privacyIDEA: PIPU0001D07B")));
         onView(withId(R.id.textViewLabel)).check(matches(withText(title)));
         onView(withId(R.id.textView_pushStatus)).check(matches(withText(question)));
-        onView(withId(R.id.next_button)).check(matches(allOf(withEffectiveVisibility(VISIBLE),
+        onView(withId(R.id.allow_button)).check(matches(allOf(withEffectiveVisibility(VISIBLE),
                 withText(R.string.Allow))));
 
 
@@ -204,7 +204,7 @@ public class PushRolloutAuth {
                         " {\"status\": true, \"value\": true}, \"time\": 1554457850.641362, \"id\": 1}"));
 
         // Click allow
-        onView(withId(R.id.next_button)).perform(click());
+        onView(withId(R.id.allow_button)).perform(click());
 
         // Toast is displayed indicating success
 //        onView(withText(R.string.AuthenticationSuccessful)).check(matches(isDisplayed()));
@@ -212,7 +212,7 @@ public class PushRolloutAuth {
         // Row in list is back to normal
         onView(withId(R.id.textViewToken)).check(matches(withText("privacyIDEA: PIPU0001D07B")));
         onView(withId(R.id.textViewLabel)).check(matches(withText((R.string.PushtokenLabel))));
-        onView(withId(R.id.next_button)).check(matches(withEffectiveVisibility(GONE)));
+        onView(withId(R.id.allow_button)).check(matches(withEffectiveVisibility(GONE)));
     }
 
     @After

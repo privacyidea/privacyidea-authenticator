@@ -76,6 +76,8 @@ public interface PresenterInterface {
 
     void removeCurrentSelection();
 
+    void removeCurrentAuthRequest(Token token);
+
     String getCurrentSelectionLabel();
 
     String getCurrentSelectionOTP();

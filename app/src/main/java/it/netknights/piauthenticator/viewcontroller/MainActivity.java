@@ -259,15 +259,18 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         // this is the item selected from the toolbar menu
         int id = item.getItemId();
         // save the tokenlist before another activity starts it's lifecycle
-        presenterInterface.saveTokenlist();
+        //presenterInterface.saveTokenlist();
         if (id == R.id.action_about) {
+            unregisterReceiver(receiver);
             Intent aboutintent = new Intent(this, AboutActivity.class);
             startActivity(aboutintent);
             return true;
         }
         if (id == R.id.action_enter_detail) {
+            unregisterReceiver(receiver);
             Intent enterDetailIntent = EnterDetailsActivity.makeIntent(MainActivity.this);
             startActivityForResult(enterDetailIntent, INTENT_ADD_TOKEN_MANUALLY);
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }

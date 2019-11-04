@@ -134,6 +134,7 @@ public class Util {
      * @return An ArrayList of Tokens
      */
     public ArrayList<Token> loadTokens() {
+        logprint("LOADING TOKEN");
         ArrayList<Token> tokens = new ArrayList<>();
         try {
             byte[] data = loadDataFromFile(DATAFILE);
@@ -157,10 +158,10 @@ public class Util {
      * @param tokens ArrayList of tokens to save
      */
     public void saveTokens(ArrayList<Token> tokens) {
-        JSONArray tmp = new JSONArray();
         if (tokens == null) {
             return;
         }
+        JSONArray tmp = new JSONArray();
         for (Token t : tokens) {
             try {
                 tmp.put(makeJSONfromToken(t));
@@ -439,7 +440,7 @@ public class Util {
             String api_key = o.getString(API_KEY);
             String projNumber = o.getString(PROJECT_NUMBER);
 
-            logprint("Firebase config loaded.");
+            //logprint("Firebase config loaded.");
             return new FirebaseInitConfig(projID, appID, api_key, projNumber);
 
         } catch (Exception e) {

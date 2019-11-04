@@ -118,7 +118,7 @@ public class NormalToken {
                 .check(matches(withText(startsWith("163 584"))));
 
         // Check that the next button is displayed and the progressbar is not
-        onView(withId(R.id.next_button)).check(matches(allOf(isDisplayed(), withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE))));
+        onView(withId(R.id.allow_button)).check(matches(allOf(isDisplayed(), withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE))));
         onView(withId(R.id.progressBar)).check(matches(allOf(not(isDisplayed()), withEffectiveVisibility(GONE))));
     }
 
@@ -159,7 +159,7 @@ public class NormalToken {
                         withAnyString()))); // The OTP is not the same even though the secret is the same
         // Check that the progressbar is displayed and the next button not
         onView(withId(R.id.progressBar)).check(matches(allOf(isDisplayed(), withEffectiveVisibility(VISIBLE))));
-        onView(withId(R.id.next_button)).check(matches(allOf(not(isDisplayed()), withEffectiveVisibility(GONE))));
+        onView(withId(R.id.allow_button)).check(matches(allOf(not(isDisplayed()), withEffectiveVisibility(GONE))));
     }
 
     @Test
@@ -225,7 +225,7 @@ public class NormalToken {
                         withAnyString())));
         // Check that the progressbar is displayed and the next button is not
         onView(withId(R.id.progressBar)).check(matches(allOf(isDisplayed(), withEffectiveVisibility(VISIBLE))));
-        onView(withId(R.id.next_button)).check(matches(allOf(not(isDisplayed()), withEffectiveVisibility(GONE))));
+        onView(withId(R.id.allow_button)).check(matches(allOf(not(isDisplayed()), withEffectiveVisibility(GONE))));
 
     }
 

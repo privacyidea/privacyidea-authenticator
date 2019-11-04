@@ -50,6 +50,7 @@ public class Token {
     public Date rollout_expiration;
     public String rollout_url;
     public boolean sslVerify = true;
+    public boolean lastAuthHadError = false;
 
     private ArrayList<PushAuthRequest> pendingAuths = new ArrayList<>();
     public State state = UNFINISHED;
