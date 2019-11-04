@@ -294,6 +294,14 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     @Override
+    public void removeCurrentAuthRequest(Token token) {
+        PushAuthRequest req = token.getPendingAuths().remove(0);
+        mainActivityInterface.cancelNotification(req.getNotificationID());
+        tokenListInterface.notifyChange();
+        token.lastAuthHadError = false;
+    }
+
+    @Override
     public String getCurrentSelectionLabel() {
         if (model.getCurrentSelection() == null) return null;
         return model.getCurrentSelection().getLabel();
@@ -719,6 +727,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     @Override
     public void handleError(int statusCode, Token token) {
+        token.lastAuthHadError = true;
         switch (statusCode) {
             case STATUS_ENDPOINT_UNKNOWN_HOST: {
                 // Network unreachable
