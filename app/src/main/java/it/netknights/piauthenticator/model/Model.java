@@ -89,6 +89,15 @@ public class Model {
         return currentSelection;
     }
 
+    public Token getTokenBySerial(String serial) {
+        for (Token t : tokens) {
+            if(t.getSerial().equals(serial)) {
+                return t;
+            }
+        }
+        return null;
+    }
+
     public ArrayList<Token> getTokens() {
         return tokens;
     }

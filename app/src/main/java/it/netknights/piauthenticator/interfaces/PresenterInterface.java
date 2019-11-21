@@ -119,5 +119,14 @@ public interface PresenterInterface {
      * @param notificationID the ID of the notification
      * @param signature      the signature of the Request
      */
-    void removePushAuthFor(int notificationID, String signature);
+    void pushAuthFinishedFor(String serial, int notificationID, String signature, boolean success);
+
+    /**
+     * Indicates that a broadcast from the PushAuthService was received to change the state of a token to "authenticating" and updating the UI
+     *
+     * @param serial         serial of the token
+     * @param notificationID notificationID of the notification
+     * @param signature      signature of the PushAuthRequest
+     */
+    void pushAuthStartedFor(String serial, int notificationID, String signature);
 }

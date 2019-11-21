@@ -48,9 +48,10 @@ import it.netknights.piauthenticator.utils.SecretKeyWrapper;
 import it.netknights.piauthenticator.utils.Util;
 import it.netknights.piauthenticator.viewcontroller.MainActivity;
 
+import static it.netknights.piauthenticator.utils.AppConstants.CHANNEL_ID_HIGH_PRIO;
+import static it.netknights.piauthenticator.utils.AppConstants.CHANNEL_ID_LOW_PRIO;
 import static it.netknights.piauthenticator.utils.AppConstants.INTENT_FILTER;
 import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
-import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_CHANNEL_ID;
 import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_ID;
 import static it.netknights.piauthenticator.utils.AppConstants.QUESTION;
 import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
@@ -145,12 +146,12 @@ public class FCMReceiverService extends FirebaseMessagingService {
                 activity_intent, title, question, "Token: " + activity_intent.getStringExtra(SERIAL), getApplicationContext().getString(R.string.Allow));
         if (notification != null) {
             //if (!appInForeground(getApplicationContext())) {
-                NotificationManagerCompat.from(this).notify(notificationID, notification);
+            NotificationManagerCompat.from(this).notify(notificationID, notification);
             //}
         }
     }
 
-    private boolean appInForeground(Context context) {
+    private static boolean appInForeground(Context context) {
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         List<ActivityManager.RunningAppProcessInfo> runningAppProcesses = activityManager.getRunningAppProcesses();
         if (runningAppProcesses == null) {
@@ -195,12 +196,16 @@ public class FCMReceiverService extends FirebaseMessagingService {
 
         NotificationCompat.Action action = new NotificationCompat.Action.Builder(0, buttonText, pService_intent).build();
 
-        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context,
-                NOTIFICATION_CHANNEL_ID)                                // Android 8+ uses notification channels
+        // If the app is already in foreground, add the notification with low priority so it does not pop up
+        boolean isAppInForeground = appInForeground(context);
+        String channelID = isAppInForeground ? CHANNEL_ID_LOW_PRIO : CHANNEL_ID_HIGH_PRIO;
+        int priority = isAppInForeground ? NotificationCompat.PRIORITY_LOW : NotificationCompat.PRIORITY_MAX;
+
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context, channelID) // Android 8+ uses notification channels
                 .setSmallIcon(R.drawable.ic_pi_notification)
                 .setContentTitle(title)
                 .setContentText(contextText)
-                .setPriority(NotificationCompat.PRIORITY_MAX)          // 7.1 and lower
+                .setPriority(priority)                                  // 7.1 and lower
                 .addAction(action)                                     // Add the allow Button
                 .setAutoCancel(true)                                   // Remove the notification after tabbing it
                 .setWhen(0)

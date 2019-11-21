@@ -82,7 +82,7 @@ import static it.netknights.piauthenticator.utils.AppConstants.State.FINISHED;
 import static it.netknights.piauthenticator.utils.AppConstants.State.ROLLING_OUT;
 import static it.netknights.piauthenticator.utils.AppConstants.State.UNFINISHED;
 import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
-import static it.netknights.piauthenticator.utils.OTPGenerator.generate;
+import static it.netknights.piauthenticator.utils.OTPGenerator.generateOTP;
 import static it.netknights.piauthenticator.utils.OTPGenerator.hashPIN;
 import static it.netknights.piauthenticator.utils.Util.logprint;
 
@@ -221,16 +221,12 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     @Override
     public void addPushAuthRequest(PushAuthRequest request) {
         // Requests for token that are not enrolled yet are not allowed
-        for (Token token : model.getTokens()) {
-            if (token.getSerial().equals(request.getSerial())) {
-                if (token.state.equals(UNFINISHED)) {
-                    return;
-                } else {
-                    logprint("Push Auth Request for " + request.getSerial() + " added.");
-                    if (token.addPushAuthRequest(request))
-                        tokenListInterface.notifyChange();
-                }
-            }
+        Token token = model.getTokenBySerial(request.getSerial());
+        if (token == null) return;
+        if (!token.state.equals(UNFINISHED)) {
+            logprint("Push Auth Request for " + request.getSerial() + " added.");
+            if (token.addPushAuthRequest(request))
+                tokenListInterface.notifyChange();
         }
     }
 
@@ -353,7 +349,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     public void addToken(Token token) {
         if (!token.getType().equals(PUSH)) {
             if (token.getCurrentOTP() == null) {
-                token.setCurrentOTP(generate(token));
+                token.setCurrentOTP(generateOTP(token));
             }
         }
         model.getTokens().add(token);
@@ -463,26 +459,40 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     @Override
-    public void removePushAuthFor(int notificationID, String signature) {
-        boolean changed = false;
-        for (Token token : model.getTokens()) {
+    public void pushAuthFinishedFor(String serial, int notificationID, String signature, boolean success) {
+        Token token = model.getTokenBySerial(serial);
+        if (token == null) return;
+        token.state = FINISHED;
+        if (success) {
             for (PushAuthRequest req : token.getPendingAuths()) {
                 if (req.getSignature().equals(signature) && req.getNotificationID() == notificationID) {
                     logprint("Removing PushAuthReq");
                     token.getPendingAuths().remove(req);
-                    changed = true;
                 }
             }
+        } else {
+            token.lastAuthHadError = true;
         }
-        if (changed) {
-            tokenListInterface.notifyChange();
+        tokenListInterface.notifyChange();
+    }
+
+    @Override
+    public void pushAuthStartedFor(String serial, int notificationID, String signature) {
+        Token token = null;
+        for (Token t : model.getTokens()) {
+            if (t.getSerial().equals(serial)) {
+                token = t;
+            }
         }
+        if (token == null) return;
+        token.state = AUTHENTICATING;
+        tokenListInterface.notifyChange();
     }
 
     @Override
     public void increaseHOTPCounter(Token token) {
         token.setCounter((token.getCounter() + 1));
-        token.setCurrentOTP(generate(token));
+        token.setCurrentOTP(generateOTP(token));
         tokenListInterface.notifyChange();
     }
 
@@ -535,7 +545,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     private void refreshOTPs() {
         for (int i = 0; i < model.getTokens().size(); i++) {
             if (!model.getTokens().get(i).getType().equals(PUSH)) {
-                model.getTokens().get(i).setCurrentOTP(generate(model.getTokens().get(i)));
+                model.getTokens().get(i).setCurrentOTP(generateOTP(model.getTokens().get(i)));
             }
         }
         tokenListInterface.notifyChange();
@@ -548,7 +558,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     private void rolloutFinished(Token token) {
         if (token == null) return;
         if (!token.getType().equals(PUSH)) {
-            token.setCurrentOTP(generate(token));
+            token.setCurrentOTP(generateOTP(token));
         } else {
             // Do not add token twice
             for (Token t : model.getTokens()) {

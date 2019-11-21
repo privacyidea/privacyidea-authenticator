@@ -55,9 +55,9 @@ import it.netknights.piauthenticator.utils.SecretKeyWrapper;
 import it.netknights.piauthenticator.utils.Util;
 import it.netknights.piauthenticator.viewcontroller.MainActivity;
 
+import static it.netknights.piauthenticator.utils.AppConstants.CHANNEL_ID_HIGH_PRIO;
 import static it.netknights.piauthenticator.utils.AppConstants.INTENT_FILTER;
 import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
-import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_CHANNEL_ID;
 import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_ID;
 import static it.netknights.piauthenticator.utils.AppConstants.QUESTION;
 import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
@@ -164,6 +164,7 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
         pushAuthTask = new PushAuthTask(token, req, publicKey, appPrivateKey, this);
         pushAuthTask.execute();
         showRunningAuthNotification();
+        broadcastAuthenitcationStarted();
         return Service.START_NOT_STICKY;
     }
 
@@ -191,7 +192,7 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
         NotificationCompat.Action action = new NotificationCompat.Action.Builder(0, "Cancel", pCancel_intent).build();
 
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this,
-                NOTIFICATION_CHANNEL_ID)                                // Android 8+ uses notification channels
+                CHANNEL_ID_HIGH_PRIO)                                // Android 8+ uses notification channels
                 .setSmallIcon(R.drawable.ic_pi_notification)
                 .setContentTitle(getApplicationContext().getString(R.string.PushtokenAuthenticating))
                 .setContentText(getString(R.string.NotificationWithToken) + token.getLabel())
@@ -210,6 +211,7 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
 
     @Override
     public void authenticationFinished(boolean success, Token token) {
+        broadcastAuthenticationFinished(success);
         if (success) {
             Toast.makeText(getApplicationContext(), R.string.AuthenticationSuccessful, Toast.LENGTH_LONG).show();
             // In case of success, remove the pendingAuth from the token (the one the auth was started with)
@@ -222,7 +224,6 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
             // Close the notification that the authentication is running
             NotificationManagerCompat.from(this).cancel(req.getNotificationID());
             //} else {
-            broadcastAuthenticationFinished();
             //}
         } else {
             Toast.makeText(getApplicationContext(), R.string.AuthenticationFailed, Toast.LENGTH_LONG).show();
@@ -285,10 +286,21 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
     }
 
     // Send broadcast in case app is running and the notification button was clicked
-    private void broadcastAuthenticationFinished() {
+    private void broadcastAuthenticationFinished(boolean success) {
         Intent intent = new Intent(INTENT_FILTER);
         // Use notificationID and signature to identify (just has to be removed)
+        intent.putExtra(SERIAL, token.getSerial());
         intent.putExtra("finished", req.getNotificationID());
+        intent.putExtra("success", success);
+        intent.putExtra(SIGNATURE, req.getSignature());
+        sendBroadcast(intent);
+    }
+
+    private void broadcastAuthenitcationStarted() {
+        Intent intent = new Intent(INTENT_FILTER);
+        // Use notificationID and signature to identify (just has to be removed)
+        intent.putExtra("running", req.getNotificationID());
+        intent.putExtra(SERIAL, token.getSerial());
         intent.putExtra(SIGNATURE, req.getSignature());
         sendBroadcast(intent);
     }
