@@ -52,7 +52,7 @@ public class OTPGenerator {
     /**
      * Entry point for OTP generation
      *
-     * @param token to generateOTP the OTP value for
+     * @param token to generate the OTP value for
      * @return the current OTP value for the input token
      */
     public static String generateOTP(Token token) {

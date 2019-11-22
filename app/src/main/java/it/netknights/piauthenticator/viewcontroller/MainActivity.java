@@ -192,7 +192,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     void pushAuthRequestReceived(Intent intent) {
         // intent contain push auth info
-        logprint("Intent found onCreate: " + ((intent.getExtras() != null) ? intent.getExtras().toString() : ""));
+        logprint("Intent found onCreate: " + ((intent.getExtras() != null) ? intent.getExtras().toString() : "No extras."));
         String serial = intent.getStringExtra(SERIAL);
         String nonce = intent.getStringExtra(NONCE);
         String title = intent.getStringExtra(TITLE);
