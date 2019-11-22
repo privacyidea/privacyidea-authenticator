@@ -124,7 +124,9 @@ public class AppConstants {
     public static final int READ_TIMEOUT = 10000;
     public static final int CONNECT_TIMEOUT = 15000;
 
-    public static final String NOTIFICATION_CHANNEL_ID = "privacyIDEAPush";
+    public static final String CHANNEL_ID_HIGH_PRIO = "privacyIDEAPush_high";
+    public static final String CHANNEL_ID_LOW_PRIO = "privacyIDEAPush_low";
+
     public static final String INTENT_FILTER = "privacyIDEAAuthenticator";
 
     // Status codes

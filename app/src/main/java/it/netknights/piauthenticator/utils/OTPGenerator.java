@@ -55,7 +55,7 @@ public class OTPGenerator {
      * @param token to generate the OTP value for
      * @return the current OTP value for the input token
      */
-    public static String generate(Token token) {
+    public static String generateOTP(Token token) {
         if (token.getType().equals(HOTP) || token.getType().equals(TOTP)) {
             String secretAsHEX = byteArrayToHexString(token.getSecret());
             String digits = String.valueOf(token.getDigits());

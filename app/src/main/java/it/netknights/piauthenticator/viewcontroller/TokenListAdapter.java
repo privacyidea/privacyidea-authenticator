@@ -59,6 +59,7 @@ import static it.netknights.piauthenticator.utils.AppConstants.HOTP;
 import static it.netknights.piauthenticator.utils.AppConstants.PUSH;
 import static it.netknights.piauthenticator.utils.AppConstants.State.AUTHENTICATING;
 import static it.netknights.piauthenticator.utils.AppConstants.State.FINISHED;
+import static it.netknights.piauthenticator.utils.AppConstants.State.ROLLING_OUT;
 import static it.netknights.piauthenticator.utils.AppConstants.State.UNFINISHED;
 import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
 
@@ -243,7 +244,7 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
                 subTextStatus.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
 
                 smallText.setText(v.getContext().getString(R.string.PushtokenLabelRolloutUnfinished));
-            } else {
+            } else if (token.state.equals(ROLLING_OUT)) {
                 // Rollout in progress
                 smallText.setVisibility(GONE);
 

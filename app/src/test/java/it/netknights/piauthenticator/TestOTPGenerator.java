@@ -101,15 +101,15 @@ public class TestOTPGenerator {
                 , OTPGenerator.hashPIN(1234567890, t));
 
         // Generate for token
-        assertEquals("766082", OTPGenerator.generate(t));  // HOTP
+        assertEquals("766082", OTPGenerator.generateOTP(t));  // HOTP
         secret = "edb642c8348a20b6c2a19a65cc71bc2eb4c2b8fc29c42a00c489e57f9b8ed73b".getBytes();
         Token t2 = new Token(secret, "serial", "test", "totp", 6); //TOTP
         assertEquals(generateTOTP(byteArrayToHexString(secret), (System.currentTimeMillis() / 1000), "6", 30, sha1),
-                Integer.parseInt(OTPGenerator.generate(t2)));
+                Integer.parseInt(OTPGenerator.generateOTP(t2)));
 
         // Generating for Push token returns empty String
         Token pushy = new Token("serial", "label");
-        assertEquals("", OTPGenerator.generate(pushy));
+        assertEquals("", OTPGenerator.generateOTP(pushy));
     }
 
     @Test

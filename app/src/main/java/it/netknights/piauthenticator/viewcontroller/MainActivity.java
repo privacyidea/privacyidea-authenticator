@@ -90,6 +90,8 @@ import static it.netknights.piauthenticator.R.color.PIBLUE;
 import static it.netknights.piauthenticator.utils.AppConstants.ALGORITHM;
 import static it.netknights.piauthenticator.utils.AppConstants.API_KEY;
 import static it.netknights.piauthenticator.utils.AppConstants.APP_ID;
+import static it.netknights.piauthenticator.utils.AppConstants.CHANNEL_ID_HIGH_PRIO;
+import static it.netknights.piauthenticator.utils.AppConstants.CHANNEL_ID_LOW_PRIO;
 import static it.netknights.piauthenticator.utils.AppConstants.COUNTER;
 import static it.netknights.piauthenticator.utils.AppConstants.DIGITS;
 import static it.netknights.piauthenticator.utils.AppConstants.ENROLLMENT_CRED;
@@ -98,7 +100,6 @@ import static it.netknights.piauthenticator.utils.AppConstants.INTENT_ADD_TOKEN_
 import static it.netknights.piauthenticator.utils.AppConstants.ISSUER;
 import static it.netknights.piauthenticator.utils.AppConstants.LABEL;
 import static it.netknights.piauthenticator.utils.AppConstants.NONCE;
-import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_CHANNEL_ID;
 import static it.netknights.piauthenticator.utils.AppConstants.NOTIFICATION_ID;
 import static it.netknights.piauthenticator.utils.AppConstants.PERIOD;
 import static it.netknights.piauthenticator.utils.AppConstants.PERSISTENT;
@@ -174,7 +175,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         receiver = new MainActivityBroadcastReceiver(this);
         registerReceiver(receiver, receiver.intentFilter);
 
-        createNotificationChannel();
+        createNotificationChannels();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             paintStatusbar();
@@ -191,8 +192,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     void pushAuthRequestReceived(Intent intent) {
         // intent contain push auth info
-        logprint("Intent Found onCreate:");
-        logprint(intent.getExtras().toString());
+        logprint("Intent found onCreate: " + ((intent.getExtras() != null) ? intent.getExtras().toString() : "No extras."));
         String serial = intent.getStringExtra(SERIAL);
         String nonce = intent.getStringExtra(NONCE);
         String title = intent.getStringExtra(TITLE);
@@ -209,8 +209,12 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         }
     }
 
-    void pushAuthFinishedFor(int notificationID, String signature) {
-        presenterInterface.removePushAuthFor(notificationID, signature);
+    void pushAuthFinishedFor(String serial, int notificationID, String signature, boolean success) {
+        presenterInterface.pushAuthFinishedFor(serial, notificationID, signature, success);
+    }
+
+    public void pushAuthStartedFor(String serial, int notificationID, String signature) {
+        presenterInterface.pushAuthStartedFor(serial, notificationID, signature);
     }
 
     private void setupFab() {
@@ -806,20 +810,22 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
             clipboard.setPrimaryClip(clip);
     }
 
-    private void createNotificationChannel() {
+    private void createNotificationChannels() {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = "privacyIDEAPush";
-            String description = "push for privacyIDEA";
-            int importance = NotificationManager.IMPORTANCE_HIGH;
-            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, name, importance);
-            channel.setDescription(description);
             // Register the channel with the system; you can't change the importance
             // or other notification behaviors after this
+            NotificationChannel channelHigh = new NotificationChannel(CHANNEL_ID_HIGH_PRIO, CHANNEL_ID_HIGH_PRIO, NotificationManager.IMPORTANCE_HIGH);
+            channelHigh.setDescription("push for privacyIDEA with high priority");
+            // Low prio channel is used when app is in foreground to still have the notification up in case user closes the app
+            NotificationChannel channelLow = new NotificationChannel(CHANNEL_ID_LOW_PRIO, CHANNEL_ID_LOW_PRIO, NotificationManager.IMPORTANCE_LOW);
+            channelHigh.setDescription("push for privacyIDEA with low priority");
+
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             if (notificationManager != null) {
-                notificationManager.createNotificationChannel(channel);
+                notificationManager.createNotificationChannel(channelHigh);
+                notificationManager.createNotificationChannel(channelLow);
             }
         }
     }

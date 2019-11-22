@@ -26,6 +26,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 
 import static it.netknights.piauthenticator.utils.AppConstants.INTENT_FILTER;
+import static it.netknights.piauthenticator.utils.AppConstants.SERIAL;
 import static it.netknights.piauthenticator.utils.AppConstants.SIGNATURE;
 import static it.netknights.piauthenticator.utils.Util.logprint;
 
@@ -41,7 +42,10 @@ public class MainActivityBroadcastReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (main != null) {
             if (intent.hasExtra("finished")) {
-                main.pushAuthFinishedFor(intent.getIntExtra("finished", 654321),
+                main.pushAuthFinishedFor(intent.getStringExtra(SERIAL), intent.getIntExtra("finished", 654321),
+                        intent.getStringExtra(SIGNATURE), intent.getBooleanExtra("success", false));
+            } else if (intent.hasExtra("running")) {
+                main.pushAuthStartedFor(intent.getStringExtra(SERIAL), intent.getIntExtra("running", 654321),
                         intent.getStringExtra(SIGNATURE));
             } else {
                 logprint("broadcastreceiver received push request");
