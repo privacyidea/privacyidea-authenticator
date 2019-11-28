@@ -515,10 +515,10 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         if (progress < 3 || progress > 27 && progress < 33 || progress > 57) {
             refreshOTPs();
         }
-        // Check for expired pendingAuths every 30s
-        if (progress == 30 || progress == 0) {
+        // Check for expired pendingAuths every 5s
+        if (progress % 5 == 0) {
+            checkForExpiredAuths();
         }
-        checkForExpiredAuths();
     }
 
     private void checkForExpiredAuths() {
@@ -689,8 +689,9 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     @Override
-    public void makeAlertDialog(String title, String message) {
-        mainActivityInterface.makeAlertDialog(title, message);
+    public void twoStepFinished(String messageToShow) {
+        mainActivityInterface.makeAlertDialog(R.string.TwoStepFinishDialogTitle, messageToShow, R.string.ButtonOK,
+                false, (dialog, which) -> dialog.dismiss());
     }
 
     @Override
@@ -703,9 +704,11 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
         if (success) {
             mainActivityInterface.makeToast(R.string.AuthenticationSuccessful);
             // Remove the notification if still present
-            mainActivityInterface.cancelNotification(token.getPendingAuths().get(0).getNotificationID());
-            // In case of success, remove the pendingAuth from the token (always the first from within the App)
-            token.getPendingAuths().remove(0);
+            if (!token.getPendingAuths().isEmpty()) {
+                mainActivityInterface.cancelNotification(token.getPendingAuths().get(0).getNotificationID());
+                // In case of success, remove the pendingAuth from the token (always the first from within the App)
+                token.getPendingAuths().remove(0);
+            }
             token.state = FINISHED;
             tokenListInterface.notifyChange();
         } else {

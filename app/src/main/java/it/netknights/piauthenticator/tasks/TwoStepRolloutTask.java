@@ -108,7 +108,7 @@ public class TwoStepRolloutTask extends AsyncTask<Void, Void, Boolean> {
             e.printStackTrace();
         }
 
-        byte completeOutputBytes[] = outputStream.toByteArray();
+        byte[] completeOutputBytes = outputStream.toByteArray();
         result = Util.insertPeriodically(new Base32().encodeAsString(completeOutputBytes), 4);
         result = result.replaceAll("=", "");
         return result;
@@ -118,7 +118,7 @@ public class TwoStepRolloutTask extends AsyncTask<Void, Void, Boolean> {
     protected void onPostExecute(final Boolean success) {
         // 4. Display the phone-part of the secret and first OTP to verify
         presenterTaskInterface.updateTaskStatus(STATUS_TWO_STEP_ROLLOUT_DONE, token);
-        presenterTaskInterface.makeAlertDialog("Phone secret", buildResultMessage());
+        presenterTaskInterface.twoStepFinished(buildResultMessage());
         logprint("2step rollout finished.");
     }
 }
