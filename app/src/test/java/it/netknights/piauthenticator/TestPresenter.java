@@ -28,6 +28,7 @@ import org.mockito.Mockito;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 
@@ -35,6 +36,7 @@ import it.netknights.piauthenticator.interfaces.MainActivityInterface;
 import it.netknights.piauthenticator.interfaces.TokenListViewInterface;
 import it.netknights.piauthenticator.model.FirebaseInitConfig;
 import it.netknights.piauthenticator.model.Model;
+import it.netknights.piauthenticator.model.PushAuthRequest;
 import it.netknights.piauthenticator.model.ScanResult;
 import it.netknights.piauthenticator.model.Token;
 import it.netknights.piauthenticator.presenter.Presenter;
@@ -64,6 +66,7 @@ import static it.netknights.piauthenticator.utils.AppConstants.STATUS_INIT_FIREB
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_STANDARD_ROLLOUT_DONE;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT;
 import static it.netknights.piauthenticator.utils.AppConstants.STATUS_TWO_STEP_ROLLOUT_DONE;
+import static it.netknights.piauthenticator.utils.AppConstants.State.AUTHENTICATING;
 import static it.netknights.piauthenticator.utils.AppConstants.State.FINISHED;
 import static it.netknights.piauthenticator.utils.AppConstants.State.UNFINISHED;
 import static it.netknights.piauthenticator.utils.AppConstants.TOTP;
@@ -117,7 +120,7 @@ public class TestPresenter {
     public void testInit() {
         presenter.init();
         verify(mainActivityInterface, never()).firebaseInit((FirebaseInitConfig) any());
-        verify(mainActivityInterface, never()).makeAlertDialog(anyString(), anyString());
+        verify(mainActivityInterface, never()).makeAlertDialog(anyInt(), anyString());
 
         FirebaseInitConfig firebaseInitConfig = new FirebaseInitConfig("projid", "appid", "api_key", "projNumber");
         when(util.loadFirebaseConfig()).thenReturn(firebaseInitConfig);
@@ -351,16 +354,34 @@ public class TestPresenter {
     }
 
     @Test
-    public void testDialogToast() {
-        presenter.makeAlertDialog("test", "test");
-        verify(mainActivityInterface).makeAlertDialog("test", "test");
+    public void authenticationFinished() {
+        Token t = new Token("serial", "label");
+        t.addPushAuthRequest(new PushAuthRequest("nonce", "url", "serial", "question?",
+                "title!", "signature", 5678, true));
+        t.state = AUTHENTICATING;
+        ArrayList<Token> list = new ArrayList<>();
+        list.add(t);
+        Model m = new Model(list);
+        presenter.setModel(m);
+
+        // check failure first
+        presenter.authenticationFinished(false, t);
+        verify(mainActivityInterface).makeToast(R.string.AuthenticationFailed);
+
+        presenter.authenticationFinished(true, t);
+
+        verify(mainActivityInterface, times(1)).makeToast(R.string.AuthenticationSuccessful);
+        verify(mainActivityInterface, times(1)).cancelNotification(5678);
+        assertTrue(t.getPendingAuths().isEmpty());  // The request is removed upon success
+        assertEquals(FINISHED, t.state);
+        verify(tokenListViewInterface).notifyChange();
+
     }
 
     @Test
     public void testStubs() {
         PublicKey key = presenter.generatePublicKeyFor("test");
         assertNull(key); // its a stub
-
     }
 
     @Test

@@ -739,7 +739,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     @Override
-    public void handleError(int statusCode, Token token) {
+    public void handleAuthError(int statusCode, Token token) {
         token.lastAuthHadError = true;
         switch (statusCode) {
             case STATUS_ENDPOINT_UNKNOWN_HOST: {

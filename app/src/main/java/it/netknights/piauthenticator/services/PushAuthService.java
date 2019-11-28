@@ -259,7 +259,7 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
     }
 
     @Override
-    public void handleError(int statusCode, Token token) {
+    public void handleAuthError(int statusCode, Token token) {
         switch (statusCode) {
             case STATUS_ENDPOINT_UNKNOWN_HOST: {
                 // TODO just fail the authentication?

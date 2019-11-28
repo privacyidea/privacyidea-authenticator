@@ -25,5 +25,5 @@ import it.netknights.piauthenticator.model.Token;
 public interface PushAuthCallbackInterface {
     void authenticationFinished(boolean success, Token token);
 
-    void handleError(int statusCode, Token token);
+    void handleAuthError(int statusCode, Token token);
 }
