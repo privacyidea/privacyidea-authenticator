@@ -720,7 +720,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     /**
      * Cancel the running Authentication Task and remove the pair from the runningAuthentications List
-     *
+     * Sets the tokens 'lastAuthHadError' so the authentication can be dismissed
      * @param token token of the pair
      */
     private void deleteRunningAuthenticationFor(Token token) {
@@ -735,6 +735,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             toDelete.second.cancel(true);
             runningAuthentications.remove(toDelete);
         }
+        token.lastAuthHadError = true;
         token.state = FINISHED;
     }
 
