@@ -27,6 +27,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import androidx.test.espresso.ViewInteraction;
+import androidx.test.espresso.intent.Intents;
+import androidx.test.espresso.matcher.ViewMatchers;
+import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner;
+import androidx.test.rule.ActivityTestRule;
+
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -46,17 +52,13 @@ import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 
-import androidx.test.espresso.ViewInteraction;
-import androidx.test.espresso.intent.Intents;
-import androidx.test.espresso.matcher.ViewMatchers;
-import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner;
-import androidx.test.rule.ActivityTestRule;
-
 import it.netknights.piauthenticator.utils.PKCS1ToSubjectPublicKeyInfo;
 import it.netknights.piauthenticator.utils.Util;
 import it.netknights.piauthenticator.viewcontroller.MainActivity;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.tls.HandshakeCertificates;
+import okhttp3.tls.internal.TlsUtil;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
@@ -95,11 +97,13 @@ public class PushRolloutAuth {
     @Before
     public void setup() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         server = new MockWebServer();
-
+        // Setup 'https'
+        HandshakeCertificates hsc = TlsUtil.localhost();
+        server.useHttps(hsc.sslSocketFactory(), false);
 
         server.start();
-        url = server.url("/ttype/push").toString();
 
+        url = server.url("/ttype/push").toString();
 
         privateKeyServer = KeyFactory.getInstance("RSA").generatePrivate(
                 new PKCS8EncodedKeySpec(

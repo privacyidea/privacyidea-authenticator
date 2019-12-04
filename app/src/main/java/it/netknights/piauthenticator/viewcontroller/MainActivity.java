@@ -833,23 +833,27 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
     @Override
     public void makeAlertDialog(int titleID, String message) {
-        showAlertDialog(getStringResource(titleID), message, null, null, true);
+        showAlertDialog(getStringResource(titleID), message, getStringResource(R.string.ButtonOK),
+                null, true);
     }
 
     @Override
     public void makeAlertDialog(int titleID, int messageID) {
-        showAlertDialog(getStringResource(titleID), getStringResource(messageID), null, null, true);
+        showAlertDialog(getStringResource(titleID), getStringResource(messageID), getStringResource(R.string.ButtonOK),
+                null, true);
     }
 
     @Override
-    public void makeAlertDialog(int titleID, String message, int positiveBtnTextID, boolean cancelable, @Nullable DialogInterface.OnClickListener positiveBtnListener) {
+    public void makeAlertDialog(int titleID, String message, int positiveBtnTextID, boolean cancelable,
+                                @Nullable DialogInterface.OnClickListener positiveBtnListener) {
         showAlertDialog(getStringResource(titleID), message, getStringResource(positiveBtnTextID), positiveBtnListener, cancelable);
     }
 
     @Override
     public void makeAlertDialog(int titleID, int messageID, int positiveBtnTextID,
                                 boolean cancelable, @Nullable DialogInterface.OnClickListener positiveBtnListener) {
-        showAlertDialog(getStringResource(titleID), getStringResource(messageID), getStringResource(positiveBtnTextID), positiveBtnListener, cancelable);
+        showAlertDialog(getStringResource(titleID), getStringResource(messageID), getStringResource(positiveBtnTextID),
+                positiveBtnListener, cancelable);
     }
 
     private void showAlertDialog(String title, String message, @Nullable String positiveButtonText,
