@@ -21,10 +21,10 @@ package it.netknights.piauthenticator;
 
 import android.view.WindowManager;
 
+import androidx.test.espresso.Root;
+
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
-
-import androidx.test.espresso.Root;
 
 public class ToastMatcher extends TypeSafeMatcher<Root> {
     @Override

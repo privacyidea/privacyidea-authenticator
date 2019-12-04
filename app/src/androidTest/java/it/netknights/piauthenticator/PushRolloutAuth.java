@@ -155,6 +155,7 @@ public class PushRolloutAuth {
                                         withClassName(is("android.widget.ScrollView")),
                                         0),
                                 3)));
+        sleep(5000);
         appCompatButton3.perform(scrollTo(), click());
 
         // Validate token is there - but unfinished
