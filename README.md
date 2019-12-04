@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/privacyidea/privacyidea-authenticator.svg?style=svg)](https://circleci.com/gh/privacyidea/privacyidea-authenticator)
+
 # privacyIDEA Authenticator
 
 The privacyIDEA Authenticator currently implements the HOTP and TOTP (30 and 60 seconds) algorithms with SHA-1/SHA-256/SHA-512.
