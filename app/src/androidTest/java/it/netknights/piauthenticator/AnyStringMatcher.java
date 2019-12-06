@@ -23,9 +23,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
-import org.hamcrest.Description;
-
 import androidx.test.espresso.matcher.BoundedMatcher;
+
+import org.hamcrest.Description;
 
 public class AnyStringMatcher extends BoundedMatcher<View, TextView> {
 

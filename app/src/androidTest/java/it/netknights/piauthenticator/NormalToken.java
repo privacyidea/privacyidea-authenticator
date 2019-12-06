@@ -26,6 +26,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import androidx.test.espresso.ViewInteraction;
+import androidx.test.espresso.intent.Intents;
+import androidx.test.espresso.matcher.ViewMatchers;
+import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner;
+import androidx.test.rule.ActivityTestRule;
+
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
@@ -36,12 +42,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import androidx.test.espresso.ViewInteraction;
-import androidx.test.espresso.intent.Intents;
-import androidx.test.espresso.matcher.ViewMatchers;
-import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner;
-import androidx.test.rule.ActivityTestRule;
 
 import it.netknights.piauthenticator.viewcontroller.MainActivity;
 
@@ -61,7 +61,6 @@ import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibilit
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static it.netknights.piauthenticator.AnyStringMatcher.withAnyString;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anything;
@@ -194,9 +193,9 @@ public class NormalToken {
 
         // The result should be shown
         ViewInteraction textView = onView(
-                allOf(IsInstanceOf.instanceOf(android.widget.TextView.class), withText("Phone secret"),
+                allOf(IsInstanceOf.instanceOf(android.widget.TextView.class), withText(R.string.TwoStepFinishDialogTitle),
                         isDisplayed()));
-        textView.check(matches(withText("Phone secret")));
+        textView.check(matches(withText(R.string.TwoStepFinishDialogTitle)));
 
         ViewInteraction textView2 = onView(
                 allOf(withId(android.R.id.message), withAnyString(),

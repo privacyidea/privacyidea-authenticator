@@ -26,18 +26,18 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import androidx.test.espresso.DataInteraction;
+import androidx.test.espresso.ViewInteraction;
+import androidx.test.filters.LargeTest;
+import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner;
+import androidx.test.rule.ActivityTestRule;
+
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import androidx.test.espresso.DataInteraction;
-import androidx.test.espresso.ViewInteraction;
-import androidx.test.filters.LargeTest;
-import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner;
-import androidx.test.rule.ActivityTestRule;
 
 import it.netknights.piauthenticator.utils.AppConstants;
 import it.netknights.piauthenticator.viewcontroller.MainActivity;
@@ -51,11 +51,11 @@ import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withClassName;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 /**
  * Check that the AboutActivity displays the info labels and license correctly
@@ -177,14 +177,14 @@ public class AboutTest {
         textView9.check(matches(withText("Apache License 2.0")));
 
         ViewInteraction textView10 = onView(
-                allOf(withId(R.id.about_row_title), withText("OTP Authenticator by Bruno Bierbaumer"),
+                allOf(withId(R.id.about_row_title), withText("OTP Authenticator"),
                         childAtPosition(
                                 childAtPosition(
                                         withId(R.id.listView_about),
                                         1),
                                 0),
                         isDisplayed()));
-        textView10.check(matches(withText("OTP Authenticator by Bruno Bierbaumer")));
+        textView10.check(matches(withText("OTP Authenticator")));
 
         ViewInteraction textView11 = onView(
                 allOf(withId(R.id.about_row_title), withText("ZXing Embedded"),

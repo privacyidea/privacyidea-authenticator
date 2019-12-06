@@ -48,7 +48,6 @@ import javax.crypto.SecretKey;
 import it.netknights.piauthenticator.model.FirebaseInitConfig;
 import it.netknights.piauthenticator.model.PushAuthRequest;
 import it.netknights.piauthenticator.model.Token;
-import it.netknights.piauthenticator.utils.AppConstants;
 import it.netknights.piauthenticator.utils.SecretKeyWrapper;
 import it.netknights.piauthenticator.utils.Util;
 

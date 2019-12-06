@@ -27,7 +27,7 @@ import it.netknights.piauthenticator.model.Token;
 public interface PresenterTaskInterface {
     void updateTaskStatus(int statusCode, Token token);
 
-    void makeAlertDialog(String title, String message);
+    void twoStepFinished(String messageToShow);
 
     PublicKey generatePublicKeyFor(String serial);
 

@@ -94,4 +94,6 @@
     <string name="PushAuthInvalidSignature">Die Authentifizierungssignatur ist ungültig. Versuchen Sie erneut, sich zu authentifizieren.</string>
     <string name="PushAuthSigningError">Authentifizierung konnte nicht signiert werden. Versuchen Sie, ein neues Token zu registrieren.</string>
     <string name="Dismiss">Verwerfen</string>
+    <string name="TwoStepFinishDialogTitle">Smartphone Anteil</string>
+    <string name="ButtonOK">OK</string>
 </resources>

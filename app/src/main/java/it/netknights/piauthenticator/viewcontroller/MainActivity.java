@@ -47,6 +47,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
@@ -233,7 +234,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     private void setupViews() {
-        setTitle("      " + AppConstants.APP_TITLE);
+        setTitle(AppConstants.APP_TITLE);
         setContentView(R.layout.activity_main);
         listview = findViewById(R.id.listview);
         listview.setOnItemLongClickListener((adapterView, view, i, l) -> {
@@ -831,8 +832,32 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
-    public void makeAlertDialog(String title, String message, String positiveBtnText, boolean cancelable,
-                                DialogInterface.OnClickListener positiveBtnListener) {
+    public void makeAlertDialog(int titleID, String message) {
+        showAlertDialog(getStringResource(titleID), message, getStringResource(R.string.ButtonOK),
+                null, true);
+    }
+
+    @Override
+    public void makeAlertDialog(int titleID, int messageID) {
+        showAlertDialog(getStringResource(titleID), getStringResource(messageID), getStringResource(R.string.ButtonOK),
+                null, true);
+    }
+
+    @Override
+    public void makeAlertDialog(int titleID, String message, int positiveBtnTextID, boolean cancelable,
+                                @Nullable DialogInterface.OnClickListener positiveBtnListener) {
+        showAlertDialog(getStringResource(titleID), message, getStringResource(positiveBtnTextID), positiveBtnListener, cancelable);
+    }
+
+    @Override
+    public void makeAlertDialog(int titleID, int messageID, int positiveBtnTextID,
+                                boolean cancelable, @Nullable DialogInterface.OnClickListener positiveBtnListener) {
+        showAlertDialog(getStringResource(titleID), getStringResource(messageID), getStringResource(positiveBtnTextID),
+                positiveBtnListener, cancelable);
+    }
+
+    private void showAlertDialog(String title, String message, @Nullable String positiveButtonText,
+                                 @Nullable DialogInterface.OnClickListener positiveButtonListener, boolean cancelable) {
         if (status_dialog != null) {
             cancelStatusDialog();
         }
@@ -840,33 +865,15 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle(title)
                 .setCancelable(cancelable)
-                .setMessage(message)
-                .setPositiveButton(positiveBtnText, positiveBtnListener);
+                .setMessage(message);
+
+        if (positiveButtonText != null) {
+            builder.setPositiveButton(positiveButtonText, positiveButtonListener);
+        }
+
         final AlertDialog alert = builder.create();
         MainActivity.changeDialogFontColor(alert);
         alert.show();
-    }
-
-    @Override
-    public void makeAlertDialog(int titleID, int messageID, int positiveBtnTextID,
-                                boolean cancelable, DialogInterface.OnClickListener positiveBtnListener) {
-        makeAlertDialog(getStringResource(titleID), getStringResource(messageID),
-                getStringResource(positiveBtnTextID), cancelable, positiveBtnListener);
-    }
-
-    @Override
-    public void makeAlertDialog(String title, String message) {
-        makeAlertDialog(title, message, "OK", true, (dialog, which) -> dialog.cancel());
-    }
-
-    @Override
-    public void makeAlertDialog(int titleID, String message) {
-        makeAlertDialog(getStringResource(titleID), message);
-    }
-
-    @Override
-    public void makeAlertDialog(int titleID, int messageID) {
-        makeAlertDialog(getStringResource(titleID), getStringResource(messageID));
     }
 
     @Override

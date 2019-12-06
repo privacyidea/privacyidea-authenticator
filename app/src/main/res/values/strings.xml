@@ -126,5 +126,7 @@
     <string name="PushAuthInvalidSignature">Authentication signature is invalid. Try to authenticate again.</string>
     <string name="PushAuthSigningError">Authentication could not be signed. Try enrolling a new token.</string>
     <string name="Dismiss">Dismiss</string>
+    <string name="TwoStepFinishDialogTitle">Smartphone part</string>
+    <string name="ButtonOK">OK</string>
 
 </resources>

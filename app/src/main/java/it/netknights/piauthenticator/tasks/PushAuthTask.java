@@ -144,11 +144,11 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements E
         switch (code) {
             case PA_INVALID_SIGNATURE:
                 logprint("authentication failed due to invalid signature :(");
-                pushAuthCallbackInterface.handleError(code, token);
+                pushAuthCallbackInterface.handleAuthError(code, token);
                 break;
             case PA_SIGNING_FAILURE:
                 logprint("authentication failed due to signing failure :(");
-                pushAuthCallbackInterface.handleError(code, token);
+                pushAuthCallbackInterface.handleAuthError(code, token);
                 break;
             case PA_AUTHENTICATION_FINISHED:
                 if (success) {
@@ -160,7 +160,7 @@ public class PushAuthTask extends AsyncTask<Void, Integer, Boolean> implements E
                 }
                 break;
             default: {
-                pushAuthCallbackInterface.handleError(code, token);
+                pushAuthCallbackInterface.handleAuthError(code, token);
                 break;
             }
         }
