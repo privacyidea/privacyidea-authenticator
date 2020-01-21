@@ -365,6 +365,7 @@ public class Util {
             return decrypt(encryptionKey, encryptedData);
         } catch (Exception e) {
             // combine exceptions here, nothing would be done anyway
+            //String s = e.getCause().getMessage();
             e.printStackTrace();
         }
         return null;
