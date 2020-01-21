@@ -71,6 +71,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import it.netknights.piauthenticator.BuildConfig;
 import it.netknights.piauthenticator.model.FirebaseInitConfig;
 import it.netknights.piauthenticator.model.PushAuthRequest;
 import it.netknights.piauthenticator.model.Token;
@@ -645,9 +646,11 @@ public class Util {
     }
 
     public static void logprint(String msg) {
-        if (msg == null)
-            return;
-        Log.e(TAG, msg);
+        if (BuildConfig.DEBUG) {
+            if (msg == null)
+                return;
+            Log.e(TAG, msg);
+        }
     }
 
     public static String insertPeriodically(String text, int stepSize) {
