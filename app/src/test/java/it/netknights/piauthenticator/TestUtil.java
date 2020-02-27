@@ -215,7 +215,7 @@ public class TestUtil {
         assertFalse(test.exists());
     }
 
-    @Test
+    @Test(expected = org.json.JSONException.class)
     public void saveLoadDeleteFirebaseConfig() throws GeneralSecurityException, JSONException, IOException {
         // there is none
         assertNull(util.loadFirebaseConfig());
@@ -223,7 +223,7 @@ public class TestUtil {
         // This throws exception -> returns null
         FirebaseInitConfig fbConf = new FirebaseInitConfig(null, null, null, null);
         util.storeFirebaseConfig(fbConf);
-        assertNull(util.loadFirebaseConfig());
+        util.loadFirebaseConfig(); // this will throw an exception when evaluating the loaded JSON
 
         // this should work
         fbConf = new FirebaseInitConfig("projID", "appID", "api_key", "projNumber");
