@@ -23,6 +23,7 @@ package it.netknights.piauthenticator.presenter;
 import android.util.Pair;
 
 import org.apache.commons.codec.binary.Base32;
+import org.json.JSONException;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -106,9 +107,29 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     public void init() {
         // Logic of onCreate
         if (model == null) {
-            model = new Model(util.loadTokens());
+            try {
+                model = new Model(util.loadTokens());
+            } catch (IOException e) { // TODO handle exceptions
+                e.printStackTrace();
+                mainActivityInterface.makeDeviceNotSupportedDialog(e);
+            } catch (GeneralSecurityException e) {
+                e.printStackTrace();
+                mainActivityInterface.makeDeviceNotSupportedDialog(e);
+            }
         }
-        FirebaseInitConfig firebaseInitConfig = util.loadFirebaseConfig();
+        if (model ==  null) {
+            model = new Model();
+        }
+        FirebaseInitConfig firebaseInitConfig = null;
+        try {
+            firebaseInitConfig = util.loadFirebaseConfig();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (GeneralSecurityException e) {  // TODO handle e
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
         if (firebaseInitConfig != null) {
             mainActivityInterface.firebaseInit(firebaseInitConfig);
         }
@@ -152,6 +173,10 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
                         mainActivityInterface.makeAlertDialog(R.string.firebase_config_broken_title,
                                 R.string.firebase_config_broken);
                         return;
+                    } catch (GeneralSecurityException e) { // TODO handle e
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
                 token.sslVerify = result.sslverify;
@@ -248,14 +273,20 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
 
     @Override
     public void saveTokenlist() {
-        util.saveTokens(model.getTokens());
+        try {
+            util.saveTokens(model.getTokens());
+        } catch (GeneralSecurityException e) {
+            e.printStackTrace(); // TODO handle e
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void checkKeyStoreIsWorking() {
         try {
             util.saveToFile("test", new byte[]{});
-        } catch (InvalidKeyException e) {
-            mainActivityInterface.makeDeviceNotSupportedDialog();
+        } catch (GeneralSecurityException | IOException e) {
+            mainActivityInterface.makeDeviceNotSupportedDialog(e);
         }
     }
 
@@ -425,6 +456,8 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             e.printStackTrace();
         } catch (UnrecoverableEntryException e) {
             e.printStackTrace();
+        } catch (GeneralSecurityException e) {      // TODO handle e
+            e.printStackTrace();
         }
     }
 
@@ -543,12 +576,14 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     }
 
     private void refreshOTPs() {
-        for (int i = 0; i < model.getTokens().size(); i++) {
-            if (!model.getTokens().get(i).getType().equals(PUSH)) {
-                model.getTokens().get(i).setCurrentOTP(generateOTP(model.getTokens().get(i)));
+        if (model != null) {
+            for (int i = 0; i < model.getTokens().size(); i++) {
+                if (!model.getTokens().get(i).getType().equals(PUSH)) {
+                    model.getTokens().get(i).setCurrentOTP(generateOTP(model.getTokens().get(i)));
+                }
             }
+            tokenListInterface.notifyChange();
         }
-        tokenListInterface.notifyChange();
     }
 
     private void doTwoStepRollout(Token token, int phonepartlength, int iterations, int output_size) {
@@ -589,7 +624,11 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     @Override
     public void receivePublicKey(String key, Token token) {
         try {
-            util.storePIPubkey(key, token.getSerial());
+            try {
+                util.storePIPubkey(key, token.getSerial());
+            } catch (IOException e) {
+                e.printStackTrace();            // TODO handle e
+            }
         } catch (GeneralSecurityException e) {
             // this means the "key" field was empty or the DECODED data is not a key
             updateTaskStatus(PRO_STATUS_RESPONSE_NO_KEY, token);
@@ -721,6 +760,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
     /**
      * Cancel the running Authentication Task and remove the pair from the runningAuthentications List
      * Sets the tokens 'lastAuthHadError' so the authentication can be dismissed
+     *
      * @param token token of the pair
      */
     private void deleteRunningAuthenticationFor(Token token) {

@@ -150,13 +150,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         secretKeyWrapper = null;
         try {
             secretKeyWrapper = new SecretKeyWrapper(this);
-        } catch (GeneralSecurityException e) {
+        } catch (GeneralSecurityException | IllegalStateException | IOException e) {          // TODO handle e
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (IllegalStateException e) {
-            // This exception occurs when the creation of the keypair fails, the app cannot save keys then and is unusable
-            makeDeviceNotSupportedDialog();
+            makeDeviceNotSupportedDialog(e);
         }
 
         Util util = new Util(secretKeyWrapper, getFilesDir().getAbsolutePath());
@@ -166,7 +162,7 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
 
         // this method checks if saving keys works, if not a dialog will appear informing the user
         // that the application cannot be used on the device
-        presenter.checkKeyStoreIsWorking();
+        //presenter.checkKeyStoreIsWorking();
 
         tokenlistadapter.setPresenterInterface(presenter);
 
@@ -877,8 +873,14 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
     }
 
     @Override
-    public void makeDeviceNotSupportedDialog() {
-        makeAlertDialog(R.string.device_not_supported, R.string.device_not_supported_text,
+    public void makeDeviceNotSupportedDialog(Exception e) {
+        Throwable t = e.getCause();
+        String cause = "Throwable is null!";
+        if (t != null) {
+            cause = t.getLocalizedMessage();
+        }
+        String message = getStringResource(R.string.device_not_supported_text) + "(Cause: " + cause + ")";
+        makeAlertDialog(R.string.device_not_supported, message,
                 R.string.device_not_supported_btn_text, false,
                 (dialog, which) -> {
                     this.finish(); // TODO this does not seem to be the best way to handle this

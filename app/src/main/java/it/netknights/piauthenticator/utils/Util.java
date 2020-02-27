@@ -119,6 +119,7 @@ public class Util {
 
     private String baseFilePath;
     private SecretKeyWrapper secretKeyWrapper;
+    private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public Util(SecretKeyWrapper secretKeyWrapper, String baseFilePath) {
         this.baseFilePath = baseFilePath;
@@ -134,7 +135,7 @@ public class Util {
      *
      * @return An ArrayList of Tokens
      */
-    public ArrayList<Token> loadTokens() {
+    public ArrayList<Token> loadTokens() throws IOException, GeneralSecurityException {
         logprint("LOADING TOKEN");
         ArrayList<Token> tokens = new ArrayList<>();
         try {
@@ -158,7 +159,7 @@ public class Util {
      *
      * @param tokens ArrayList of tokens to save
      */
-    public void saveTokens(ArrayList<Token> tokens) {
+    public void saveTokens(ArrayList<Token> tokens) throws GeneralSecurityException, IOException {
         if (tokens == null) {
             return;
         }
@@ -171,12 +172,8 @@ public class Util {
             }
         }
 
-        try {
-            if (saveToFile(DATAFILE, tmp.toString().getBytes())) {
-                logprint("Tokenlist saved.");
-            }
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
+        if (saveToFile(DATAFILE, tmp.toString().getBytes())) {
+            logprint("Tokenlist saved.");
         }
     }
 
@@ -201,8 +198,7 @@ public class Util {
                 t.enrollment_credential = o.getString(ENROLLMENT_CRED);
                 t.sslVerify = o.getBoolean(SSL_VERIFY);
                 try {
-                    t.rollout_expiration = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                            .parse(o.getString(ROLLOUT_EXPIRATION));
+                    t.rollout_expiration = dateFormat.parse(o.getString(ROLLOUT_EXPIRATION));
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
@@ -261,8 +257,7 @@ public class Util {
             // If the rollout is not finished yet, save the data necessary to complete it
             if (t.state.equals(UNFINISHED)) {
                 o.put(URL, t.rollout_url);
-                o.put(ROLLOUT_EXPIRATION, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                        .format(t.rollout_expiration));
+                o.put(ROLLOUT_EXPIRATION, dateFormat.format(t.rollout_expiration));
                 o.put(ENROLLMENT_CRED, t.enrollment_credential);
                 o.put(SSL_VERIFY, t.sslVerify);
             }
@@ -300,7 +295,7 @@ public class Util {
         return o;
     }
 
-    public void storePIPubkey(String key, String serial) throws GeneralSecurityException, IllegalArgumentException {
+    public void storePIPubkey(String key, String serial) throws GeneralSecurityException, IllegalArgumentException, IOException {
         byte[] keybytes = decodeBase64(key);
 
         PublicKey pubkey = PKCS1ToSubjectPublicKeyInfo.decodePKCS1PublicKey(keybytes);
@@ -314,25 +309,18 @@ public class Util {
         PublicKey pubkey = kf.generatePublic(keySpec); */
     }
 
-    public PublicKey getPIPubkey(String serial) {
+    public PublicKey getPIPubkey(String serial) throws GeneralSecurityException, IOException {
         if (baseFilePath == null) return null;
         return getPIPubkey(baseFilePath, serial);
     }
 
-    PublicKey getPIPubkey(String filepath, String serial) {
-        try {
-            byte[] keybytes = loadDataFromFile(serial + "_" + PUBKEYFILE, filepath);
-            // build pubkey
-            if (keybytes == null) return null;
-            X509EncodedKeySpec X509publicKey = new X509EncodedKeySpec(keybytes);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            return kf.generatePublic(X509publicKey);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-        }
-        return null;
+    PublicKey getPIPubkey(String filepath, String serial) throws GeneralSecurityException, IOException {
+        byte[] keybytes = loadDataFromFile(serial + "_" + PUBKEYFILE, filepath);
+        // build pubkey
+        if (keybytes == null) return null;
+        X509EncodedKeySpec X509publicKey = new X509EncodedKeySpec(keybytes);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return kf.generatePublic(X509publicKey);
     }
 
     /**
@@ -342,7 +330,7 @@ public class Util {
      * @param fileName Name of the file to load
      * @return raw data as byte array, null if no baseFilePath is set or there is no file
      */
-    private byte[] loadDataFromFile(String fileName) {
+    private byte[] loadDataFromFile(String fileName) throws IOException, GeneralSecurityException {
         if (baseFilePath == null) return null;
         return loadDataFromFile(fileName, baseFilePath);
     }
@@ -355,21 +343,14 @@ public class Util {
      * @param baseFilePath baseFilePath of the Context
      * @return raw data as byte array, null if there is no file
      */
-    private byte[] loadDataFromFile(String fileName, String baseFilePath) {
-        try {
-            byte[] encryptedData = readFile(new File(baseFilePath + "/" + fileName));
-            // decrypt
-            SecretKey encryptionKey = getSecretKey(new File(baseFilePath + "/" + KEYFILE));
-            if (encryptedData == null) {
-                return null;
-            }
-            return decrypt(encryptionKey, encryptedData);
-        } catch (Exception e) {
-            // combine exceptions here, nothing would be done anyway
-            //String s = e.getCause().getMessage();
-            e.printStackTrace();
+    private byte[] loadDataFromFile(String fileName, String baseFilePath) throws IOException, GeneralSecurityException {
+        byte[] encryptedData = readFile(new File(baseFilePath + "/" + fileName));
+        // decrypt
+        SecretKey encryptionKey = getSecretKey(new File(baseFilePath + "/" + KEYFILE));
+        if (encryptedData == null) {
+            return null;
         }
-        return null;
+        return decrypt(encryptionKey, encryptedData);
     }
 
     private void writeFile(File file, byte[] data) throws IOException {
@@ -408,7 +389,7 @@ public class Util {
         }
     }
 
-    public void storeFirebaseConfig(FirebaseInitConfig firebaseInitConfig) throws InvalidKeyException {
+    public void storeFirebaseConfig(FirebaseInitConfig firebaseInitConfig) throws GeneralSecurityException, IOException {
         logprint("Storing Firebase config...");
         JSONObject o = new JSONObject();
         try {
@@ -427,29 +408,22 @@ public class Util {
     /**
      * @return FirebaseInitConfig object or null if there is no config / error
      */
-    public FirebaseInitConfig loadFirebaseConfig() {
+    public FirebaseInitConfig loadFirebaseConfig() throws IOException, GeneralSecurityException, JSONException {
         logprint("Loading Firebase config...");
-        try {
-            byte[] data = loadDataFromFile(FB_CONFIG_FILE);
-            if (data == null) {
-                logprint("Firebase config not found!");
-                return null;
-            }
-
-            JSONObject o = new JSONObject(new String(data));
-            String projID = o.getString(PROJECT_ID);
-            String appID = o.getString(APP_ID);
-            String api_key = o.getString(API_KEY);
-            String projNumber = o.getString(PROJECT_NUMBER);
-
-            //logprint("Firebase config loaded.");
-            return new FirebaseInitConfig(projID, appID, api_key, projNumber);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            logprint("Missing parameter from config!");
+        byte[] data = loadDataFromFile(FB_CONFIG_FILE);
+        if (data == null) {
+            logprint("Firebase config not found!");
             return null;
         }
+
+        JSONObject o = new JSONObject(new String(data));
+        String projID = o.getString(PROJECT_ID);
+        String appID = o.getString(APP_ID);
+        String api_key = o.getString(API_KEY);
+        String projNumber = o.getString(PROJECT_NUMBER);
+
+        //logprint("Firebase config loaded.");
+        return new FirebaseInitConfig(projID, appID, api_key, projNumber);
     }
 
     public void removeFirebaseConfig() {
@@ -470,20 +444,11 @@ public class Util {
      * @param data         Data to save
      * @return true if successful, false if error
      */
-    private boolean saveToFile(String fileName, String baseFilePath, byte[] data) throws InvalidKeyException {
-        try {
-            SecretKey key = getSecretKey(new File(baseFilePath + "/" + KEYFILE));
-            data = encrypt(key, data);
-            writeFile(new File(baseFilePath + "/" + fileName), data);
-            return true;
-        } catch (InvalidKeyException e) {
-            throw e;
-        } catch (GeneralSecurityException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return false;
+    private boolean saveToFile(String fileName, String baseFilePath, byte[] data) throws GeneralSecurityException, IOException {
+        SecretKey key = getSecretKey(new File(baseFilePath + "/" + KEYFILE));
+        data = encrypt(key, data);
+        writeFile(new File(baseFilePath + "/" + fileName), data);
+        return true;
     }
 
     /**
@@ -494,7 +459,7 @@ public class Util {
      * @param data     Data to save
      * @return true if successful, false if error
      */
-    public boolean saveToFile(String fileName, byte[] data) throws InvalidKeyException {
+    public boolean saveToFile(String fileName, byte[] data) throws GeneralSecurityException, IOException {
         if (baseFilePath == null) return false;
         return saveToFile(fileName, baseFilePath, data);
     }

@@ -103,24 +103,6 @@ public class SecretKeyWrapper {
         mPair = new KeyPair(publicKey, privateKey);*/
     }
 
-    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
-    private static void generateKeyPair(Context context)
-            throws GeneralSecurityException {
-        final Calendar start = new GregorianCalendar();
-        final Calendar end = new GregorianCalendar();
-        end.add(Calendar.YEAR, 100);
-        final KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA", "AndroidKeyStore");
-        final KeyPairGeneratorSpec spec = new KeyPairGeneratorSpec.Builder(context)
-                .setAlias("settings")
-                .setSubject(new X500Principal("CN=" + "settings"))
-                .setSerialNumber(BigInteger.ONE)
-                .setStartDate(start.getTime())
-                .setEndDate(end.getTime())
-                .build();
-        gen.initialize(spec);
-        gen.generateKeyPair();
-    }
-
     /**
      * Wrap a {@link SecretKey} using the public key assigned to this wrapper.
      * Use {@link #unwrap(byte[])} to later recover the original

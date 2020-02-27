@@ -43,6 +43,8 @@ import android.widget.Toast;
 
 import androidx.core.widget.TextViewCompat;
 
+import org.apache.commons.codec.binary.Base32;
+
 import java.util.ArrayList;
 
 import it.netknights.piauthenticator.R;
@@ -266,12 +268,10 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
         nextbtn.setVisibility(VISIBLE);
 
         nextbtn.setOnClickListener(v -> {
-
             // disable button for some time after clicking
             nextbtn.setEnabled(false);
             new Handler().postDelayed(() -> nextbtn.setEnabled(true), 1000);
             presenterInterface.increaseHOTPCounter(token);
-
         });
     }
 

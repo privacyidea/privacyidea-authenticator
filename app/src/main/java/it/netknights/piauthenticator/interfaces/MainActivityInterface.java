@@ -42,7 +42,7 @@ public interface MainActivityInterface {
     void makeAlertDialog(int titleID, int messageID, int positiveBtnTextID, boolean cancelable,
                          @Nullable DialogInterface.OnClickListener positiveBtnListener);
 
-    void makeDeviceNotSupportedDialog();
+    void makeDeviceNotSupportedDialog(Exception e);
 
     void makeToast(String message);
 

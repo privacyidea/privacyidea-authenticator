@@ -219,7 +219,13 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
             //if (isRunningInBackground()) {
             token.getPendingAuths().remove(req);
             if (util != null) {
-                util.saveTokens(tokenlist);
+                try {
+                    util.saveTokens(tokenlist);
+                } catch (GeneralSecurityException e) {
+                    e.printStackTrace(); // TODO handle e
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
             // Close the notification that the authentication is running
             NotificationManagerCompat.from(this).cancel(req.getNotificationID());
@@ -280,7 +286,13 @@ public class PushAuthService extends Service implements PushAuthCallbackInterfac
     private void saveIfAppNotRunning() {
         //if (isRunningInBackground()) {
         if (util != null) {
-            util.saveTokens(tokenlist);
+            try {
+                util.saveTokens(tokenlist);
+            } catch (GeneralSecurityException e) {
+                e.printStackTrace();
+            } catch (IOException e) { // TODO handle e
+                e.printStackTrace();
+            }
         }
         //}
     }
