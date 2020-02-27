@@ -20,11 +20,13 @@
 package it.netknights.piauthenticator;
 
 import org.apache.commons.codec.binary.Base32;
+import org.json.JSONException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.PublicKey;
@@ -115,7 +117,7 @@ public class TestPresenter {
     }
 
     @Test
-    public void testInit() {
+    public void testInit() throws JSONException, GeneralSecurityException, IOException {
         presenter.init();
         verify(mainActivityInterface, never()).firebaseInit((FirebaseInitConfig) any());
         verify(mainActivityInterface, never()).makeAlertDialog(anyInt(), anyString());
@@ -265,7 +267,7 @@ public class TestPresenter {
     }
 
     @Test
-    public void lifecycle() {
+    public void lifecycle() throws GeneralSecurityException, IOException {
         presenter.onStop(); // saves tokenlist
 
         presenter.onPause();
@@ -390,11 +392,13 @@ public class TestPresenter {
             verify(util).storePIPubkey("test", "serial");
         } catch (GeneralSecurityException e) {
             e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
     @Test
-    public void receivePubKeyGSEnIAE() throws GeneralSecurityException {
+    public void receivePubKeyGSEnIAE() throws GeneralSecurityException, IOException {
         Token pushy = new Token("serial", "label");
 
         doThrow(GeneralSecurityException.class).when(util).storePIPubkey(anyString(), anyString());
@@ -420,7 +424,7 @@ public class TestPresenter {
     } */
 
     @Test
-    public void scanQRResult() throws InvalidKeyException {
+    public void scanQRResult() throws GeneralSecurityException, IOException {
         clearTokenlist();
         ScanResult res = new ScanResult(HOTP, "serial");
         res.secret = "AAAAAAAAAAAAAA";

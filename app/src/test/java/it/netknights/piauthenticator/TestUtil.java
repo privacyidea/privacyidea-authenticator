@@ -22,6 +22,7 @@ package it.netknights.piauthenticator;
 
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Base64;
+import org.json.JSONException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -117,7 +118,7 @@ public class TestUtil {
     }
 
     @Test
-    public void testSaveAndLoad() {
+    public void testSaveAndLoad() throws GeneralSecurityException, IOException {
 
         ArrayList<Token> list = new ArrayList<>();
         Token t1 = new Token("testetststest".getBytes(), "SERIALSERIAL", "LABEL", HOTP, 6);
@@ -172,7 +173,7 @@ public class TestUtil {
      * Doesn't work, androids base64 is not available here, Apache base64 doesn't work on a real device
      */
     @Test
-    public void receiveAndStorePublicKey() {
+    public void receiveAndStorePublicKey() throws GeneralSecurityException, IOException {
         // in_key is in setup
         try {
             util.storePIPubkey(in_key, "testkey");
@@ -214,15 +215,15 @@ public class TestUtil {
         assertFalse(test.exists());
     }
 
-    @Test
-    public void saveLoadDeleteFirebaseConfig() throws InvalidKeyException {
+    @Test(expected = org.json.JSONException.class)
+    public void saveLoadDeleteFirebaseConfig() throws GeneralSecurityException, JSONException, IOException {
         // there is none
         assertNull(util.loadFirebaseConfig());
 
         // This throws exception -> returns null
         FirebaseInitConfig fbConf = new FirebaseInitConfig(null, null, null, null);
         util.storeFirebaseConfig(fbConf);
-        assertNull(util.loadFirebaseConfig());
+        util.loadFirebaseConfig(); // this will throw an exception when evaluating the loaded JSON
 
         // this should work
         fbConf = new FirebaseInitConfig("projID", "appID", "api_key", "projNumber");
@@ -261,7 +262,7 @@ public class TestUtil {
     }
 
     @Test
-    public void testLoadingOldToken() {
+    public void testLoadingOldToken() throws IOException, GeneralSecurityException {
         // Older token did not have the serial attribute.
         // Upon loading them, their label should be set as their serial
 
