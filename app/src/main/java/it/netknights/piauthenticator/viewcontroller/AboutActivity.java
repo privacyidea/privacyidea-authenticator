@@ -52,6 +52,7 @@ public class AboutActivity extends AppCompatActivity {
         paintStatusbar();
         setupActionBar();
         setupList();
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
     }
 
     private void setupList() {

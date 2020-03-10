@@ -185,6 +185,9 @@ public class MainActivity extends AppCompatActivity implements ActionMode.Callba
         } else {
             pushAuthRequestReceived(intent);
         }
+
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+
     }
 
     void pushAuthRequestReceived(Intent intent) {
