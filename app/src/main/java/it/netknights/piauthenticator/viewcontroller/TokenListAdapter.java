@@ -214,10 +214,9 @@ public class TokenListAdapter extends BaseAdapter implements TokenListViewInterf
             allowbtn.setText(v.getContext().getString(R.string.Allow));
             allowbtn.setOnClickListener(__ -> presenterInterface.startPushAuthentication(token));
 
-            if (token.lastAuthHadError) {
-                dismissbtn.setVisibility(VISIBLE);
-                dismissbtn.setOnClickListener(__ -> presenterInterface.removeCurrentAuthRequest(token));
-            }
+            dismissbtn.setVisibility(VISIBLE);
+            dismissbtn.setOnClickListener(__ -> presenterInterface.removeCurrentAuthRequest(token));
+
 
         } else if (!token.getPendingAuths().isEmpty() && (token.state.equals(AUTHENTICATING))) {
             smallText.setText(token.getPendingAuths().get(0).getTitle());
