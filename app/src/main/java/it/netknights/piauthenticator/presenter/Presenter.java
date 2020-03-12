@@ -193,6 +193,7 @@ public class Presenter implements PresenterInterface, PresenterTaskInterface, Pr
             case HOTP:
             case TOTP: {
                 if (result.secret == null) return;
+                result.secret = result.secret.toUpperCase();
                 token = new Token(new Base32().decode(result.secret), result.serial, result.label, result.type, result.digits);
                 token.setCounter(result.counter);
                 token.setPeriod(result.period);
