@@ -154,7 +154,7 @@ public class Util {
     }
 
     /**
-     * Encrpyt and save the ArrayList of tokens with a Secret Key, which is wrapped by a Public Key
+     * Encrypt and save the ArrayList of tokens with a Secret Key, which is wrapped by a Public Key
      * that is stored in the Keystore
      *
      * @param tokens ArrayList of tokens to save

@@ -51,13 +51,14 @@
         android:layout_alignParentEnd="true"
         android:layout_marginStart="8dp"
         android:layout_marginTop="12dp"
-        android:layout_marginEnd="8dp">
+        android:layout_marginEnd="0dp">
 
         <Button
             android:id="@+id/dismiss_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:backgroundTint="@color/PIBLUE"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@android:color/holo_red_dark"
             android:text="@string/Dismiss"
             android:textColor="@color/zxing_status_text"
             app:layout_constraintEnd_toEndOf="parent"
