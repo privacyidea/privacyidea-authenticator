@@ -11,11 +11,11 @@ android {
 
         def versionMajor = 2
         def versionMinor = 0
-        def versionPatch = 4
-        def versionAdditive = 0
+        def versionPatch = 5
 
-        versionCode versionMajor * 10000 + versionMinor * 1000 + versionPatch * 100 + versionAdditive
-        versionName "${versionMajor}.${versionMinor}.${versionPatch}b${versionAdditive}"
+        versionCode = versionMajor * 10000 + versionMinor * 1000 + versionPatch * 100
+
+        versionName = "${versionMajor}.${versionMinor}.${versionPatch}"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
