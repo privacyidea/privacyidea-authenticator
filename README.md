@@ -11,7 +11,7 @@ specified in our
 [smartphone concept](https://github.com/privacyidea/privacyidea/wiki/concept%3A-SmartphoneApp) as well as the [pushtoken](https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken) with support for user-configured firebase projects.
 
 The App is best used with the
-[privacyIDEA Authentication Server](https://github/privacyidea/privacyidea).
+[privacyIDEA Authentication Server](https://github.com/privacyidea/privacyidea).
 
 The iOS App can be found [here](https://github.com/privacyidea/privacyidea-authenticator-ios).
 
