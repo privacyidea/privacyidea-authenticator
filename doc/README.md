@@ -38,7 +38,7 @@ This parameter specifies the length of the resulting OTP seed in byte.
 Usually you do not have to specify this parameter as it is derived from the algorithm that is used. 
 The defaults are 20 (160bit) for HMAC-SHA1, 32 (256bit) for HMAC-SHA256 and 64 (512bit) for HMAC-SHA512.
 
-    2step_output=32
+    2step_output=20
 
 
 ### 2step_salt
