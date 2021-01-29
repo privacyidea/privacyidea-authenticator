@@ -1,3 +1,5 @@
+# This app is superseded by [the new app](https://github.com/privacyidea/pi-authenticator) therefore this repo is archived.
+
 [![CircleCI](https://circleci.com/gh/privacyidea/privacyidea-authenticator.svg?style=svg)](https://circleci.com/gh/privacyidea/privacyidea-authenticator)
 
 # privacyIDEA Authenticator
